@@ -1,0 +1,274 @@
+# === imports ======
+
+sh <- suppressPackageStartupMessages
+
+sh(library(ADNIMERGE))
+sh(library(lubridate))
+sh(library(stringr))
+sh(library(this.path))
+sh(library(tidyverse))
+
+# === Set working directory ======
+
+setwd(this.dir())
+
+# === Set paths ======
+
+PATH.PTDEMOG.CSV <- '../rawdata/PTDEMOG.csv'
+PATH.ICV <- '../derivatives/adni_icvs.csv'
+
+PATH.PACC.SCRIPT <- '../scripts/pacc.R'
+
+PATH.OUTPUT <- '../derivatives/adni_base_table.csv'
+
+# === Set variables ======
+
+THRESHOLD.IMAGING.DAYS = 365
+THRESHOLD.COGNITIVE.DAYS = 365
+
+# === Find amyloid/tau overlap ======
+
+scan.id <- function(RID, EXAMDATE) {
+  return (paste(as.character(RID), gsub('-', '', EXAMDATE), sep='-'))
+}
+
+# merge on tau as that is less available
+# separate merges for amyloid/FBB and concatenation
+# just need to check that some individuals didn't get duplicate scans
+
+tau <- ucberkeleyav1451 %>%
+  mutate(DateTau = as_datetime(ymd(EXAMDATE)),
+         TauID = scan.id(RID, EXAMDATE)) %>%
+  select(RID, DateTau, TauID) %>%
+  group_by(RID) %>%
+  slice_min(DateTau, with_ties = F) %>%
+  ungroup()
+
+# Centiloid conversion for ADNI: 
+# https://adni.loni.usc.edu/wp-content/themes/freshnews-dev-v2/documents/pet/ADNI%20Centiloids%20Final.pdf
+
+av45 <- ucberkeleyav45 %>%
+  mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
+         AmyloidID = scan.id(RID, EXAMDATE),
+         AmyloidTracer = 'AV45',
+         AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.11CUTOFF),
+         AmyloidID = scan.id(RID, EXAMDATE),
+         Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03)) %>%
+  select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
+
+fbb <- ucberkeleyfbb %>%
+  mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
+         AmyloidID = scan.id(RID, EXAMDATE),
+         AmyloidTracer = 'FBB',
+         AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.08CUTOFF),
+         AmyloidID = scan.id(RID, EXAMDATE),
+         Centiloid = as.numeric((159.08*SUMMARYSUVR_WHOLECEREBNORM) - 151.65)) %>%
+  select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
+
+link.av45 <- left_join(tau, av45, by='RID') %>%
+  mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
+  group_by(TauID) %>%
+  slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
+  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
+
+link.fbb <- left_join(tau, fbb, by='RID') %>%
+  mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
+  group_by(TauID) %>%
+  slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
+  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
+
+df <- rbind(link.av45, link.fbb) %>%
+  mutate(MeanImagingDate = as_date(DateTau - (as.difftime(DiffTauAmyloid, units = 'days') / 2)),
+         RID = as.numeric(RID)) %>%
+  arrange(RID, DateTau)
+
+# === Verification step =======
+
+# verify that the tau scan can be used to uniquely identify each scan pair
+
+if (sum(duplicated(df$TauID)) == 0) {
+  print('Tau scan IDs are unique for each row')
+} else {
+  stop('Tau scans are NOT unique for each row - revisit how identify rows.')
+}
+
+# === Add CDR ======
+
+cdr.record <- cdr %>%
+  mutate(DateCDR = as_datetime(ymd(USERDATE)),
+         CDRGlobal = CDGLOBAL,
+         CDRSumBoxes = CDRSB,
+         RID = as.numeric(RID)) %>%
+  select(RID, DateCDR, CDRGlobal, CDRSumBoxes)
+
+cdr.df <- left_join(df, cdr.record, by='RID') %>%
+  mutate(DiffMeanImagingDateCDR = as.numeric(difftime(MeanImagingDate, DateCDR, units = 'days')))
+
+cdr.df <- group_by(cdr.df, TauID) %>%
+  slice_min(order_by=abs(DiffMeanImagingDateCDR), with_ties = F) %>%
+  ungroup()
+
+bad <- is.na(cdr.df$CDRGlobal) | (abs(cdr.df$DiffMeanImagingDateCDR) > THRESHOLD.COGNITIVE.DAYS)
+cdr.df[bad, c("DateCDR", "CDRGlobal", "CDRSumBoxes", "DiffMeanImagingDateCDR")] <- NA
+
+cdr.df <- cdr.df %>%
+  mutate(CDRBinned=cut(CDRGlobal, breaks=c(0, .5, 1, Inf), right=F))
+levels(cdr.df$CDRBinned) <- c("0.0", "0.5", "1.0+")
+
+df <- as.data.frame(cdr.df) %>%
+  arrange(RID, DateTau)
+
+df$Dementia <- ifelse(df$CDRGlobal >= 0.5 & ! is.na(df$CDRGlobal), 
+                      'Yes',
+                      'No')
+df[is.na(df$CDRGlobal), 'Dementia'] <- 'Unknown'
+
+# === add MMSE ======
+
+# add MMSE
+mmse.adni <- mmse %>%
+  dplyr::select(RID, USERDATE, MMSCORE) %>%
+  rename(DateMMSE=USERDATE, MMSE=MMSCORE) %>%
+  mutate(DateMMSE=as_datetime(ymd(DateMMSE)))
+
+mmse.merged <- left_join(df, mmse.adni, by='RID') %>%
+  mutate(MMSEDiff = difftime(MeanImagingDate, DateMMSE, units='days')) %>%
+  group_by(TauID) %>%
+  slice_min(abs(MMSEDiff), with_ties = F) %>%
+  ungroup() %>%
+  mutate(MMSE = ifelse(! is.na(MMSEDiff) & abs(MMSEDiff) > 365, NA, MMSE))  
+
+df <- mmse.merged
+
+# === Add APOE ======
+
+a1 <- select(apoeres, RID, APGEN1, APGEN2)
+a2 <- select(apoego2, RID, APGEN1, APGEN2)
+a3 <- select(apoe3, RID, APGEN1, APGEN2)
+
+all.apoe <- do.call(rbind, list(a1, a2, a3))
+
+all.apoe <- all.apoe %>%
+  mutate(APOEGenotype=paste(
+    pmin(all.apoe$APGEN1, all.apoe$APGEN2),
+    pmax(all.apoe$APGEN1, all.apoe$APGEN2),
+    sep='/')
+  )
+
+df <- left_join(df, all.apoe, by='RID')
+df$HasE4 <- ifelse(is.na(df$APOEGenotype), NA, grepl('4', df$APOEGenotype))
+
+# === Add neuropsych ======
+
+# for computation of PACC, need some neuropsych & ADAS cog Q4
+# see https://adni.bitbucket.io/reference/pacc.html
+
+# 1. Neuropsych battery
+nps <- neurobat %>%
+  select(RID, USERDATE, LDELTOTAL, DIGITSCOR, TRABSCOR) %>%
+  rename(DateNeuropsych=USERDATE) %>%
+  mutate(DateNeuropsych=as_datetime(ymd(DateNeuropsych)))
+
+df <- left_join(df, nps, by='RID') %>%
+  mutate(DiffNPS = as.numeric(abs(difftime(MeanImagingDate, DateNeuropsych, units='days')))) %>%
+  group_by(TauID) %>%
+  slice_min(DiffNPS, with_ties = F)
+
+bad.nps <- (df$DiffNPS > 365) | (is.na(df$DiffNPS))
+df[bad.nps, c('LDELTOTAL', 'DIGITSCOR', 'TRABSCOR')] <- NA
+
+# 2. ADAS
+adascog <- adas %>%
+  select(RID, USERDATE, Q4SCORE) %>%
+  rename(DateADAS=USERDATE,
+         ADASQ4=Q4SCORE) %>%
+  mutate(DateADS=as_datetime(ymd(DateADAS)))
+
+df <- left_join(df, adascog, by='RID') %>%
+  mutate(DiffADAS = as.numeric(abs(difftime(MeanImagingDate, DateADAS, units='days')))) %>%
+  group_by(TauID) %>%
+  slice_min(DiffADAS, with_ties = F)
+
+bad.adas <- (df$DiffADAS > 365) | (is.na(df$DiffADAS))
+df[bad.adas, c('ADASQ4')] <- NA
+
+# === Add demographics ======
+
+min.ages <- ptdemog %>%
+  select(RID, USERDATE, AGE, PTGENDER) %>%
+  rename(DateDemogBL=USERDATE, AgeBL=AGE, Gender=PTGENDER) %>%
+  mutate(DateDemogBL=as_datetime(ymd(DateDemogBL)),
+         AgeBL = as.numeric(AgeBL)) %>%
+  drop_na(AgeBL) %>%
+  group_by(RID) %>%
+  slice_min(DateDemogBL)
+
+df.age <- left_join(df, min.ages, by='RID')
+df.age$TimeTauSinceBL <- as.numeric(difftime(df.age$DateTau, df.age$DateDemogBL, units='days')) / 365.25
+df.age$Age <- as.numeric(df.age$AgeBL + df.age$TimeTauSinceBL)
+
+# manually add some missing ages
+# these are not in ADNIMERGE::ptdemog but are in the downloaded study tables
+missing.age <- df.age[is.na(df.age$Age), ]
+replace.rids <- missing.age$RID
+
+demog.csv <- read.csv(PATH.PTDEMOG.CSV) %>%
+  select(RID, PTDOBMM, PTDOBYY) %>%
+  mutate(DOB=as.POSIXct(paste(PTDOBMM, 15, PTDOBYY, sep='/'), format='%m/%d/%Y')) %>%
+  filter(RID %in% replace.rids) %>%
+  select(RID, DOB)
+
+df.age <- left_join(df.age, demog.csv, by='RID') %>%
+  mutate(Age = ifelse(
+    is.na(Age),
+    as.numeric(difftime(DateTau, DOB, units='days') / 365.25),
+    Age)
+  )
+
+df <- select(df.age, -c(DOB, AgeBL, DateDemogBL, TimeTauSinceBL))
+
+# same for some missing genders
+df$Gender <- as.character(df$Gender)
+gender.missing <- df[is.na(df$Gender), ]
+
+demog.csv <- read.csv(PATH.PTDEMOG.CSV) %>%
+  select(RID, PTGENDER) %>%
+  filter(RID %in% gender.missing$RID) %>%
+  mutate(Gender.Missing=recode(PTGENDER, `1`='Male', `2`='Female')) %>%
+  select(-PTGENDER)
+
+df.gender <- left_join(df, demog.csv, by='RID') %>%
+  mutate(Gender = ifelse(is.na(Gender), Gender.Missing, Gender)) %>%
+  select(-Gender.Missing)
+
+df <- df.gender
+
+# === Add ICV ======
+
+icv <- read.csv(PATH.ICV)
+
+df <- left_join(df, icv, by = 'TauID')
+
+# === Compute PACC =========
+
+# done relative to baseline CN group
+# this is using the modified formula recommended by ADNIMERGE R
+# https://adni.bitbucket.io/reference/pacc.html
+
+source(PATH.PACC.SCRIPT)
+
+df$PACC.ADNI <- compute.pacc(df,
+                             pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
+                             cn.mask = df$Dementia == 'No',
+                             higher.better = c(F, T, F, T),
+                             min.required = 2)
+
+# === print dataset sizes ======
+
+print(sprintf('AV45: %s', sum(df$AmyloidTracer == 'AV45')))
+print(sprintf('FBB: %s', sum(df$AmyloidTracer == 'FBB')))
+
+# === save ========
+
+dir.create(dirname(PATH.OUTPUT), showWarnings = F)
+write.csv(df, PATH.OUTPUT, quote = F, na = '', row.names = F)

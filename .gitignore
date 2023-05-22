@@ -7,6 +7,14 @@
 rawdata/*
 !rawdata/README.md
 
+# derivatives
+derivatives/*
+
+# icv
+prep/adni_generate_icv
+!prep/adni_generate_icv/generate_icv_table.R
+!derivatives/adni_icvs.csv
+
 ##########
 # Python
 ##########

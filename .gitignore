@@ -5,6 +5,7 @@
 
 # rawdata
 rawdata/*
+!rawdata/README.md
 
 ##########
 # Python

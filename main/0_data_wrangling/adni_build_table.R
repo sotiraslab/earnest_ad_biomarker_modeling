@@ -64,14 +64,14 @@ av45 <- ucberkeleyav45 %>%
          Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03)) %>%
   select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
 
-fbb <- ucberkeleyfbb %>%
-  mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
-         AmyloidID = scan.id(RID, EXAMDATE),
-         AmyloidTracer = 'FBB',
-         AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.08CUTOFF),
-         AmyloidID = scan.id(RID, EXAMDATE),
-         Centiloid = as.numeric((159.08*SUMMARYSUVR_WHOLECEREBNORM) - 151.65)) %>%
-  select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
+# fbb <- ucberkeleyfbb %>%
+#   mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
+#          AmyloidID = scan.id(RID, EXAMDATE),
+#          AmyloidTracer = 'FBB',
+#          AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.08CUTOFF),
+#          AmyloidID = scan.id(RID, EXAMDATE),
+#          Centiloid = as.numeric((159.08*SUMMARYSUVR_WHOLECEREBNORM) - 151.65)) %>%
+#   select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
 
 link.av45 <- left_join(tau, av45, by='RID') %>%
   mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
@@ -79,13 +79,13 @@ link.av45 <- left_join(tau, av45, by='RID') %>%
   slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
 
-link.fbb <- left_join(tau, fbb, by='RID') %>%
-  mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
-  group_by(TauID) %>%
-  slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
-  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
+# link.fbb <- left_join(tau, fbb, by='RID') %>%
+#   mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
+#   group_by(TauID) %>%
+#   slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
+#   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
 
-df <- rbind(link.av45, link.fbb) %>%
+df <- link.av45 %>%
   mutate(MeanImagingDate = as_date(DateTau - (as.difftime(DiffTauAmyloid, units = 'days') / 2)),
          RID = as.numeric(RID)) %>%
   arrange(RID, DateTau)
@@ -204,7 +204,7 @@ df[bad.adas, c('ADASQ4')] <- NA
 
 min.ages <- ptdemog %>%
   select(RID, USERDATE, AGE, PTGENDER) %>%
-  rename(DateDemogBL=USERDATE, AgeBL=AGE, Gender=PTGENDER) %>%
+  rename(DateDemogBL=USERDATE, AgeBL=AGE, Sex=PTGENDER) %>%
   mutate(DateDemogBL=as_datetime(ymd(DateDemogBL)),
          AgeBL = as.numeric(AgeBL)) %>%
   drop_na(AgeBL) %>%
@@ -235,21 +235,21 @@ df.age <- left_join(df.age, demog.csv, by='RID') %>%
 
 df <- select(df.age, -c(DOB, AgeBL, DateDemogBL, TimeTauSinceBL))
 
-# same for some missing genders
-df$Gender <- as.character(df$Gender)
-gender.missing <- df[is.na(df$Gender), ]
+# same for some missing sex
+df$Sex <- as.character(df$Sex)
+sex.missing <- df[is.na(df$Sex), ]
 
 demog.csv <- read.csv(PATH.PTDEMOG.CSV) %>%
   select(RID, PTGENDER) %>%
-  filter(RID %in% gender.missing$RID) %>%
-  mutate(Gender.Missing=recode(PTGENDER, `1`='Male', `2`='Female')) %>%
+  filter(RID %in% sex.missing$RID) %>%
+  mutate(Sex.Missing=recode(PTGENDER, `1`='Male', `2`='Female')) %>%
   select(-PTGENDER)
 
-df.gender <- left_join(df, demog.csv, by='RID') %>%
-  mutate(Gender = ifelse(is.na(Gender), Gender.Missing, Gender)) %>%
-  select(-Gender.Missing)
+df.sex <- left_join(df, demog.csv, by='RID') %>%
+  mutate(Sex = ifelse(is.na(Sex), Sex.Missing, Sex)) %>%
+  select(-Sex.Missing)
 
-df <- df.gender
+df <- df.sex
 
 # === Add ICV ======
 
@@ -270,11 +270,6 @@ df$PACC.ADNI <- compute.pacc(df,
                              cn.mask = df$Dementia == 'No',
                              higher.better = c(F, T, F, T),
                              min.required = 2)
-
-# === print dataset sizes ======
-
-print(sprintf('AV45: %s', sum(df$AmyloidTracer == 'AV45')))
-print(sprintf('FBB: %s', sum(df$AmyloidTracer == 'FBB')))
 
 # === variables for selecting ROIs ======
 
@@ -309,23 +304,23 @@ df <- left_join(df, rois.bilateral, by = 'AmyloidID')
 
 # === Add ROIs : FBB ======
 
-rois <- ucberkeleyfbb %>%
-  mutate(AmyloidID = scan.id(RID, EXAMDATE)) %>%
-  select(AmyloidID,
-         WHOLECEREBELLUM_SUVR,
-         matches('CTX.*SUVR') & ! contains('UNKNOWN'),
-         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
-  mutate(across(contains('SUVR'), function (x) x / WHOLECEREBELLUM_SUVR)) %>%
-  select(-WHOLECEREBELLUM_SUVR)
-
-lh <- select(rois, contains('lh_'), contains('left'))
-rh <- select(rois, contains('rh_'), contains('right'))
-rois.bilateral <- (lh + rh) / 2
-colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'FBB', colnames(rois.bilateral))
-
-rois.bilateral$AmyloidID <- rois$AmyloidID
-
-df <- left_join(df, rois.bilateral, by = 'AmyloidID')
+# rois <- ucberkeleyfbb %>%
+#   mutate(AmyloidID = scan.id(RID, EXAMDATE)) %>%
+#   select(AmyloidID,
+#          WHOLECEREBELLUM_SUVR,
+#          matches('CTX.*SUVR') & ! contains('UNKNOWN'),
+#          matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
+#   mutate(across(contains('SUVR'), function (x) x / WHOLECEREBELLUM_SUVR)) %>%
+#   select(-WHOLECEREBELLUM_SUVR)
+# 
+# lh <- select(rois, contains('lh_'), contains('left'))
+# rh <- select(rois, contains('rh_'), contains('right'))
+# rois.bilateral <- (lh + rh) / 2
+# colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'FBB', colnames(rois.bilateral))
+# 
+# rois.bilateral$AmyloidID <- rois$AmyloidID
+# 
+# df <- left_join(df, rois.bilateral, by = 'AmyloidID')
 
 # === Add ROIs : FTP ======
 
@@ -363,7 +358,7 @@ colnames(rois.bilateral) <- gsub('CTX_LH_|LEFT_', '', colnames(rois.bilateral))
 rois.bilateral$TauID <- rois$TauID
 
 df <- left_join(df, rois.bilateral, by = 'TauID') %>%
-  mutate(across(contains('_VOLUME'), function (x) (x / ICV) * 1000))
+  mutate(across(ends_with('_VOLUME'), function (x) (x / ICV) * 1000))
 
 # === save ========
 

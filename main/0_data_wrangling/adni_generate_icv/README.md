@@ -1,11 +1,11 @@
 
 # Generating ICV values for ADNI
 
-Intracranial volume (ICV) values are manually generated for ADNI subjects, as ADNI does not seem to provide this information.  This step is more complicated than other steps in this project in that it requires images to be download from ADNI and preprocessed.  **Because of this, the precomputed ICV values are provided in `derivatives/adni_icvs.csv` and do not need to be recomputed to rerun analyses**.  The steps below will document how that table can be created:
+Intracranial volume (ICV) values are manually generated for ADNI subjects, as ADNI does not seem to provide this information.  This step is more complicated than other steps in this project in that it requires images to be download from ADNI and preprocessed.  **Because of this, the precomputed ICV values are provided in `data/derivatives/adni_icvs.csv` and do not need to be recomputed to rerun analyses**.  The steps below will document how that table can be created:
 
 ## Steps
 
-1. Run `prep/adni_build_table.R` once to generate the table of subjects used in this project.
+1. Run `main/0_data_wrangling/adni_build_table.R` once to generate the table of subjects used in this project.
 2. Run `generate_icv_table.R` once to generate a list of ADNI participant IDs (PTIDS.txt) which can be used to search ADNI.
 3. Run an image search on ADNI:
     - Go to the ADNI database (ida.loni.usc.edu) > Search > Advanced Image Search (beta).
@@ -27,4 +27,4 @@ Intracranial volume (ICV) values are manually generated for ADNI subjects, as AD
      - `SCRIPT` should point to `process_image.sh`.
      - `TTP2` and `SCRIPT` may need to be updated to be absolute paths.
 7. Once the images are processed and brain masks have been created, use `mean_intensity_tool.py` to generate mask sizes for all the brain masks computed by DeepMRSeg.  Save the output as MASKSIZES.csv.
-8. Run `generate_icv_table.R` for a third time, which should now run to completion and generate `derivatives/adni_icvs.csv`.
+8. Run `generate_icv_table.R` for a third time, which should now run to completion and generate `data/derivatives/adni_icvs.csv`.

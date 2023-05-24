@@ -4,16 +4,16 @@
 ##########
 
 # rawdata
-rawdata/*
-!rawdata/README.md
+data/rawdata/*
+!data/rawdata/README.md
 
 # derivatives
-derivatives/*
+data/derivatives/*
+!data/derivatives/adni_icvs.csv
 
-# icv
-prep/adni_generate_icv/*.csv
-prep/adni_generate_icv/*.txt
-!derivatives/adni_icvs.csv
+# main
+main/**/*.csv
+main/**/*.txt
 
 ##########
 # Python

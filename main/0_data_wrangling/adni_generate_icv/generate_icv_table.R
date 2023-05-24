@@ -17,10 +17,10 @@ sh(library(tidyverse))
 
 setwd(this.dir())
 
-# === Set paths ======
+# === Set paths ======  
 
 # input
-PATH.DF <- '../../derivatives/adni_base_table.csv'
+PATH.DF <- '../../../data/derivatives/adni_base_table.csv'
 
 # intermediate files
 PATH.PTIDS <- 'PTIDS.txt'
@@ -30,7 +30,7 @@ PATH.MASKSIZES <- 'MASKSIZES.csv'
 PATH.DOWNLOADLIST <- 'DOWNLOADLIST.txt'
 
 # output
-PATH.ICV.TABLE <- '../../derivatives/adni_icvs.csv'
+PATH.ICV.TABLE <- '../../../data/derivatives/adni_icvs.csv'
 
 
 # === Step 1: Produce search for MRI ======
@@ -133,7 +133,7 @@ if (! file.exists(PATH.MASKSIZES)) {
 }
 
 if (! file.exists(PATH.DOWNLOADLIST)) {
-  msg <- sprintf('"%s" not found.  In image download folder, run `find . -name "ADNI*.nii.gz" > %s` and copy the output to this folder', PATH.DOWNLOADLIST)
+  msg <- sprintf('"%s" not found.  In image download folder, run `find . -name "ADNI*.nii.gz" > %s` and copy the output to this folder', PATH.DOWNLOADLIST, PATH.DOWNLOADLIST)
   stop(msg)
 }
 

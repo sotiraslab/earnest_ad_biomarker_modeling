@@ -14,12 +14,12 @@ setwd(this.dir())
 
 # === Set paths ======
 
-PATH.PTDEMOG.CSV <- '../rawdata/PTDEMOG.csv'
-PATH.ICV <- '../derivatives/adni_icvs.csv'
+PATH.PTDEMOG.CSV <- '../../data/rawdata/PTDEMOG.csv'
+PATH.ICV <- '../../data/derivatives/adni_icvs.csv'
 
-PATH.PACC.SCRIPT <- '../scripts/pacc.R'
+PATH.PACC.SCRIPT <- '../../scripts/pacc.R'
 
-PATH.OUTPUT <- '../derivatives/adni_base_table.csv'
+PATH.OUTPUT <- '../../data/derivatives/adni_base_table.csv'
 
 # === Set variables ======
 

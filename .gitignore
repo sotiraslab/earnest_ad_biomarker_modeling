@@ -3,6 +3,9 @@
 # Me
 ##########
 
+# DS_Store
+.DS_Store
+
 # rawdata
 data/rawdata/*
 !data/rawdata/README.md

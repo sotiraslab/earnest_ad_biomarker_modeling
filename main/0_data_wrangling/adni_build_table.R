@@ -18,8 +18,12 @@ PATH.PTDEMOG.CSV <- '../../data/rawdata/PTDEMOG.csv'
 PATH.ICV <- '../../data/derivatives/adni_icvs.csv'
 
 PATH.PACC.SCRIPT <- '../../scripts/pacc.R'
+PATH.EXAMDATE.SCRIPT <- '../../scripts/adni_examdate.R'
 
 PATH.OUTPUT <- '../../data/derivatives/adni_base_table.csv'
+
+source(PATH.PACC.SCRIPT)
+source(PATH.EXAMDATE.SCRIPT)
 
 # === Set variables ======
 
@@ -62,7 +66,10 @@ av45 <- ucberkeleyav45 %>%
          AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.11CUTOFF),
          AmyloidID = scan.id(RID, EXAMDATE),
          Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03)) %>%
-  select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
+  select(RID, DateAmyloid, AmyloidID, AmyloidTracer,
+         AmyloidPositive, AmyloidID, Centiloid,
+         SUMMARYSUVR_COMPOSITE_REFNORM,
+         SUMMARYSUVR_WHOLECEREBNORM)
 
 # fbb <- ucberkeleyfbb %>%
 #   mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
@@ -103,11 +110,14 @@ if (sum(duplicated(df$TauID)) == 0) {
 # === Add CDR ======
 
 cdr.record <- cdr %>%
-  mutate(DateCDR = as_datetime(ymd(USERDATE)),
-         CDRGlobal = CDGLOBAL,
-         CDRSumBoxes = CDRSB,
-         RID = as.numeric(RID)) %>%
-  select(RID, DateCDR, CDRGlobal, CDRSumBoxes)
+  as.data.frame() %>%
+  mutate(DateCDR = ifelse(is.na(EXAMDATE),
+                          get.examdate.from.registry(cdr),
+                          EXAMDATE),
+         DateCDR = as_datetime(ymd(DateCDR))) %>%
+  select(RID, DateCDR, CDGLOBAL, CDRSB) %>%
+  rename(CDRGlobal=CDGLOBAL, CDRSumBoxes=CDRSB) %>%
+  drop_na(CDRGlobal)
 
 cdr.df <- left_join(df, cdr.record, by='RID') %>%
   mutate(DiffMeanImagingDateCDR = as.numeric(difftime(MeanImagingDate, DateCDR, units = 'days')))
@@ -136,9 +146,12 @@ df$Control <- ifelse(! df$AmyloidPositive & df$Dementia == 'No', 1, 0)
 
 # add MMSE
 mmse.adni <- mmse %>%
-  dplyr::select(RID, USERDATE, MMSCORE) %>%
-  rename(DateMMSE=USERDATE, MMSE=MMSCORE) %>%
-  mutate(DateMMSE=as_datetime(ymd(DateMMSE)))
+  mutate(DateMMSE = ifelse(is.na(EXAMDATE),
+                           get.examdate.from.registry(mmse),
+                           EXAMDATE),
+         DateMMSE = as_datetime(ymd(DateMMSE))) %>%
+  dplyr::select(RID, DateMMSE, MMSCORE) %>%
+  rename(MMSE=MMSCORE)
 
 mmse.merged <- left_join(df, mmse.adni, by='RID') %>%
   mutate(MMSEDiff = difftime(MeanImagingDate, DateMMSE, units='days')) %>%
@@ -174,9 +187,11 @@ df$HasE4 <- ifelse(is.na(df$APOEGenotype), NA, grepl('4', df$APOEGenotype))
 
 # 1. Neuropsych battery
 nps <- neurobat %>%
-  select(RID, USERDATE, LDELTOTAL, DIGITSCOR, TRABSCOR) %>%
-  rename(DateNeuropsych=USERDATE) %>%
-  mutate(DateNeuropsych=as_datetime(ymd(DateNeuropsych)))
+  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
+                                 get.examdate.from.registry(neurobat),
+                                 EXAMDATE),
+         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
+  select(RID, DateNeuropsych, LDELTOTAL, DIGITSCOR, TRABSCOR)
 
 df <- left_join(df, nps, by='RID') %>%
   mutate(DiffNPS = as.numeric(abs(difftime(MeanImagingDate, DateNeuropsych, units='days')))) %>%
@@ -188,10 +203,12 @@ df[bad.nps, c('LDELTOTAL', 'DIGITSCOR', 'TRABSCOR')] <- NA
 
 # 2. ADAS
 adascog <- adas %>%
-  select(RID, USERDATE, Q4SCORE) %>%
-  rename(DateADAS=USERDATE,
-         ADASQ4=Q4SCORE) %>%
-  mutate(DateADS=as_datetime(ymd(DateADAS)))
+  mutate(DateADAS = ifelse(is.na(EXAMDATE),
+                           get.examdate.from.registry(adas),
+                           EXAMDATE),
+         DateADAS = as_datetime(ymd(DateADAS))) %>%
+  select(RID, DateADAS, Q4SCORE) %>%
+  rename(ADASQ4=Q4SCORE)
 
 df <- left_join(df, adascog, by='RID') %>%
   mutate(DiffADAS = as.numeric(abs(difftime(MeanImagingDate, DateADAS, units='days')))) %>%
@@ -204,10 +221,13 @@ df[bad.adas, c('ADASQ4')] <- NA
 # === Add demographics ======
 
 min.ages <- ptdemog %>%
-  select(RID, USERDATE, AGE, PTGENDER) %>%
-  rename(DateDemogBL=USERDATE, AgeBL=AGE, Sex=PTGENDER) %>%
-  mutate(DateDemogBL=as_datetime(ymd(DateDemogBL)),
-         AgeBL = as.numeric(AgeBL)) %>%
+  mutate(DateDemogBL = ifelse(is.na(EXAMDATE),
+                              get.examdate.from.registry(ptdemog),
+                              as.character(EXAMDATE)),
+         DateDemogBL = as_datetime(ymd(DateDemogBL))) %>%
+  select(RID, DateDemogBL, AGE, PTGENDER) %>%
+  rename(AgeBL=AGE, Sex=PTGENDER) %>%
+  mutate(AgeBL = as.numeric(AgeBL)) %>%
   drop_na(AgeBL) %>%
   group_by(RID) %>%
   slice_min(DateDemogBL)
@@ -250,7 +270,8 @@ df.sex <- left_join(df, demog.csv, by='RID') %>%
   mutate(Sex = ifelse(is.na(Sex), Sex.Missing, Sex)) %>%
   select(-Sex.Missing)
 
-df <- df.sex
+df <- df.sex %>%
+  mutate(Sex.Integer = ifelse(Sex == 'Male', 1, 0))
 
 # === Add ICV ======
 
@@ -264,13 +285,19 @@ df <- left_join(df, icv, by = 'TauID')
 # this is using the modified formula recommended by ADNIMERGE R
 # https://adni.bitbucket.io/reference/pacc.html
 
-source(PATH.PACC.SCRIPT)
-
 df$PACC.ADNI <- compute.pacc(df,
                              pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
                              cn.mask = df$Dementia == 'No',
                              higher.better = c(F, T, F, T),
                              min.required = 2)
+
+# === remove NAs =========
+
+na.cols <- c('Age', 'Sex', 'PACC.ADNI', 'HasE4', 'CDRBinned')
+
+df.withna <- df
+df <- df %>%
+  drop_na(all_of(na.cols))
 
 # === variables for selecting ROIs ======
 
@@ -359,7 +386,7 @@ colnames(rois.bilateral) <- gsub('CTX_LH_|LEFT_', '', colnames(rois.bilateral))
 rois.bilateral$TauID <- rois$TauID
 
 df <- left_join(df, rois.bilateral, by = 'TauID') %>%
-  mutate(across(ends_with('_VOLUME'), function (x) (x / ICV) * 1000))
+  mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
 
 # === save ========
 

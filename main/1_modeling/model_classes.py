@@ -19,25 +19,15 @@ from sklearn.svm import SVR
 
 # Binary predictors ----
 
-class BinaryAsIs:
-
-    def __init__(self, y_col):
-        self.y_col = y_col
-
-    def fit(self, data):
-        pass
-
-    def covariates(self, data):
-        return data[self.y_col].to_numpy()[:, np.newaxis]
-
 class BinaryZScore:
 
-    def __init__(self, y_col, control_col, cutoff=2.0, greater=True):
+    def __init__(self, y_col, control_col, zcutoff=2.0, greater=True):
         self.y_col = y_col
         self.control_col = control_col
-        self.cutoff = cutoff
+        self.zcutoff = zcutoff
         self.operator = operator.ge if greater else operator.le
-
+        
+        self.cutoff = None
         self.mean = None
         self.std = None
 
@@ -45,11 +35,12 @@ class BinaryZScore:
         controls = data.loc[data[self.control_col].astype(bool),  self.y_col]
         self.mean = controls.mean()
         self.std = controls.std()
+        self.cutoff = (self.zcutoff * self.std) + self.mean
 
     def covariates(self, data):
         y = data[self.y_col]
         z = (y - self.mean) / self.std
-        return np.where(self.operator(z, self.cutoff), 1., 0.)[:, np.newaxis]
+        return np.where(self.operator(z, self.zcutoff), 1., 0.)[:, np.newaxis]
 
 class BinaryGMM:
 

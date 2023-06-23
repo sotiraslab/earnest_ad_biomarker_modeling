@@ -10,6 +10,7 @@ Created on Wed May 31 10:22:26 2023
 
 from collections import defaultdict
 from copy import deepcopy
+import itertools as it
 import pickle
 import os
 
@@ -115,15 +116,24 @@ tau_columns += COVARIATES
 gm_columns += COVARIATES
 roi_columns += COVARIATES
 
-SVM_MODELS = {'SVM (amyloid)': MultivariateSVR(amy_columns, TARGET),
-              'SVM (tau)': MultivariateSVR(tau_columns, TARGET),
-              'SVM (GM)': MultivariateSVR(gm_columns, TARGET),
-              'SVM (combined)': MultivariateSVR(roi_columns, TARGET)}
+SVM_MODELS = {'SVM (amyloid)': amy_columns,
+              'SVM (tau)': tau_columns,
+              'SVM (GM)': gm_columns,
+              'SVM (combined)': roi_columns}
+
+SVM_PARAMS = {
+    'C': [0.01, 0.1, 1, 10, 100],
+    'epsilon': [0.01, .1, .5, 1, 2],
+    'kernel': ['rbf', 'linear']}
+
+param_combos = list(it.product(*SVM_PARAMS.values()))
+SVM_SEARCH = [dict(zip(SVM_PARAMS.keys(), v)) for v in param_combos]
 
 # ---- Main
 results = []
 save_models = defaultdict(list)
 
+# repeats of nested CV
 for r in range(REPEATS):
 
     print(f"CV Repeat #{r}...")
@@ -131,16 +141,20 @@ for r in range(REPEATS):
     outer_cv = StratifiedKFold(n_splits=OUTER_SPLITS, random_state=OUTER_SEED + r, shuffle=True)
     inner_cv = StratifiedKFold(n_splits=INNER_SPLITS, random_state=INNER_SEED + r, shuffle=True)
 
+    # outer CV loop
     for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(df, df[STRATIFY_COLUMN])):
         outer_train = df.iloc[outer_train_index, :]
         outer_test = df.iloc[outer_test_index, :]
 
         inner_cv_results = []
+        inner_cv_svm_results = []
 
+        # inner CV loop
         for j, (inner_train_index, inner_test_index) in enumerate(inner_cv.split(outer_train, outer_train[STRATIFY_COLUMN])):
-            inner_train = df.iloc[inner_train_index, :]
-            inner_test = df.iloc[inner_test_index, :]
+            inner_train = outer_train.iloc[inner_train_index, :]
+            inner_test = outer_train.iloc[inner_test_index, :]
 
+            # testing many ATN models
             for atn, measure_dict in ATN_PREDICTORS.items():
                 for measure_type, model_dict in measure_dict.items():
                     for name, model in model_dict.items():
@@ -155,12 +169,27 @@ for r in range(REPEATS):
                                'fold': j,
                                **metrics}
                         inner_cv_results.append(row)
-
+            
+            # testing many SVM models
+            for svm_name, svm_features in SVM_MODELS.items():
+                for params in SVM_SEARCH:
+                    model = MultivariateSVR(svm_features, TARGET, **params)
+                    model.fit(inner_train)
+                    preds = model.predict(inner_test)
+                    row = {'name': svm_name,
+                           **params,
+                           'fold': j,
+                           'rmse': mean_squared_error(inner_test[TARGET], preds, squared=False),
+                           'r2': r2_score(inner_test[TARGET], preds)}
+                    inner_cv_svm_results.append(row)
+            
+        # select best ATN model
         inner_cv_results = pd.DataFrame(inner_cv_results)
         model_averages = inner_cv_results.groupby(['atn', 'measure_type', 'name'])['rmse'].agg(mean=np.mean, std=np.std).reset_index()
         best_by_measure = model_averages.groupby(['atn', 'measure_type'])['mean'].idxmin()
         selected_models = model_averages.iloc[best_by_measure]
 
+        # develop combinations
         FINAL_ATN_MODELS = {
             'Baseline': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, None, None),
             'Binary A': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'binary', None, None),
@@ -201,38 +230,38 @@ for r in range(REPEATS):
             results.append(row)
             save_models[name].append(deepcopy(model))
 
-results = pd.DataFrame(results)
-results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
+# results = pd.DataFrame(results)
+# results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
 
-with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
-    pickle.dump(save_models, f)
+# with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
+#     pickle.dump(save_models, f)
 
-# ---- save plot
-plt.rcParams.update({'font.family': 'Arial',
-                     'font.size': 15})
-n_test = int((1/OUTER_SPLITS) * len(df))
-n_train = len(df) - n_test
+# # ---- save plot
+# plt.rcParams.update({'font.family': 'Arial',
+#                      'font.size': 15})
+# n_test = int((1/OUTER_SPLITS) * len(df))
+# n_train = len(df) - n_test
 
-if not os.path.isdir(OUTPUT):
-    os.mkdir(OUTPUT)
+# if not os.path.isdir(OUTPUT):
+#     os.mkdir(OUTPUT)
     
-# colors
-palette = (['gray'] +
-           ['#FFDDAA'] * 3 +
-           ['#F7A934'] +
-           ['#E59C9C'] * 3 +
-           ['#ba635d'] +
-           ['#AAC3E9'] * 3 +
-           ['#7DA1D8'] +
-           ['#B3E2AD'] * 3 +
-           ['#99C494'])
+# # colors
+# palette = (['gray'] +
+#            ['#FFDDAA'] * 3 +
+#            ['#F7A934'] +
+#            ['#E59C9C'] * 3 +
+#            ['#ba635d'] +
+#            ['#AAC3E9'] * 3 +
+#            ['#7DA1D8'] +
+#            ['#B3E2AD'] * 3 +
+#            ['#99C494'])
 
-name = 'rmse_boxplot.png'
-title = 'Accuracy (entire test set)'
-results_boxplot(results,
-                save=os.path.join(OUTPUT, name),
-                title=title,
-                n_test=n_test,
-                n_train=n_train,
-                baseline='Baseline',
-                palette=palette)
+# name = 'rmse_boxplot.png'
+# title = 'Accuracy (entire test set)'
+# results_boxplot(results,
+#                 save=os.path.join(OUTPUT, name),
+#                 title=title,
+#                 n_test=n_test,
+#                 n_train=n_train,
+#                 baseline='Baseline',
+#                 palette=palette)

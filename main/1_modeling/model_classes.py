@@ -190,6 +190,7 @@ class MultivariateSVR:
     def __init__(self, predictors, target, **kwargs):
         self.predictors = predictors
         self.target = target
+        self.kwargs = kwargs
 
         self.pipeline = Pipeline([('scaler', StandardScaler()), ('svc', SVR(**kwargs))])
 

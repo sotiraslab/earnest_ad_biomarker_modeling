@@ -8,6 +8,9 @@ Created on Wed May 31 10:22:26 2023
 
 # ---- imports
 
+from collections import defaultdict
+from copy import deepcopy
+import pickle
 import os
 
 import matplotlib.pyplot as plt
@@ -119,6 +122,7 @@ SVM_MODELS = {'SVM (amyloid)': MultivariateSVR(amy_columns, TARGET),
 
 # ---- Main
 results = []
+save_models = defaultdict(list)
 
 for r in range(REPEATS):
 
@@ -184,6 +188,7 @@ for r in range(REPEATS):
                    'repeat': r,
                    **metrics}
             results.append(row)
+            save_models[name].append(deepcopy(model))
 
         for name, model in SVM_MODELS.items():
             model.fit(outer_train)
@@ -194,9 +199,13 @@ for r in range(REPEATS):
                    'rmse': mean_squared_error(outer_test[TARGET], preds, squared=False),
                    'r2': r2_score(outer_test[TARGET], preds)}
             results.append(row)
+            save_models[name].append(deepcopy(model))
 
 results = pd.DataFrame(results)
 results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
+
+with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
+    pickle.dump(save_models, f)
 
 # ---- save plot
 plt.rcParams.update({'font.family': 'Arial',

@@ -18,6 +18,7 @@ data/derivatives/*
 main/**/*.csv
 main/**/*.txt
 main/**/*.png
+main/**/*.pickle
 
 ##########
 # Python

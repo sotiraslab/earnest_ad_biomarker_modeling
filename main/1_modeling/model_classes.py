@@ -49,9 +49,6 @@ class BinaryGMM:
         self.operator = operator.ge if greater else operator.le
 
         self.gmm = None
-        self.g1 = None
-        self.g2 = None
-        self.diff = None
         self.cutoff = None
 
     def fit(self, data):
@@ -62,11 +59,11 @@ class BinaryGMM:
         stds = np.sqrt(self.gmm.covariances_.flatten())
         weights = self.gmm.weights_
 
-        self.g1 = lambda x: norm.pdf(x, loc = means[0], scale = stds[0]) * weights[0]
-        self.g2 = lambda x: norm.pdf(x, loc = means[1], scale = stds[1]) * weights[1]
-        self.diff = lambda x: self.g2(x) - self.g1(x)
+        g1 = lambda x: norm.pdf(x, loc = means[0], scale = stds[0]) * weights[0]
+        g2 = lambda x: norm.pdf(x, loc = means[1], scale = stds[1]) * weights[1]
+        diff = lambda x: g2(x) - g1(x)
         try:
-            self.cutoff = root_scalar(self.diff, bracket=list(means)).root
+            self.cutoff = root_scalar(diff, bracket=list(means)).root
         except ValueError:
             self.cutoff = (means[0] + 2*stds[0])[0]
 

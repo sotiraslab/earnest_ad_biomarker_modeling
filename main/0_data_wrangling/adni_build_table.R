@@ -130,6 +130,7 @@ df$Dementia <- ifelse(df$CDRGlobal >= 0.5 & ! is.na(df$CDRGlobal),
                       'Yes',
                       'No')
 df[is.na(df$CDRGlobal), 'Dementia'] <- 'Unknown'
+df$Control <- ifelse(! df$AmyloidPositive & df$Dementia == 'No', 1, 0)
 
 # === add MMSE ======
 

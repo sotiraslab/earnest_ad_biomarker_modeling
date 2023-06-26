@@ -19,6 +19,7 @@ main/**/*.csv
 main/**/*.txt
 main/**/*.png
 main/**/*.pickle
+main/**/*.slurmlog
 
 # chpc script
 sync_chpc.sh

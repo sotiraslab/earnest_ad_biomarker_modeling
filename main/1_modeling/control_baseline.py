@@ -125,7 +125,7 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
 SVM_PARAMS = {
     'C': [0.01, 0.1, 1, 10, 100],
     'epsilon': [0.01, .1, .5, 1, 2],
-    'kernel': ['rbf', 'linear']}
+    'kernel': ['rbf']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))
 SVM_SEARCH = [dict(zip(SVM_PARAMS.keys(), v)) for v in param_combos]

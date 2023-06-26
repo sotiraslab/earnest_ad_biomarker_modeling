@@ -260,8 +260,6 @@ for r in range(REPEATS):
             results.append(row)
             save_models[svm_name].append(deepcopy(model))
 
-    break
-
 results = pd.DataFrame(results)
 results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
 

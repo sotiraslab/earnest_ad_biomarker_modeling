@@ -252,7 +252,7 @@ for r in range(REPEATS):
             model = MultivariateSVR(svm_features, TARGET, **best_params)
             model.fit(outer_train)
             preds = model.predict(outer_test)
-            row = {'model': name,
+            row = {'model': svm_name,
                    'fold': i,
                    'repeat': r,
                    'rmse': mean_squared_error(outer_test[TARGET], preds, squared=False),

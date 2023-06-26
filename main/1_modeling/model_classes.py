@@ -6,6 +6,7 @@ Created on Tue May 30 10:08:53 2023
 @author: earnestt1234
 """
 
+import inspect
 import operator
 
 import numpy as np
@@ -17,9 +18,29 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 
+# Base Class -----
+
+class ATNPredictor:
+    
+    def __repr__(self):
+        names = inspect.getfullargspec(self.__init__).args
+        d = {}
+        for name in names:
+            try:
+                value = getattr(self, name)
+                d[name] = value
+            except AttributeError:
+                continue
+        kv = ', '.join([f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}'
+                        for k, v in d.items()])
+        classname = self.__class__.__name__
+        s = f"{classname}({kv})"
+        
+        return s
+
 # Binary predictors ----
 
-class BinaryZScore:
+class BinaryZScore(ATNPredictor):
 
     def __init__(self, y_col, control_col, zcutoff=2.0, greater=True):
         self.y_col = y_col
@@ -42,7 +63,7 @@ class BinaryZScore:
         z = (y - self.mean) / self.std
         return np.where(self.operator(z, self.zcutoff), 1., 0.)[:, np.newaxis]
 
-class BinaryGMM:
+class BinaryGMM(ATNPredictor):
 
     def __init__(self, y_col, greater=True):
         self.y_col = y_col
@@ -71,7 +92,7 @@ class BinaryGMM:
         y = data[self.y_col]
         return np.where(self.operator(y, self.cutoff), 1., 0.)[:, np.newaxis]
 
-class BinaryManual:
+class BinaryManual(ATNPredictor):
 
     def __init__(self, y_col, cutoff, greater=True):
         self.y_col = y_col
@@ -119,7 +140,7 @@ def assign_frequency_stage(data, groupings=None, p='any', atypical='NS'):
     cats = [str(i) for i in range(0, len(unique_stages) + 1)] + [str(atypical)]
     return pd.Categorical(stage, categories=cats)
 
-class Quantiles:
+class Quantiles(ATNPredictor):
 
     def __init__(self, y_col):
         self.y_col = y_col
@@ -132,7 +153,7 @@ class Quantiles:
     def covariates(self, data):
         return np.digitize(data[self.y_col], self.quantiles)[:, np.newaxis]
 
-class CategoricalStager:
+class CategoricalStager(ATNPredictor):
 
     def __init__(self, columns, groupings=None, method='gmm', non_stageable='NS',
                  p='any', **kwargs):
@@ -172,7 +193,7 @@ class CategoricalStager:
 
 # Continuous predictors ----
 
-class Continuous:
+class Continuous(ATNPredictor):
 
     def __init__(self, y_col):
         self.y_col = y_col
@@ -192,7 +213,7 @@ class MultivariateSVR:
         self.target = target
         self.kwargs = kwargs
 
-        self.pipeline = Pipeline([('scaler', StandardScaler()), ('svc', SVR(**kwargs))])
+        self.pipeline = Pipeline([('scaler', StandardScaler()), ('svm', SVR(**kwargs))])
 
     def fit(self, data):
         X = data[self.predictors].to_numpy()

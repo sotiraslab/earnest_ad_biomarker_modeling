@@ -23,6 +23,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from helpers import (get_combo_atn_model,
                      results_boxplot,
+                     svm_best_param_lookup,
                      test_atn_linear_model)
 from model_classes import (BinaryGMM,
                            BinaryManual,
@@ -35,7 +36,7 @@ from model_classes import (BinaryGMM,
 # ---- Variables
 OUTER_SPLITS = 5
 INNER_SPLITS = 5
-REPEATS = 2
+REPEATS = 20
 OUTER_SEED = 0
 INNER_SEED = 100
 
@@ -136,21 +137,28 @@ save_models = defaultdict(list)
 # repeats of nested CV
 for r in range(REPEATS):
 
-    print(f"CV Repeat #{r}...")
-
     outer_cv = StratifiedKFold(n_splits=OUTER_SPLITS, random_state=OUTER_SEED + r, shuffle=True)
     inner_cv = StratifiedKFold(n_splits=INNER_SPLITS, random_state=INNER_SEED + r, shuffle=True)
 
     # outer CV loop
     for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(df, df[STRATIFY_COLUMN])):
+        
+        msg = f"REPEAT: {r}, OUTER FOLD: {i}"
+        print()
+        print(msg)
+        print('-' * len(msg))
+        
         outer_train = df.iloc[outer_train_index, :]
         outer_test = df.iloc[outer_test_index, :]
 
-        inner_cv_results = []
+        inner_cv_lm_results = []
         inner_cv_svm_results = []
 
         # inner CV loop
         for j, (inner_train_index, inner_test_index) in enumerate(inner_cv.split(outer_train, outer_train[STRATIFY_COLUMN])):
+            
+            print(f'*INNER TRAINING FOLD {j}*')
+            
             inner_train = outer_train.iloc[inner_train_index, :]
             inner_test = outer_train.iloc[inner_test_index, :]
 
@@ -158,21 +166,25 @@ for r in range(REPEATS):
             for atn, measure_dict in ATN_PREDICTORS.items():
                 for measure_type, model_dict in measure_dict.items():
                     for name, model in model_dict.items():
+                        
+                        # print(f' - {model}')                        
                         metrics = test_atn_linear_model(models=model,
                                                         covariates=COVARIATES,
                                                         target=TARGET, 
                                                         train_data=inner_train, 
                                                         test_data=inner_test)
+                        
                         row = {'atn': atn,
                                'measure_type': measure_type,
                                'name': name,
                                'fold': j,
                                **metrics}
-                        inner_cv_results.append(row)
+                        inner_cv_lm_results.append(row)
             
             # testing many SVM models
             for svm_name, svm_features in SVM_MODELS.items():
-                for params in SVM_SEARCH:
+                for c, params in enumerate(SVM_SEARCH):
+                    # print(f' - {svm_name} ({params})')
                     model = MultivariateSVR(svm_features, TARGET, **params)
                     model.fit(inner_train)
                     preds = model.predict(inner_test)
@@ -184,29 +196,44 @@ for r in range(REPEATS):
                     inner_cv_svm_results.append(row)
             
         # select best ATN model
-        inner_cv_results = pd.DataFrame(inner_cv_results)
-        model_averages = inner_cv_results.groupby(['atn', 'measure_type', 'name'])['rmse'].agg(mean=np.mean, std=np.std).reset_index()
-        best_by_measure = model_averages.groupby(['atn', 'measure_type'])['mean'].idxmin()
-        selected_models = model_averages.iloc[best_by_measure]
+        inner_cv_lm_results = pd.DataFrame(inner_cv_lm_results)
+        lm_model_averages = inner_cv_lm_results.groupby(['atn', 'measure_type', 'name'])['rmse'].agg(mean=np.mean, std=np.std).reset_index()
+        best_by_measure = lm_model_averages.groupby(['atn', 'measure_type'])['mean'].idxmin()
+        lm_selected_models = lm_model_averages.iloc[best_by_measure]
+        
+        # select best SVM model
+        inner_cv_svm_results = pd.DataFrame(inner_cv_svm_results)
+        svm_model_averages = inner_cv_svm_results.groupby(['name'] + list(SVM_PARAMS.keys()))['rmse'].agg(mean=np.mean, std=np.std).reset_index()
+        best_by_params = svm_model_averages.groupby('name')['mean'].idxmin()
+        svm_selected_models = svm_model_averages.iloc[best_by_params]
 
         # develop combinations
         FINAL_ATN_MODELS = {
-            'Baseline': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, None, None),
-            'Binary A': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'binary', None, None),
-            'Binary T': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, 'binary', None),
-            'Binary N': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, None, 'binary'),
-            'All binary': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary'),
-            'Categorical A': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'categorical', None, None),
-            'Categorical T': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, 'categorical', None),
-            'Categorical N': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, None, 'categorical'),
-            'All categorical': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical'),
-            'Continuous A': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'continuous', None, None),
-            'Continuous T': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, 'continuous', None),
-            'Continuous N': get_combo_atn_model(selected_models, ATN_PREDICTORS, None, None, 'continuous'),
-            'All continuous': get_combo_atn_model(selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
+            'Baseline': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, None),
+            'Binary A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', None, None),
+            'Binary T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'binary', None),
+            'Binary N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'binary'),
+            'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary'),
+            'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', None, None),
+            'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'categorical', None),
+            'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'categorical'),
+            'All categorical': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical'),
+            'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', None, None),
+            'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'continuous', None),
+            'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'continuous'),
+            'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
             }
+        
+        print()
+        print('*SELECTED MODELS*')
+        print(lm_selected_models)
+        print(svm_selected_models)
+        
+        print()
+        print('*OUTER TRAINING*')
 
         for name, model in FINAL_ATN_MODELS.items():
+            print(f' - {name} ({model})')
             metrics = test_atn_linear_model(models=model,
                                             covariates=COVARIATES,
                                             target=TARGET, 
@@ -219,7 +246,10 @@ for r in range(REPEATS):
             results.append(row)
             save_models[name].append(deepcopy(model))
 
-        for name, model in SVM_MODELS.items():
+        for svm_name, svm_features in SVM_MODELS.items():
+            best_params = svm_best_param_lookup(svm_selected_models, svm_name, list(SVM_PARAMS.keys()))
+            print(f' - {svm_name} ({best_params})')
+            model = MultivariateSVR(svm_features, TARGET, **best_params)
             model.fit(outer_train)
             preds = model.predict(outer_test)
             row = {'model': name,
@@ -228,40 +258,42 @@ for r in range(REPEATS):
                    'rmse': mean_squared_error(outer_test[TARGET], preds, squared=False),
                    'r2': r2_score(outer_test[TARGET], preds)}
             results.append(row)
-            save_models[name].append(deepcopy(model))
+            save_models[svm_name].append(deepcopy(model))
 
-# results = pd.DataFrame(results)
-# results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
+    break
 
-# with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
-#     pickle.dump(save_models, f)
+results = pd.DataFrame(results)
+results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
 
-# # ---- save plot
-# plt.rcParams.update({'font.family': 'Arial',
-#                      'font.size': 15})
-# n_test = int((1/OUTER_SPLITS) * len(df))
-# n_train = len(df) - n_test
+with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
+    pickle.dump(save_models, f)
 
-# if not os.path.isdir(OUTPUT):
-#     os.mkdir(OUTPUT)
+# ---- save plot
+plt.rcParams.update({'font.family': 'Arial',
+                      'font.size': 15})
+n_test = int((1/OUTER_SPLITS) * len(df))
+n_train = len(df) - n_test
+
+if not os.path.isdir(OUTPUT):
+    os.mkdir(OUTPUT)
     
-# # colors
-# palette = (['gray'] +
-#            ['#FFDDAA'] * 3 +
-#            ['#F7A934'] +
-#            ['#E59C9C'] * 3 +
-#            ['#ba635d'] +
-#            ['#AAC3E9'] * 3 +
-#            ['#7DA1D8'] +
-#            ['#B3E2AD'] * 3 +
-#            ['#99C494'])
+# colors
+palette = (['gray'] +
+            ['#FFDDAA'] * 3 +
+            ['#F7A934'] +
+            ['#E59C9C'] * 3 +
+            ['#ba635d'] +
+            ['#AAC3E9'] * 3 +
+            ['#7DA1D8'] +
+            ['#B3E2AD'] * 3 +
+            ['#99C494'])
 
-# name = 'rmse_boxplot.png'
-# title = 'Accuracy (entire test set)'
-# results_boxplot(results,
-#                 save=os.path.join(OUTPUT, name),
-#                 title=title,
-#                 n_test=n_test,
-#                 n_train=n_train,
-#                 baseline='Baseline',
-#                 palette=palette)
+name = 'rmse_boxplot.png'
+title = 'Accuracy (entire test set)'
+results_boxplot(results,
+                save=os.path.join(OUTPUT, name),
+                title=title,
+                n_test=n_test,
+                n_train=n_train,
+                baseline='Baseline',
+                palette=palette)

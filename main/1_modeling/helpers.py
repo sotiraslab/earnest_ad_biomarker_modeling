@@ -49,6 +49,22 @@ def get_training_x(data, covariates, models):
     else:
         return np.hstack([base_x, get_atn_covariates(models, data)])
     
+def svm_best_param_lookup(results_table, svm_name, svm_params):
+    
+    lookup = results_table.to_dict(orient='records')
+    d = {}
+    
+    for entry in lookup:
+        if entry['name'] == svm_name:
+            d = entry
+            break
+        
+    if not d:
+        raise ValueError(f"Cannot find params for model '{svm_name}'")
+        
+    params = {k: v for k, v in d.items() if k in svm_params}
+    return params
+    
 def test_atn_linear_model(models, covariates, target, train_data, test_data):
 
     if not isinstance(models, list):

@@ -4,7 +4,7 @@
 module load python
 source activate atn_cognition
 
-SCRIPTS=('control_baseline.py')
+SCRIPTS=('control_baseline.py' 'binary_baseline.py')
 
 for script in "${SCRIPTS[@]}"
 do

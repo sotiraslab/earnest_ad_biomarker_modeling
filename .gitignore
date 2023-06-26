@@ -20,6 +20,9 @@ main/**/*.txt
 main/**/*.png
 main/**/*.pickle
 
+# chpc script
+sync_chpc.sh
+
 ##########
 # Python
 ##########

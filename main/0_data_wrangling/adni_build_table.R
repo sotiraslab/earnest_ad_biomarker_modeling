@@ -158,7 +158,7 @@ mmse.merged <- left_join(df, mmse.adni, by='RID') %>%
   group_by(TauID) %>%
   slice_min(abs(MMSEDiff), with_ties = F) %>%
   ungroup() %>%
-  mutate(MMSE = ifelse(! is.na(MMSEDiff) & abs(MMSEDiff) > 365, NA, MMSE))  
+  mutate(MMSE = ifelse(! is.na(MMSEDiff) & abs(MMSEDiff) > THRESHOLD.COGNITIVE.DAYS, NA, MMSE))  
 
 df <- mmse.merged
 
@@ -233,8 +233,8 @@ min.ages <- ptdemog %>%
   slice_min(DateDemogBL)
 
 df.age <- left_join(df, min.ages, by='RID')
-df.age$TimeTauSinceBL <- as.numeric(difftime(df.age$DateTau, df.age$DateDemogBL, units='days')) / 365.25
-df.age$Age <- as.numeric(df.age$AgeBL + df.age$TimeTauSinceBL)
+df.age$TimeSinceBL <- as.numeric(difftime(df.age$MeanImagingDate, df.age$DateDemogBL, units='days')) / 365.25
+df.age$Age <- as.numeric(df.age$AgeBL + df.age$TimeSinceBL)
 
 # manually add some missing ages
 # these are not in ADNIMERGE::ptdemog but are in the downloaded study tables
@@ -250,11 +250,11 @@ demog.csv <- read.csv(PATH.PTDEMOG.CSV) %>%
 df.age <- left_join(df.age, demog.csv, by='RID') %>%
   mutate(Age = ifelse(
     is.na(Age),
-    as.numeric(difftime(DateTau, DOB, units='days') / 365.25),
+    as.numeric(difftime(MeanImagingDate, DOB, units='days') / 365.25),
     Age)
   )
 
-df <- select(df.age, -c(DOB, AgeBL, DateDemogBL, TimeTauSinceBL))
+df <- select(df.age, -c(DOB, AgeBL, DateDemogBL, TimeSinceBL))
 
 # same for some missing sex
 df$Sex <- as.character(df$Sex)

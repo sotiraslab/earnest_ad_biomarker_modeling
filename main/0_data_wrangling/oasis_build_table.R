@@ -114,8 +114,11 @@ df <- left_join(df, clinical.df.proc, by='Subject') %>%
   group_by(Subject) %>%
   slice_min(DiffMeanImagingCDR, with_ties = F) %>%
   mutate(CDR = ifelse(DiffMeanImagingCDR > THRESHOLD.COGNITIVE.DAYS, NA, CDR),
-         CDRSumBoxes = ifelse(DiffMeanImagingCDR > THRESHOLD.COGNITIVE.DAYS, NA, CDRSumBoxes)) %>%
+         CDRSumBoxes = ifelse(DiffMeanImagingCDR > THRESHOLD.COGNITIVE.DAYS, NA, CDRSumBoxes),
+         CDRBinned=cut(CDR, breaks=c(0, .5, 1, Inf), right=F)) %>%
   drop_na(CDR)
+
+levels(df$CDRBinned) <- c("0.0", "0.5", "1.0+")
 
 df$Dementia <- ifelse(df$CDR >= 0.5 & ! is.na(df$CDR), 
                       'Yes',
@@ -129,7 +132,7 @@ demo <- read.csv(PATH.DEMO)
 
 demo.proc <- demo %>%
   select(OASISID, AgeatEntry, AgeatDeath, GENDER, APOE) %>%
-  rename(Subject=OASISID) %>%
+  rename(Subject=OASISID, Sex=GENDER) %>%
   mutate(HasE4 = grepl('4', APOE))
 
 df <- left_join(df, demo.proc, by='Subject')
@@ -172,10 +175,11 @@ df[bad.nps, c('srtfree', 'MEMUNITS', 'digsym', 'ANIMALS', 'tmb')] <- NA
 
 source(PATH.PACC.SCRIPT)
 
-df$PACC.Original <- compute.pacc(df,
-                                 pacc.columns = c('srtfree', 'MEMUNITS', 'digsym', 'MMSE'),
-                                 cn.mask <- df$Control,
-                                 higher.better = c(T, T, T, T))
+df$PACC <- compute.pacc(df,
+                        pacc.columns = c('srtfree', 'MEMUNITS', 'digsym', 'MMSE'),
+                        cn.mask = df$Control == 1,
+                        higher.better = c(T, T, T, T))
+
 # === Configure subcortical regions
 
 # MAKE SURE THIS MATCHES THE ORDER AS ADNI!
@@ -269,6 +273,175 @@ merger <- rois.bilateral %>%
 
 df <- left_join(df, merger, by = 'FSID') %>%
   mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
+
+# === remove NAs =========
+
+all.roi.cols <- colnames(df)[str_detect(colnames(df), '_SUVR$|_VOLUME$')]
+na.cols <- c('Age', 'Sex', 'PACC', 'HasE4', 'CDRBinned', all.roi.cols)
+
+df.withna <- df
+df <- df %>%
+  drop_na(all_of(na.cols))
+
+# === Add engineered features =========
+
+# these should closely match ADNI
+# so that models estimated in ADNI can be applied in OASIS
+# without renaming the features
+
+# Note that ADNI mostly uses volume-weighted uptakes
+# for PET.  This is apparently calulated using
+# unilateral ROIs, which is repeated here.
+
+base <- df[, c('AmyloidID', 'TauID', 'FSID'), drop=F]
+bilateral.cols <- c(gsub('TOT', 'L', cort.cols), gsub('TOT', 'R', cort.cols),
+                    gsub('TOT', 'L', subcort.cols), gsub('TOT', 'R', subcort.cols))
+
+# unilateral av45
+rois.av45 <- read.csv(PATH.AV45)
+rois.av45 <- rois.av45 %>%
+  mutate(AmyloidID = PUP_PUPTIMECOURSEDATA.ID) %>%
+  select(AmyloidID,
+         matches('PET_fSUVR_(L|R)_CTX_.*') & ! matches('CBLL') & ! matches('CRPCLM'),
+         matches(SUBCORTICAL_PAT) & ! contains('_TOT_') & ! contains('WM') & ! contains('CTX'))
+rois.av45 <- left_join(base, rois.av45, by='AmyloidID') %>%
+  select(-AmyloidID, -TauID, -FSID)
+check.av45 <- data.frame(OASIS=colnames(rois.av45), bilateral.cols)
+colnames(rois.av45) <- bilateral.cols
+
+# unilateral tau
+rois.tau <- read.csv(PATH.FTP)
+rois.tau <- rois.tau %>%
+  mutate(TauID = PUP_PUPTIMECOURSEDATA.ID) %>%
+  select(TauID,
+         matches('PET_fSUVR_(L|R)_CTX_.*') & ! matches('CBLL') & ! matches('CRPCLM'),
+         matches(SUBCORTICAL_PAT) & ! contains('_TOT_') & ! contains('WM') & ! contains('CTX'))
+rois.tau <- left_join(base, rois.tau, by='TauID') %>%
+  select(-AmyloidID, -TauID, -FSID)
+check.tau <- data.frame(OASIS=colnames(rois.tau), bilateral.cols)
+colnames(rois.tau) <- bilateral.cols
+
+# unilateral GM
+rois.gm <- read.csv(PATH.GM)
+rois.gm <- rois.gm %>%
+  mutate(FSID = FS_FSDATA.ID) %>%
+  select(FSID,
+         contains('lh_') & contains('volume') & ! contains('WM') & ! contains('TOTAL'),
+         contains('rh_') & contains('volume') & ! contains('WM') & ! contains('TOTAL'),
+         matches(SUBCORTICAL_PAT) & contains('volume') & ! contains('WM') & ! contains('TOTAL'))
+rois.gm <- left_join(base, rois.gm, by='FSID') %>%
+  select(-AmyloidID, -TauID, -FSID)
+check.gm <- data.frame(OASIS=colnames(rois.gm), bilateral.cols)
+colnames(rois.gm) <- bilateral.cols
+
+# create volume weighting function
+volume.weighted.mean <- function(pet.rois, volumes, columns) {
+  pet.rois <- rois.tau
+  volumes <- rois.gm
+  columns <- c("PET_fSUVR_L_CTX_ENTORHINAL", "PET_fSUVR_R_CTX_ENTORHINAL")
+  
+  pet <- pet.rois[, columns]
+  volumes <- volumes[, columns]
+  volumes.norm <- volumes / rowSums(volumes)
+  pet.norm <- pet * volumes.norm
+  result <- rowSums(pet.norm)
+  
+  return(result)
+}
+
+comp.amyloid.regs <- c('CAUDMIDFRN',
+                       'LATORBFRN',
+                       'MEDORBFRN',
+                       'PARSOPCLRS',
+                       'PARSORBLS',
+                       'PARSTRNGLS',
+                       'ROSMIDFRN',
+                       'SUPERFRN',
+                       'FRNPOLE',
+                       'CAUDANTCNG',
+                       'ISTHMUSCNG',
+                       'POSTCNG',
+                       'ROSANTCNG',
+                       'INFERPRTL',
+                       'PRECUNEUS',
+                       'SUPERPRTL',
+                       'SUPRAMRGNL',
+                       'INFERTMP',
+                       'MIDTMP',
+                       'SUPERTMP')
+comp.amyloid.cols <- bilateral.cols[str_detect(bilateral.cols, paste(comp.amyloid.regs, collapse='|'))]
+
+braak1.regs <- c('ENTORHINAL')
+braak1.cols <- bilateral.cols[str_detect(bilateral.cols, paste(braak1.regs, collapse='|'))]
+
+braak34.regs <- c('PARAHPCMPL',
+                  'FUSIFORM',
+                  'LINGUAL',
+                  'AMYGDALA',
+                  'MIDTMP',
+                  'CAUDANTCNG',
+                  'ROSANTCNG',
+                  'POSTCNG',
+                  'ISTHMUSCNG',
+                  'INSULA',
+                  'INFERTMP',
+                  'TMPPOLE')
+braak34.cols <- bilateral.cols[str_detect(bilateral.cols, paste(braak34.regs, collapse='|'))]
+
+braak56.regs <- c('SUPERFRN',
+                  'LATORBFRN',
+                  'MEDORBFRN',
+                  'FRNPOLE',
+                  'CADMIDFRN',
+                  'ROSMIDFRN',
+                  'PARSOPCLRS',
+                  'PARSORBLS',
+                  'PARSTRNGLS',
+                  'LATOCC',
+                  'SUPRAMRGNL',
+                  'INFERPRTL',
+                  'SUPERTMP',
+                  'SUPERPRTL',
+                  'PRECUNEUS',
+                  'SSTSBANK',
+                  'TRANSTMP',
+                  'PERICLCRN',
+                  'POSTCNTRL',
+                  'CUNEUS',
+                  'PRECENTRL',
+                  'PARACNTRL')
+braak56.cols <- bilateral.cols[str_detect(bilateral.cols, paste(braak56.regs, collapse='|'))]
+
+mtt.regs <- c('AMYGDALA',
+              'ENTORHINAL',
+              'FUSIFORM',
+              'INFERTMP',
+              'MIDTMP')
+mtt.cols <- bilateral.cols[str_detect(bilateral.cols, paste(mtt.regs, collapse='|'))]
+
+# Amyloid
+#  - Centiloid
+#  - SUMMARYSUVR_WHOLECEREBNORM
+#
+# Tau
+#  - META_TEMPORAL_SUVR
+#  - BRAAK1_SUVR
+#  - BRAAK34_SUVR
+#  - BRAAK56_SUVR
+# 
+# GM
+#  - HIPPOCAMPUS_VOLUME
+#  - META_TEMPORAL_VOLUME
+
+
+# apply!
+df$SUMMARYSUVR_WHOLECEREBNORM <- volume.weighted.mean(rois.av45, rois.gm, comp.amyloid.cols)
+df$META_TEMPORAL_SUVR <- volume.weighted.mean(rois.tau, rois.gm, mtt.cols)
+df$BRAAK1_SUVR <- volume.weighted.mean(rois.tau, rois.gm, braak1.cols)
+df$BRAAK34_SUVR <- volume.weighted.mean(rois.tau, rois.gm, braak34.cols)
+df$BRAAK56_SUVR <- volume.weighted.mean(rois.tau, rois.gm, braak56.cols)
+
+df$META_TEMPORAL_VOLUME <- (rowSums(rois.gm[, mtt.cols]) * 1000) / df$ICV
 
 # === Save ==========
 

@@ -286,15 +286,15 @@ df <- left_join(df, icv, by = 'TauID')
 # this is using the modified formula recommended by ADNIMERGE R
 # https://adni.bitbucket.io/reference/pacc.html
 
-df$PACC.ADNI <- compute.pacc(df,
-                             pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
-                             cn.mask = df$Dementia == 'No',
-                             higher.better = c(F, T, F, T),
-                             min.required = 2)
+df$PACC <- compute.pacc(df,
+                        pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
+                        cn.mask = df$Dementia == 'No',
+                        higher.better = c(F, T, F, T),
+                        min.required = 2)
 
 # === remove NAs =========
 
-na.cols <- c('Age', 'Sex', 'PACC.ADNI', 'HasE4', 'CDRBinned')
+na.cols <- c('Age', 'Sex', 'PACC', 'HasE4', 'CDRBinned')
 
 df.withna <- df
 df <- df %>%

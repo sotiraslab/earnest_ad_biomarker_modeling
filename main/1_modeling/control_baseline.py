@@ -40,13 +40,13 @@ REPEATS = 20
 OUTER_SEED = 0
 INNER_SEED = 100
 
-TARGET = 'PACC.ADNI'
+TARGET = 'PACC'
 COVARIATES = ['Age', 'Sex', 'HasE4']
 STRATIFY_COLUMN = 'CDRBinned'
 
 # ---- Paths
-PATH_DATA = '../../data/derivatives/adni_base_table.csv'
-
+PATH_ADNI_DATA = '../../data/derivatives/adni_base_table.csv'
+PATH_OASIS_DATA = '../../data/derivatives/oasis_base_table.csv'
 
 # ---- Output
 
@@ -56,9 +56,13 @@ if not os.path.isdir(OUTPUT):
 
 # ---- Read
 
-df = pd.read_csv(PATH_DATA)
-df['Sex'] = np.where(df['Sex'] == 'Male', 1., 0.)
-df['HasE4'] = df['HasE4'].astype(float)
+adni = pd.read_csv(PATH_ADNI_DATA)
+adni['Sex'] = np.where(adni['Sex'] == 'Male', 1., 0.)
+adni['HasE4'] = adni['HasE4'].astype(float)
+
+oasis = pd.read_csv(PATH_OASIS_DATA)
+oasis['Sex'] = np.where(oasis['Sex'] == 'Male', 1., 0.)
+oasis['HasE4'] = oasis['HasE4'].astype(float)
 
 # ---- ATN predeictors
 
@@ -107,9 +111,9 @@ ATN_PREDICTORS = {
 
 # ---- Setup models
 
-amy_columns = list(df.columns[df.columns.str.startswith('AV45')])
-tau_columns = list(df.columns[df.columns.str.startswith('FTP')])
-gm_columns = list(df.columns[df.columns.str.endswith('VOLUME') & ~ df.columns.str.contains('BRAAK|META')])
+amy_columns = list(adni.columns[adni.columns.str.startswith('AV45')])
+tau_columns = list(adni.columns[adni.columns.str.startswith('FTP')])
+gm_columns = list(adni.columns[adni.columns.str.endswith('VOLUME') & ~ adni.columns.str.contains('BRAAK|META')])
 roi_columns = amy_columns + tau_columns + gm_columns
 
 amy_columns += COVARIATES
@@ -131,7 +135,8 @@ param_combos = list(it.product(*SVM_PARAMS.values()))
 SVM_SEARCH = [dict(zip(SVM_PARAMS.keys(), v)) for v in param_combos]
 
 # ---- Main
-results = []
+results_adni = []
+results_oasis = []
 save_models = defaultdict(list)
 
 # repeats of nested CV
@@ -141,15 +146,15 @@ for r in range(REPEATS):
     inner_cv = StratifiedKFold(n_splits=INNER_SPLITS, random_state=INNER_SEED + r, shuffle=True)
 
     # outer CV loop
-    for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(df, df[STRATIFY_COLUMN])):
+    for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(adni, adni[STRATIFY_COLUMN])):
         
         msg = f"REPEAT: {r}, OUTER FOLD: {i}"
         print()
         print(msg)
         print('-' * len(msg))
         
-        outer_train = df.iloc[outer_train_index, :]
-        outer_test = df.iloc[outer_test_index, :]
+        outer_train = adni.iloc[outer_train_index, :]
+        outer_test = adni.iloc[outer_test_index, :]
 
         inner_cv_lm_results = []
         inner_cv_svm_results = []
@@ -234,6 +239,8 @@ for r in range(REPEATS):
 
         for name, model in FINAL_ATN_MODELS.items():
             print(f' - {name} ({model})')
+            
+            # testing on ADNI
             metrics = test_atn_linear_model(models=model,
                                             covariates=COVARIATES,
                                             target=TARGET, 
@@ -243,34 +250,67 @@ for r in range(REPEATS):
                    'fold': i,
                    'repeat': r,
                    **metrics}
-            results.append(row)
-            save_models[name].append(deepcopy(model))
+            results_adni.append(row)
 
+            # testing on OASIS
+            metrics = test_atn_linear_model(models=model,
+                                            covariates=COVARIATES,
+                                            target=TARGET, 
+                                            train_data=outer_train, 
+                                            test_data=oasis)
+            row = {'model': name,
+                   'fold': i,
+                   'repeat': r,
+                   **metrics}
+            results_oasis.append(row)
+            
+            
+            # save model
+            save_models[name].append(deepcopy(model))
+            
         for svm_name, svm_features in SVM_MODELS.items():
             best_params = svm_best_param_lookup(svm_selected_models, svm_name, list(SVM_PARAMS.keys()))
-            print(f' - {svm_name} ({best_params})')
             model = MultivariateSVR(svm_features, TARGET, **best_params)
             model.fit(outer_train)
+            
+            print(f' - {svm_name} ({best_params})')
+            
+            # test on ADNI
             preds = model.predict(outer_test)
             row = {'model': svm_name,
                    'fold': i,
                    'repeat': r,
                    'rmse': mean_squared_error(outer_test[TARGET], preds, squared=False),
                    'r2': r2_score(outer_test[TARGET], preds)}
-            results.append(row)
+            results_adni.append(row)
+            
+            # test on OASIS
+            preds = model.predict(oasis)
+            row = {'model': svm_name,
+                   'fold': i,
+                   'repeat': r,
+                   'rmse': mean_squared_error(oasis[TARGET], preds, squared=False),
+                   'r2': r2_score(oasis[TARGET], preds)}
+            results_oasis.append(row)
+            
+            # save model
             save_models[svm_name].append(deepcopy(model))
 
-results = pd.DataFrame(results)
-results.to_csv(os.path.join(OUTPUT, 'outer_cv_results.csv'), index=False)
+#%%
+results_adni = pd.DataFrame(results_adni)
+results_adni.to_csv(os.path.join(OUTPUT, 'adni_results.csv'), index=False)
+
+results_oasis = pd.DataFrame(results_oasis)
+results_oasis.to_csv(os.path.join(OUTPUT, 'oasis_results.csv'), index=False)
 
 with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
     pickle.dump(save_models, f)
 
-# ---- save plot
+# ---- save plots
 plt.rcParams.update({'font.family': 'Arial',
                       'font.size': 15})
-n_test = int((1/OUTER_SPLITS) * len(df))
-n_train = len(df) - n_test
+n_test = int((1/OUTER_SPLITS) * len(adni))
+n_train = len(adni) - n_test
 
 if not os.path.isdir(OUTPUT):
     os.mkdir(OUTPUT)
@@ -286,9 +326,19 @@ palette = (['gray'] +
             ['#B3E2AD'] * 3 +
             ['#99C494'])
 
-name = 'rmse_boxplot.png'
-title = 'Accuracy (entire test set)'
-results_boxplot(results,
+name = 'adni_rmse_boxplot.png'
+title = 'Accuracy (ADNI)'
+results_boxplot(results_adni,
+                save=os.path.join(OUTPUT, name),
+                title=title,
+                n_test=n_test,
+                n_train=n_train,
+                baseline='Baseline',
+                palette=palette)
+
+name = 'oasis_rmse_boxplot.png'
+title = 'Accuracy (OASIS)'
+results_boxplot(results_oasis,
                 save=os.path.join(OUTPUT, name),
                 title=title,
                 n_test=n_test,

@@ -119,6 +119,7 @@ df <- left_join(df, clinical.df.proc, by='Subject') %>%
   drop_na(CDR)
 
 levels(df$CDRBinned) <- c("0.0", "0.5", "1.0+")
+df$CDRBinned <- as.character(df$CDRBinned)
 
 df$Dementia <- ifelse(df$CDR >= 0.5 & ! is.na(df$CDR), 
                       'Yes',
@@ -133,7 +134,8 @@ demo <- read.csv(PATH.DEMO)
 demo.proc <- demo %>%
   select(OASISID, AgeatEntry, AgeatDeath, GENDER, APOE) %>%
   rename(Subject=OASISID, Sex=GENDER) %>%
-  mutate(HasE4 = grepl('4', APOE))
+  mutate(HasE4 = grepl('4', APOE),
+         Sex=ifelse(Sex == 1, 'Male', 'Female'))
 
 df <- left_join(df, demo.proc, by='Subject')
 df$Age <- df$AgeatEntry + (df$MeanImagingDate / 365.25)

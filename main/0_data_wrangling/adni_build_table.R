@@ -21,6 +21,7 @@ PATH.PACC.SCRIPT <- '../../scripts/pacc.R'
 PATH.EXAMDATE.SCRIPT <- '../../scripts/adni_examdate.R'
 
 PATH.OUTPUT <- '../../data/derivatives/adni_base_table.csv'
+PATH.DERIVATIVES = '../../data/derivatives'
 
 source(PATH.PACC.SCRIPT)
 source(PATH.EXAMDATE.SCRIPT)
@@ -326,6 +327,10 @@ rh <- select(rois, contains('rh_'), contains('right'))
 rois.bilateral <- (lh + rh) / 2
 colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'AV45', colnames(rois.bilateral))
 
+roi.names <- data.frame(Region=colnames(rois.bilateral)) %>%
+  mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
+write.csv(roi.names, file.path(PATH.DERIVATIVES, 'av45_regions.csv'), row.names = F)
+
 rois.bilateral$AmyloidID <- rois$AmyloidID
 
 df <- left_join(df, rois.bilateral, by = 'AmyloidID')
@@ -366,6 +371,10 @@ rh <- select(rois, contains('rh_'), contains('right'))
 rois.bilateral <- (lh + rh) / 2
 colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'FTP', colnames(rois.bilateral))
 
+roi.names <- data.frame(Region=colnames(rois.bilateral)) %>%
+  mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
+write.csv(roi.names, file.path(PATH.DERIVATIVES, 'ftp_regions.csv'), row.names = F)
+
 rois.bilateral$TauID <- rois$TauID
 
 df <- left_join(df, rois.bilateral, by = 'TauID')
@@ -382,6 +391,10 @@ lh <- select(rois, contains('lh_'), contains('left'))
 rh <- select(rois, contains('rh_'), contains('right'))
 rois.bilateral <- (lh + rh)
 colnames(rois.bilateral) <- gsub('CTX_LH_|LEFT_', '', colnames(rois.bilateral))
+
+roi.names <- data.frame(Region=colnames(rois.bilateral)) %>%
+  mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
+write.csv(roi.names, file.path(PATH.DERIVATIVES, 'gm_regions.csv'), row.names = F)
 
 rois.bilateral$TauID <- rois$TauID
 

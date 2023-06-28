@@ -14,12 +14,19 @@ setwd(this.dir())
 
 # === Files needed ===========
 
-PATH.FTP <- '../../data/rawdata/oasis_flortaucipir.csv'
+
 PATH.CENTILOID <- '../../data/derivatives/oasis_manual_centiloid.csv'
 PATH.CLINICAL <- '../../data/rawdata/OASIS3_data_files/scans/UDSb4-Form_B4__Global_Staging__CDR__Standard_and_Supplemental/resources/csv/files/OASIS3_UDSb4_cdr.csv'
 PATH.DEMO <- '../../data/rawdata/OASIS3_data_files/scans/demo-demographics/resources/csv/files/OASIS3_demographics.csv'
 PATH.NEUROPSYCH <- '../../data/rawdata/OASIS3_data_files/scans/pychometrics-Form_C1__Cognitive_Assessments/resources/csv/files/OASIS3_UDSc1_cognitive_assessments.csv'
 PATH.PACC.SCRIPT <- '../../scripts/pacc.R'
+
+PATH.AV45 <- '../../data/rawdata/oasis_amyloid.csv'
+PATH.AV45.ROIS <- '../../data/derivatives/av45_regions.csv'
+PATH.FTP <- '../../data/rawdata/oasis_flortaucipir.csv'
+PATH.FTP.ROIS <- '../../data/derivatives/ftp_regions.csv'
+PATH.GM<- '../../data/rawdata/oasis_freesurfer.csv'
+PATH.GM.ROIS <- '../../data/derivatives/gm_regions.csv'
 
 # === Set variables ======
 
@@ -63,9 +70,9 @@ amyloid.df.proc <- amyloid.df %>%
          ManualCentiloid) %>%
   rename(AmyloidTracer = tracer,
          Centiloid = ManualCentiloid,
-         PUPLongID = PUP_PUPTIMECOURSEDATA.ID) %>%
-  mutate(Subject = str_extract(PUPLongID, 'OAS\\d+'),
-         SessionAmyloid = adrc_session_to_number(PUPLongID),
+         AmyloidID = PUP_PUPTIMECOURSEDATA.ID) %>%
+  mutate(Subject = str_extract(AmyloidID, 'OAS\\d+'),
+         SessionAmyloid = adrc_session_to_number(AmyloidID),
          AmyloidPositive = ifelse(AmyloidTracer == 'AV45',
                                   Centiloid >= 20.6,
                                   Centiloid >= 16.4)) %>%
@@ -109,6 +116,12 @@ df <- left_join(df, clinical.df.proc, by='Subject') %>%
   mutate(CDR = ifelse(DiffMeanImagingCDR > THRESHOLD.COGNITIVE.DAYS, NA, CDR),
          CDRSumBoxes = ifelse(DiffMeanImagingCDR > THRESHOLD.COGNITIVE.DAYS, NA, CDRSumBoxes)) %>%
   drop_na(CDR)
+
+df$Dementia <- ifelse(df$CDR >= 0.5 & ! is.na(df$CDR), 
+                      'Yes',
+                      'No')
+df[is.na(df$CDR), 'Dementia'] <- 'Unknown'
+df$Control <- ifelse(! df$AmyloidPositive & df$Dementia == 'No', 1, 0)
 
 # === Add Demographics ==========
 
@@ -155,76 +168,109 @@ df <- left_join(df, nps, by='Subject') %>%
 bad.nps <- (df$DiffMeanImagingNPS > THRESHOLD.COGNITIVE.DAYS) | (is.na(df$DiffMeanImagingNPS))
 df[bad.nps, c('srtfree', 'MEMUNITS', 'digsym', 'ANIMALS', 'tmb')] <- NA
 
+# === Calculate PACC ======
+
+source(PATH.PACC.SCRIPT)
+
+df$PACC.Original <- compute.pacc(df,
+                                 pacc.columns = c('srtfree', 'MEMUNITS', 'digsym', 'MMSE'),
+                                 cn.mask <- df$Control,
+                                 higher.better = c(T, T, T, T))
+# === Configure subcortical regions
+
+# MAKE SURE THIS MATCHES THE ORDER AS ADNI!
+# SUBCORTICAL = c('amygdala',
+#                 'caudate',
+#                 'hippocampus',
+#                 'pallidum',
+#                 'putamen',
+#                 'thalamus',
+#                 'ventraldc')
+
+SUBCORTICAL = c('AMYGDALA',
+                'CAUD',
+                'HIPPOCAMPUS',
+                'PALLIDUM',
+                'PUTAMEN',
+                'THALAMUS',
+                'VENTRALDC')
+SUBCORTICAL_PAT <- paste(SUBCORTICAL, collapse='|')
+
+# === Add regional AV45 =========
+
+rois <- read.csv(PATH.AV45)
+
+# corpus callosum & cerebllum are omitted to match ADNI
+cort.cols <- colnames(rois)[grepl("PET_fSUVR_TOT_CTX_.*", colnames(rois), perl = T) &
+                              ! grepl("CRPCLM|CBLL", colnames(rois), perl = T)]
+subcort.cols <- colnames(rois)[grepl(SUBCORTICAL_PAT, colnames(rois), perl = T) &
+                                 grepl('PET_fSUVR_TOT', colnames(rois), perl = T) &
+                                 ! grepl('CTX|WM', colnames(rois), perl = T)]
+cols <- c(cort.cols, subcort.cols)
+
+# ROIS from OASIS & ADNI have different names but should be ordered the same
+# good point to verify this!
+adni.rois <- read.csv(PATH.AV45.ROIS)
+converter <-  data.frame(OASIS=cols, ADNI=adni.rois$Region)
+
+# merge
+rois$AmyloidID <- rois$PUP_PUPTIMECOURSEDATA.ID
+joiner <- rois[, c("AmyloidID", cols)]
+colnames(joiner) <- c("AmyloidID", converter$ADNI)
+df <- left_join(df, joiner, by='AmyloidID')
+
 # === Add regional tau =========
 
-tau.rois <- read.csv(PATH.FTP)
+rois <- read.csv(PATH.FTP)
 
-# # === Select amyloid positive df ==========
-# 
-# # corpus callosum & cerebllum are omitted to match ADNI
-# pat.inc <- "PET_fSUVR_TOT_CTX_.*"
-# pat.exc <- "CRPCLM|CBLL"
-# cols <- colnames(tau.rois)[grepl(pat.inc, colnames(tau.rois), perl = T) &
-#                            ! grepl(pat.exc, colnames(tau.rois), perl = T)]
-# 
-# # ROIS from ADRC have different names than ADNI/ggseg
-# # but are ordered the same
-# adni.rois <- read.csv('../../derivatives/adni/nmf_regions.csv')
-# converter <-  data.frame(ADRC=cols, ADNI=adni.rois$Feature)
-# 
-# tau.rois$Subject <- str_extract(tau.rois$PUP_PUPTIMECOURSEDATA.ID, 'OAS\\d+')
-# 
-# # add total cortical mean for a course tau index
-# joiner <- tau.rois[, c("Subject", cols, 'PET_fSUVR_TOT_CORTMEAN')]
-# colnames(joiner) <- c("Subject", converter$ADNI, 'TotalCtxTauMean')
-# 
-# df <- left_join(df, joiner, by='Subject')
+# corpus callosum & cerebllum are omitted to match ADNI
+cort.cols <- colnames(rois)[grepl("PET_fSUVR_TOT_CTX_.*", colnames(rois), perl = T) &
+                            ! grepl("CRPCLM|CBLL", colnames(rois), perl = T)]
+subcort.cols <- colnames(rois)[grepl(SUBCORTICAL_PAT, colnames(rois), perl = T) &
+                               grepl('PET_fSUVR_TOT', colnames(rois), perl = T) &
+                               ! grepl('CTX|WM', colnames(rois), perl = T)]
+cols <- c(cort.cols, subcort.cols)
 
-# # === Add groups =============
-# 
-# df$Group <- NA
-# 
-# df$Group <- ifelse(is.na(df$Group) & df$Subject %in% df.amyloidpos$Subject,
-#                    'TrainingSet',
-#                    NA)
-# 
-# cdr0 <- (df$CDR == 0 & ! is.na(df$CDR))
-# amyneg <- (! is.na(df$AmyloidPositive) & df$AmyloidPositive == F)
-# both <- cdr0 & amyneg
-# df$Group <- ifelse(is.na(df$Group) & both,
-#                    'ControlSet',
-#                    df$Group)
-# 
-# df$Group <- ifelse(is.na(df$Group),
-#                    'Other',
-#                    df$Group)
-# 
-# # === Calculate PACC ======
-# 
-# source(PATH.PACC.SCRIPT)
-# 
-# df$PACC.Original <- compute.pacc(df,
-#                                  pacc.columns = c('srtfree', 'MEMUNITS', 'digsym', 'MMSE'),
-#                                  cn.mask <- df$Group == 'ControlSet',
-#                                  higher.better = c(T, T, T, T))
-# 
-# # === Generate subject list =========
-# 
-# # this code creates the subject-ids file for OASIS3
-# # NOTE: overwriting the subject lists in the subject_ids folder
-# #       may result in a different set of subjects being analyzed!
-# 
-# # sub.ids <- select(df, Subject, Session, Group)
-# # write.csv(sub.ids, 'oasis_subjects.csv', row.names = F)
-# 
-# 
-# # === Apply Subject list =========
-# 
-# original.subs <- read.csv(PATH.OASIS.SUBS)
-# current.subs <- select(df, -Group)
-# df.original.subs <- left_join(original.subs, current.subs, by=c('Subject', 'Session'))
-# 
-# # === Save ==========
-# 
-# write.csv(df.original.subs, '../../derivatives/oasis3/main_data.csv', na='', quote=F, row.names = F)
+# ROIS from OASIS & ADNI have different names but should be ordered the same
+# good point to verify this!
+adni.rois <- read.csv(PATH.FTP.ROIS)
+converter <-  data.frame(OASIS=cols, ADNI=adni.rois$Region)
+
+# merge
+rois$TauID <- rois$PUP_PUPTIMECOURSEDATA.ID
+joiner <- rois[, c("TauID", cols)]
+colnames(joiner) <- c("TauID", converter$ADNI)
+df <- left_join(df, joiner, by='TauID')
+
+# === Add regional GM volume =========
+
+fs <- read.csv(PATH.GM)
+
+rois <- fs %>%
+  select(Subject,
+         matches('^(lh|rh)_.*_volume$'),
+         matches(SUBCORTICAL_PAT, ignore.case = T) &
+           contains('volume') &
+           ! contains('WM') &
+           ! contains('TOTAL'))
+
+lh <- select(rois, contains('lh_'), contains('Left'))
+rh <- select(rois, contains('rh_'), contains('Right'))
+rois.bilateral <- (lh + rh)
+
+# check name conversion
+adni.rois <- read.csv(PATH.GM.ROIS)
+converter <-  data.frame(OASIS=colnames(rois.bilateral), ADNI=adni.rois$Region)
+colnames(rois.bilateral) <- converter$ADNI
+
+merger <- rois.bilateral %>%
+  mutate(FSID = fs$FS_FSDATA.ID,
+         ICV = fs$IntraCranialVol)
+
+df <- left_join(df, merger, by = 'FSID') %>%
+  mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
+
+# === Save ==========
+
+write.csv(df, '../../data/derivatives/oasis_base_table.csv', na='', quote=F, row.names = F)
   

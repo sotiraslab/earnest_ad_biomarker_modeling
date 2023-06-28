@@ -296,7 +296,6 @@ for r in range(REPEATS):
             # save model
             save_models[svm_name].append(deepcopy(model))
 
-#%%
 results_adni = pd.DataFrame(results_adni)
 results_adni.to_csv(os.path.join(OUTPUT, 'adni_results.csv'), index=False)
 
@@ -305,6 +304,8 @@ results_oasis.to_csv(os.path.join(OUTPUT, 'oasis_results.csv'), index=False)
 
 with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
     pickle.dump(save_models, f)
+    
+#%%
 
 # ---- save plots
 plt.rcParams.update({'font.family': 'Arial',
@@ -328,20 +329,20 @@ palette = (['gray'] +
 
 name = 'adni_rmse_boxplot.png'
 title = 'Accuracy (ADNI)'
-results_boxplot(results_adni,
-                save=os.path.join(OUTPUT, name),
-                title=title,
-                n_test=n_test,
-                n_train=n_train,
-                baseline='Baseline',
-                palette=palette)
+adni_plot, adni_stats = results_boxplot(results_adni,
+                                        save=os.path.join(OUTPUT, name),
+                                        title=title,
+                                        n_test=n_test,
+                                        n_train=n_train,
+                                        baseline='Baseline',
+                                        palette=palette)
 
 name = 'oasis_rmse_boxplot.png'
 title = 'Accuracy (OASIS)'
-results_boxplot(results_oasis,
-                save=os.path.join(OUTPUT, name),
-                title=title,
-                n_test=n_test,
-                n_train=n_train,
-                baseline='Baseline',
-                palette=palette)
+oasis_plot, oasis_stats = results_boxplot(results_oasis,
+                                          save=os.path.join(OUTPUT, name),
+                                          title=title,
+                                          n_test=n_test,
+                                          n_train=n_train,
+                                          baseline='Baseline',
+                                          palette=palette)

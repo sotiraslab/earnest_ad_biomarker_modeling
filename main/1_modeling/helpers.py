@@ -259,3 +259,5 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
     if save is not None:
         plt.tight_layout()
         fig.savefig(save, dpi=300)
+        
+    return ax.get_figure, stats

@@ -44,15 +44,7 @@ scan.id <- function(RID, EXAMDATE) {
 tau <- ucberkeleyav1451 %>%
   mutate(DateTau = as_datetime(ymd(EXAMDATE)),
          TauID = scan.id(RID, EXAMDATE)) %>%
-  select(RID, DateTau, TauID,
-         META_TEMPORAL_SUVR,
-         META_TEMPORAL_VOLUME,
-         BRAAK1_SUVR,
-         BRAAK1_VOLUME,
-         BRAAK34_SUVR,
-         BRAAK34_VOLUME,
-         BRAAK56_SUVR,
-         BRAAK56_VOLUME) %>%
+  select(RID, DateTau, TauID) %>%
   group_by(RID) %>%
   slice_min(DateTau, with_ties = F) %>%
   ungroup()
@@ -68,9 +60,7 @@ av45 <- ucberkeleyav45 %>%
          AmyloidID = scan.id(RID, EXAMDATE),
          Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03)) %>%
   select(RID, DateAmyloid, AmyloidID, AmyloidTracer,
-         AmyloidPositive, AmyloidID, Centiloid,
-         SUMMARYSUVR_COMPOSITE_REFNORM,
-         SUMMARYSUVR_WHOLECEREBNORM)
+         AmyloidPositive, AmyloidID, Centiloid)
 
 # fbb <- ucberkeleyfbb %>%
 #   mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
@@ -314,91 +304,54 @@ SUBCORTICAL_PAT = paste(SUBCORTICAL, collapse='|')
 # === Add ROIs : AV45 ======
 
 rois <- ucberkeleyav45 %>%
-  mutate(AmyloidID = scan.id(RID, EXAMDATE)) %>%
-  select(AmyloidID,
-         WHOLECEREBELLUM_SUVR,
+  select(WHOLECEREBELLUM_SUVR,
          matches('CTX.*SUVR') & ! contains('UNKNOWN'),
          matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
   mutate(across(contains('SUVR'), function (x) x / WHOLECEREBELLUM_SUVR)) %>%
   select(-WHOLECEREBELLUM_SUVR)
 
-lh <- select(rois, contains('lh_'), contains('left'))
-rh <- select(rois, contains('rh_'), contains('right'))
-rois.bilateral <- (lh + rh) / 2
-colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'AV45', colnames(rois.bilateral))
+colnames(rois) <- paste('AV45', colnames(rois), sep='_')
 
-roi.names <- data.frame(Region=colnames(rois.bilateral)) %>%
+roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
 write.csv(roi.names, file.path(PATH.DERIVATIVES, 'av45_regions.csv'), row.names = F)
 
-rois.bilateral$AmyloidID <- rois$AmyloidID
+rois$AmyloidID <- scan.id(ucberkeleyav45$RID, ucberkeleyav45$EXAMDATE)
 
-df <- left_join(df, rois.bilateral, by = 'AmyloidID')
-
-# === Add ROIs : FBB ======
-
-# rois <- ucberkeleyfbb %>%
-#   mutate(AmyloidID = scan.id(RID, EXAMDATE)) %>%
-#   select(AmyloidID,
-#          WHOLECEREBELLUM_SUVR,
-#          matches('CTX.*SUVR') & ! contains('UNKNOWN'),
-#          matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
-#   mutate(across(contains('SUVR'), function (x) x / WHOLECEREBELLUM_SUVR)) %>%
-#   select(-WHOLECEREBELLUM_SUVR)
-# 
-# lh <- select(rois, contains('lh_'), contains('left'))
-# rh <- select(rois, contains('rh_'), contains('right'))
-# rois.bilateral <- (lh + rh) / 2
-# colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'FBB', colnames(rois.bilateral))
-# 
-# rois.bilateral$AmyloidID <- rois$AmyloidID
-# 
-# df <- left_join(df, rois.bilateral, by = 'AmyloidID')
+df <- left_join(df, rois, by = 'AmyloidID')
 
 # === Add ROIs : FTP ======
 
 rois <- ucberkeleyav1451 %>%
-  mutate(TauID = scan.id(RID, EXAMDATE)) %>%
-  select(TauID,
-         INFERIORCEREBELLUM_SUVR,
+  select(INFERIORCEREBELLUM_SUVR,
          matches('CTX.*SUVR') & ! contains('UNKNOWN'),
          matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
   mutate(across(contains('SUVR'), function (x) x / INFERIORCEREBELLUM_SUVR)) %>%
   select(-INFERIORCEREBELLUM_SUVR)
 
-lh <- select(rois, contains('lh_'), contains('left'))
-rh <- select(rois, contains('rh_'), contains('right'))
-rois.bilateral <- (lh + rh) / 2
-colnames(rois.bilateral) <- gsub('CTX_LH|LEFT', 'FTP', colnames(rois.bilateral))
+colnames(rois) <- paste('FTP', colnames(rois), sep='_')
 
-roi.names <- data.frame(Region=colnames(rois.bilateral)) %>%
+roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
 write.csv(roi.names, file.path(PATH.DERIVATIVES, 'ftp_regions.csv'), row.names = F)
 
-rois.bilateral$TauID <- rois$TauID
+rois$TauID <- scan.id(ucberkeleyav1451$RID, ucberkeleyav1451$EXAMDATE)
 
-df <- left_join(df, rois.bilateral, by = 'TauID')
+df <- left_join(df, rois, by = 'TauID')
 
 # === Add ROIs : Volume ======
 
 rois <- ucberkeleyav1451 %>%
-  mutate(TauID = scan.id(RID, EXAMDATE)) %>%
-  select(TauID,
-         matches('CTX.*VOLUME') & ! contains('UNKNOWN'),
+  select(matches('CTX.*VOLUME') & ! contains('UNKNOWN'),
          matches(SUBCORTICAL_PAT, ignore.case = T) & contains('VOLUME'))
 
-lh <- select(rois, contains('lh_'), contains('left'))
-rh <- select(rois, contains('rh_'), contains('right'))
-rois.bilateral <- (lh + rh)
-colnames(rois.bilateral) <- gsub('CTX_LH_|LEFT_', '', colnames(rois.bilateral))
-
-roi.names <- data.frame(Region=colnames(rois.bilateral)) %>%
+roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
 write.csv(roi.names, file.path(PATH.DERIVATIVES, 'gm_regions.csv'), row.names = F)
 
-rois.bilateral$TauID <- rois$TauID
+rois$TauID <- scan.id(ucberkeleyav1451$RID, ucberkeleyav1451$EXAMDATE)
 
-df <- left_join(df, rois.bilateral, by = 'TauID') %>%
+df <- left_join(df, rois, by = 'TauID') %>%
   mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
 
 # === save ========

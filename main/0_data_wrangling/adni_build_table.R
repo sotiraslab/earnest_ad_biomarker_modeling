@@ -107,8 +107,8 @@ cdr.record <- cdr %>%
                           EXAMDATE),
          DateCDR = as_datetime(ymd(DateCDR))) %>%
   select(RID, DateCDR, CDGLOBAL, CDRSB) %>%
-  rename(CDRGlobal=CDGLOBAL, CDRSumBoxes=CDRSB) %>%
-  drop_na(CDRGlobal)
+  rename(CDR=CDGLOBAL, CDRSumBoxes=CDRSB) %>%
+  drop_na(CDR)
 
 cdr.df <- left_join(df, cdr.record, by='RID') %>%
   mutate(DiffMeanImagingDateCDR = as.numeric(difftime(MeanImagingDate, DateCDR, units = 'days')))
@@ -117,20 +117,20 @@ cdr.df <- group_by(cdr.df, TauID) %>%
   slice_min(order_by=abs(DiffMeanImagingDateCDR), with_ties = F) %>%
   ungroup()
 
-bad <- is.na(cdr.df$CDRGlobal) | (abs(cdr.df$DiffMeanImagingDateCDR) > THRESHOLD.COGNITIVE.DAYS)
-cdr.df[bad, c("DateCDR", "CDRGlobal", "CDRSumBoxes", "DiffMeanImagingDateCDR")] <- NA
+bad <- is.na(cdr.df$CDR) | (abs(cdr.df$DiffMeanImagingDateCDR) > THRESHOLD.COGNITIVE.DAYS)
+cdr.df[bad, c("DateCDR", "CDR", "CDRSumBoxes", "DiffMeanImagingDateCDR")] <- NA
 
 cdr.df <- cdr.df %>%
-  mutate(CDRBinned=cut(CDRGlobal, breaks=c(0, .5, 1, Inf), right=F))
+  mutate(CDRBinned=cut(CDR, breaks=c(0, .5, 1, Inf), right=F))
 levels(cdr.df$CDRBinned) <- c("0.0", "0.5", "1.0+")
 
 df <- as.data.frame(cdr.df) %>%
   arrange(RID, DateTau)
 
-df$Dementia <- ifelse(df$CDRGlobal >= 0.5 & ! is.na(df$CDRGlobal), 
+df$Dementia <- ifelse(df$CDR >= 0.5 & ! is.na(df$CDR), 
                       'Yes',
                       'No')
-df[is.na(df$CDRGlobal), 'Dementia'] <- 'Unknown'
+df[is.na(df$CDR), 'Dementia'] <- 'Unknown'
 df$Control <- ifelse(! df$AmyloidPositive & df$Dementia == 'No', 1, 0)
 
 # === add MMSE ======

@@ -26,35 +26,33 @@ PATH.OASIS <- '../../data/derivatives/oasis_base_table.csv'
 adni <- read.csv(PATH.ADNI)
 oasis <- read.csv(PATH.OASIS)
 
-# === volume harmonization =======
+# === harmonization =======
 
-gm.rois <- colnames(adni)[str_detect(colnames(adni), '_VOLUME$')]
-gm.rois <- gm.rois[! str_detect(gm.rois, 'META_TEMPORAL|BRAAK')]
-
-adni.mat <- t(as.matrix(adni[, gm.rois]))
-oasis.mat <- t(as.matrix(oasis[, gm.rois]))
-
-# design matrix
-adni$CDRFactor <- factor(adni$CDRGlobal)
-oasis$CDRFactor <- factor(oasis$CDR)
-covars <- c('Age', 'Sex', 'HasE4', 'CDRFactor')
-combine.data <- rbind(
-  adni[, covars],
-  oasis[, covars]
-)
-
-dat <- cbind(adni.mat, oasis.mat)
-batch <- c(rep(1, ncol(adni.mat)), rep(2, ncol(oasis.mat)))
-mod <- model.matrix(~Age+Sex+HasE4+CDRFactor, data=combine.data)
-
-harmonized <- neuroCombat(dat=dat, batch=batch, mod=mod)
-harmonized.data <- harmonized$dat.combat
-
-adni.harmonized <- adni
-adni.harmonized[, gm.rois] <- as.data.frame(t(harmonized.data[, batch == 1]))
-
-oasis.harmonized <- oasis
-oasis.harmonized[, gm.rois] <- as.data.frame(t(harmonized.data[, batch == 2]))
+harmonize <- function(data.a, data.b, columns, covariates) {
+  a <- t(as.matrix(data.a[, columns]))
+  b <- t(as.matrix(data.b[, columns]))
+  
+  combine.data <- rbind(data.a[, covars], data.b[, covars])
+  
+  fml <- as.formula(paste('~', paste(covars, collapse='+')))
+  
+  dat <- cbind(a, b)
+  batch <- c(rep(1, ncol(a)), rep(2, ncol(b)))
+  mod <- model.matrix(fml, data=combine.data)
+  
+  harmonized <- neuroCombat(dat=dat, batch=batch, mod=mod)
+  harmonized.data <- harmonized$dat.combat
+  
+  harmonized.data.a <- data.a
+  harmonized.data.a[, columns] <- as.data.frame(t(harmonized.data[, batch == 1]))
+  harmonized.data.b <- data.b
+  harmonized.data.b[, columns] <- as.data.frame(t(harmonized.data[, batch == 1]))
+  
+  output <- list('harmonized.data.a' = harmonized.data.a,
+                 'harmonized.data.b' = harmonized.data.b)
+  
+  return (output)
+}
 
 # === create plotting functions ========
 

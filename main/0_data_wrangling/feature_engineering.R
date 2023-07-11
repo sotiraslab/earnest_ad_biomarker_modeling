@@ -2,12 +2,7 @@
 
 sh <- suppressPackageStartupMessages
 
-sh(library(colormap))
-sh(library(ggseg))
-sh(library(gridExtra))
-sh(library(gsubfn))
 sh(library(lubridate))
-sh(library(neuroCombat))
 sh(library(stringr))
 sh(library(this.path))
 sh(library(tidyverse))

@@ -31,8 +31,8 @@ from model_classes import ATN_PREDICTORS_DICT, MultivariateSVR
 OUTER_SPLITS = 5
 INNER_SPLITS = 5
 REPEATS = 20
-OUTER_SEED = 600
-INNER_SEED = 700
+OUTER_SEED = 800
+INNER_SEED = 900
 
 TARGET = 'PACC'
 COVARIATES = ['Age', 'Sex', 'HasE4']
@@ -88,6 +88,11 @@ results_adni = []
 results_oasis = []
 save_models = defaultdict(list)
 
+def testing_filter(dataset):
+    return dataset.loc[dataset['CDRBinned'] == '0.0', ].copy()
+
+oasis = testing_filter(oasis)
+
 # repeats of nested CV
 for r in range(REPEATS):
 
@@ -103,7 +108,7 @@ for r in range(REPEATS):
         print('-' * len(msg))
 
         outer_train = adni.iloc[outer_train_index, :]
-        outer_test = adni.iloc[outer_test_index, :]
+        outer_test = testing_filter(adni.iloc[outer_test_index, :])
 
         inner_cv_lm_results = []
         inner_cv_svm_results = []
@@ -114,7 +119,7 @@ for r in range(REPEATS):
             print(f'*INNER TRAINING FOLD {j}*')
 
             inner_train = outer_train.iloc[inner_train_index, :]
-            inner_test = outer_train.iloc[inner_test_index, :]
+            inner_test = testing_filter(outer_train.iloc[inner_test_index, :])
 
             # testing many ATN models
             for atn, measure_dict in ATN_PREDICTORS_DICT.items():

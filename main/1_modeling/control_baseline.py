@@ -79,8 +79,8 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
               'SVM (combined)': roi_columns}
 
 SVM_PARAMS = {
-    'C': list(2. ** np.arange(-5., 17., 2)),
-    'gamma': list(2. ** np.arange(-5., 17., 2)),
+    'C': list(2. ** np.arange(-5., 15., 2)),
+    'gamma': list(2. ** np.arange(-5., 15., 2)),
     'kernel': ['rbf']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))

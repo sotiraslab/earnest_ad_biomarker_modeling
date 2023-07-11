@@ -31,8 +31,8 @@ from model_classes import ATN_PREDICTORS_DICT, MultivariateSVR
 OUTER_SPLITS = 5
 INNER_SPLITS = 5
 REPEATS = 20
-OUTER_SEED = 600
-INNER_SEED = 700
+OUTER_SEED = 200
+INNER_SEED = 300
 
 TARGET = 'PACC'
 COVARIATES = ['Age', 'Sex', 'HasE4']
@@ -63,12 +63,15 @@ oasis['HasE4'] = oasis['HasE4'].astype(float)
 amy_columns = list(adni.columns[adni.columns.str.startswith('AV45')])
 tau_columns = list(adni.columns[adni.columns.str.startswith('FTP')])
 gm_columns = list(adni.columns[adni.columns.str.endswith('VOLUME') & ~ adni.columns.str.contains('BRAAK|META')])
+gm_columns = [col for col in gm_columns if col != 'HIPPOCAMPUS_VOLUME']
 roi_columns = amy_columns + tau_columns + gm_columns
 
 amy_columns += COVARIATES
 tau_columns += COVARIATES
 gm_columns += COVARIATES
 roi_columns += COVARIATES
+
+assert len(set([len(x) for x in [amy_columns, tau_columns, gm_columns]])) == 1, 'Different # of columns for SVM'
 
 SVM_MODELS = {'SVM (amyloid)': amy_columns,
               'SVM (tau)': tau_columns,
@@ -88,6 +91,11 @@ results_adni = []
 results_oasis = []
 save_models = defaultdict(list)
 
+def testing_filter(dataset):
+    return dataset.loc[dataset['CDRBinned'] == '0.0', ].copy()
+
+oasis = testing_filter(oasis)
+
 # repeats of nested CV
 for r in range(REPEATS):
 
@@ -103,7 +111,7 @@ for r in range(REPEATS):
         print('-' * len(msg))
 
         outer_train = adni.iloc[outer_train_index, :]
-        outer_test = adni.iloc[outer_test_index, :]
+        outer_test = testing_filter(adni.iloc[outer_test_index, :])
 
         inner_cv_lm_results = []
         inner_cv_svm_results = []
@@ -114,7 +122,7 @@ for r in range(REPEATS):
             print(f'*INNER TRAINING FOLD {j}*')
 
             inner_train = outer_train.iloc[inner_train_index, :]
-            inner_test = outer_train.iloc[inner_test_index, :]
+            inner_test = testing_filter(outer_train.iloc[inner_test_index, :])
 
             # testing many ATN models
             for atn, measure_dict in ATN_PREDICTORS_DICT.items():
@@ -163,14 +171,18 @@ for r in range(REPEATS):
 
         # develop combinations
         FINAL_ATN_MODELS = {
+            'Baseline': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, None, None),
+            'Binary A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', None, None),
+            'Binary T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, 'binary', None),
+            'Binary N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, None, 'binary'),
             'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'binary', 'binary'),
-            'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'categorical', 'binary', 'binary'),
-            'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'categorical', 'binary'),
-            'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'binary', 'categorical'),
+            'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'categorical', None, None),
+            'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, 'categorical', None),
+            'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, None, 'categorical'),
             'All categorical': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'categorical', 'categorical', 'categorical'),
-            'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'continuous', 'binary', 'binary'),
-            'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'continuous', 'binary'),
-            'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'binary', 'continuous'),
+            'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'continuous', None, None),
+            'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, 'continuous', None),
+            'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, None, None, 'continuous'),
             'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'continuous', 'continuous', 'continuous'),
             }
 
@@ -263,12 +275,14 @@ if not os.path.isdir(OUTPUT):
 
 # colors
 palette = (['gray'] +
-           ['#E59C9C'] * 3 +
-           ['#ba635d'] +
-           ['#AAC3E9'] * 3 +
-           ['#7DA1D8'] +
-           ['#B3E2AD'] * 3 +
-           ['#99C494'])
+            ['#FFDDAA'] * 3 +
+            ['#F7A934'] +
+            ['#E59C9C'] * 3 +
+            ['#ba635d'] +
+            ['#AAC3E9'] * 3 +
+            ['#7DA1D8'] +
+            ['#B3E2AD'] * 3 +
+            ['#99C494'])
 
 name = 'adni_rmse_boxplot.png'
 title = 'Accuracy (ADNI)'
@@ -277,7 +291,7 @@ adni_plot, adni_stats = results_boxplot(results_adni,
                                         title=title,
                                         n_test=n_test,
                                         n_train=n_train,
-                                        baseline='All binary',
+                                        baseline='Baseline',
                                         palette=palette)
 
 name = 'oasis_rmse_boxplot.png'
@@ -287,5 +301,5 @@ oasis_plot, oasis_stats = results_boxplot(results_oasis,
                                           title=title,
                                           n_test=n_test,
                                           n_train=n_train,
-                                          baseline='All binary',
+                                          baseline='Baseline',
                                           palette=palette)

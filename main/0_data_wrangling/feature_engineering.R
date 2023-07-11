@@ -134,8 +134,11 @@ oasis$BRAAK56_SUVR <- volume.weighted.mean(oasis.ftp, oasis.gm, braak56.regs)
 
 # mtt volume
 mtt.cols <- gm.cols[str_detect(gm.cols, paste(mtt.regs, collapse='|'))]
-adni$META_TEMPORAL_VOLUME <- rowSums(adni.gm[, mtt.cols] * 1000) / adni$ICV
-oasis$META_TEMPORAL_VOLUME <- rowSums(oasis.gm[, mtt.cols] * 1000) / oasis$ICV
+adni$META_TEMPORAL_VOLUME <- rowSums(adni.gm[, mtt.cols]) 
+adni$HIPPOCAMPUS_VOLUME <- rowSums(adni.gm[, c('LEFT_HIPPOCAMPUS_VOLUME', 'RIGHT_HIPPOCAMPUS_VOLUME')])
+
+oasis$META_TEMPORAL_VOLUME <- rowSums(oasis.gm[, mtt.cols])
+oasis$HIPPOCAMPUS_VOLUME <- rowSums(oasis.gm[, c('LEFT_HIPPOCAMPUS_VOLUME', 'RIGHT_HIPPOCAMPUS_VOLUME')])
 
 # === save =======
 

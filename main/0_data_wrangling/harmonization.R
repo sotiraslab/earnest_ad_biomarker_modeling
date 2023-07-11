@@ -277,18 +277,21 @@ combat.evaluation <- function(modality, adni.mask, oasis.mask) {
 
 # === plots =====
 
+output <- 'harmonization_figures'
+dir.create(output, showWarnings = F)
+
 for (m in c('av45', 'ftp', 'gm')) {
   p <- combat.evaluation(m, adni$CDRFactor == 0 & adni$AmyloidPositive == 0, oasis$CDRFactor == 0 & oasis$AmyloidPositive == 0)
-  ggsave(sprintf('%s_harmonize_cn.png', m), p, width=8, height=4, units='in')
+  ggsave(file.path(output, sprintf('%s_harmonize_cn.png', m)), p, width=8, height=4, units='in')
   
   p <- combat.evaluation(m, adni$CDRFactor == 0 & adni$AmyloidPositive == 1, oasis$CDRFactor == 0 & oasis$AmyloidPositive == 1)
-  ggsave(sprintf('%s_harmonize_preclinical.png', m), p, width=8, height=4, units='in')
+  ggsave(file.path(output, sprintf('%s_harmonize_preclinical.png', m)), p, width=8, height=4, units='in')
   
   p <- combat.evaluation(m, adni$CDRFactor == 0.5,  oasis$CDRFactor == 0.5)
-  ggsave(sprintf('%s_harmonize_mci.png', m), p, width=8, height=4, units='in')
+  ggsave(file.path(output, sprintf('%s_harmonize_mci.png', m)), p, width=8, height=4, units='in')
   
   p <- combat.evaluation(m, adni$CDRFactor == 1.0,  oasis$CDRFactor == 1.0)
-  ggsave(sprintf('%s_harmonize_ad.png', m), p, width=8, height=4, units='in')
+  ggsave(file.path(output, sprintf('%s_harmonize_ad.png', m)), p, width=8, height=4, units='in')
 }
 
 # === save data =======

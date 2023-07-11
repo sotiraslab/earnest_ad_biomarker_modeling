@@ -45,8 +45,8 @@ COVARIATES = ['Age', 'Sex', 'HasE4']
 STRATIFY_COLUMN = 'CDRBinned'
 
 # ---- Paths
-PATH_ADNI_DATA = '../../data/derivatives/adni_base_table.csv'
-PATH_OASIS_DATA = '../../data/derivatives/oasis_base_table.csv'
+PATH_ADNI_DATA = '../../data/derivatives/adni_harmonized_augmented.csv'
+PATH_OASIS_DATA = '../../data/derivatives/oasis_harmonized_augmented.csv'
 
 # ---- Output
 
@@ -69,13 +69,13 @@ oasis['HasE4'] = oasis['HasE4'].astype(float)
 ATN_PREDICTORS = {
     'amyloid': {
         'binary': {
-            'composite_wm_1.11': BinaryManual('SUMMARYSUVR_WHOLECEREBNORM', 1.11),
+            'composite_wm_1.11': BinaryManual('AMYLOID_COMPOSITE', 1.11),
             'centiloid_20': BinaryManual('Centiloid', 20)},
         'categorical': {
-            'composite_wm_quantiles': Quantiles('SUMMARYSUVR_WHOLECEREBNORM'),
+            'composite_wm_quantiles': Quantiles('AMYLOID_COMPOSITE'),
             'centiloid_quantiles': Quantiles('Centiloid')},
         'continuous': {
-            'composite_wm': Continuous('SUMMARYSUVR_WHOLECEREBNORM'),
+            'composite_wm': Continuous('AMYLOID_COMPOSITE'),
             'centiloid': Continuous('Centiloid')}},
     'tau': {
         'binary': {
@@ -127,8 +127,8 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
               'SVM (combined)': roi_columns}
 
 SVM_PARAMS = {
-    'C': [0.01, 0.1, 1, 10, 100],
-    'epsilon': [0.01, .1, .5, 1, 2],
+    'C': list(2. ** np.arange(-5., 17., 2)),
+    'gamma': list(2. ** np.arange(-5., 17., 2)),
     'kernel': ['rbf']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))
@@ -147,12 +147,12 @@ for r in range(REPEATS):
 
     # outer CV loop
     for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(adni, adni[STRATIFY_COLUMN])):
-        
+
         msg = f"REPEAT: {r}, OUTER FOLD: {i}"
         print()
         print(msg)
         print('-' * len(msg))
-        
+
         outer_train = adni.iloc[outer_train_index, :]
         outer_test = adni.iloc[outer_test_index, :]
 
@@ -161,9 +161,9 @@ for r in range(REPEATS):
 
         # inner CV loop
         for j, (inner_train_index, inner_test_index) in enumerate(inner_cv.split(outer_train, outer_train[STRATIFY_COLUMN])):
-            
+
             print(f'*INNER TRAINING FOLD {j}*')
-            
+
             inner_train = outer_train.iloc[inner_train_index, :]
             inner_test = outer_train.iloc[inner_test_index, :]
 
@@ -171,21 +171,21 @@ for r in range(REPEATS):
             for atn, measure_dict in ATN_PREDICTORS.items():
                 for measure_type, model_dict in measure_dict.items():
                     for name, model in model_dict.items():
-                        
-                        # print(f' - {model}')                        
+
+                        # print(f' - {model}')
                         metrics = test_atn_linear_model(models=model,
                                                         covariates=COVARIATES,
-                                                        target=TARGET, 
-                                                        train_data=inner_train, 
+                                                        target=TARGET,
+                                                        train_data=inner_train,
                                                         test_data=inner_test)
-                        
+
                         row = {'atn': atn,
                                'measure_type': measure_type,
                                'name': name,
                                'fold': j,
                                **metrics}
                         inner_cv_lm_results.append(row)
-            
+
             # testing many SVM models
             for svm_name, svm_features in SVM_MODELS.items():
                 for c, params in enumerate(SVM_SEARCH):
@@ -199,13 +199,13 @@ for r in range(REPEATS):
                            'rmse': mean_squared_error(inner_test[TARGET], preds, squared=False),
                            'r2': r2_score(inner_test[TARGET], preds)}
                     inner_cv_svm_results.append(row)
-            
+
         # select best ATN model
         inner_cv_lm_results = pd.DataFrame(inner_cv_lm_results)
         lm_model_averages = inner_cv_lm_results.groupby(['atn', 'measure_type', 'name'])['rmse'].agg(mean=np.mean, std=np.std).reset_index()
         best_by_measure = lm_model_averages.groupby(['atn', 'measure_type'])['mean'].idxmin()
         lm_selected_models = lm_model_averages.iloc[best_by_measure]
-        
+
         # select best SVM model
         inner_cv_svm_results = pd.DataFrame(inner_cv_svm_results)
         svm_model_averages = inner_cv_svm_results.groupby(['name'] + list(SVM_PARAMS.keys()))['rmse'].agg(mean=np.mean, std=np.std).reset_index()
@@ -224,23 +224,23 @@ for r in range(REPEATS):
             'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'continuous'),
             'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
             }
-        
+
         print()
         print('*SELECTED MODELS*')
         print(lm_selected_models)
         print(svm_selected_models)
-        
+
         print()
         print('*OUTER TRAINING*')
 
         for name, model in FINAL_ATN_MODELS.items():
             print(f' - {name} ({model})')
-            
+
             # testing on ADNI
             metrics = test_atn_linear_model(models=model,
                                             covariates=COVARIATES,
-                                            target=TARGET, 
-                                            train_data=outer_train, 
+                                            target=TARGET,
+                                            train_data=outer_train,
                                             test_data=outer_test)
             row = {'model': name,
                    'fold': i,
@@ -251,26 +251,26 @@ for r in range(REPEATS):
             # testing on OASIS
             metrics = test_atn_linear_model(models=model,
                                             covariates=COVARIATES,
-                                            target=TARGET, 
-                                            train_data=outer_train, 
+                                            target=TARGET,
+                                            train_data=outer_train,
                                             test_data=oasis)
             row = {'model': name,
                    'fold': i,
                    'repeat': r,
                    **metrics}
             results_oasis.append(row)
-            
-            
+
+
             # save model
             save_models[name].append(deepcopy(model))
-            
+
         for svm_name, svm_features in SVM_MODELS.items():
             best_params = svm_best_param_lookup(svm_selected_models, svm_name, list(SVM_PARAMS.keys()))
             model = MultivariateSVR(svm_features, TARGET, **best_params)
             model.fit(outer_train)
-            
+
             print(f' - {svm_name} ({best_params})')
-            
+
             # test on ADNI
             preds = model.predict(outer_test)
             row = {'model': svm_name,
@@ -279,7 +279,7 @@ for r in range(REPEATS):
                    'rmse': mean_squared_error(outer_test[TARGET], preds, squared=False),
                    'r2': r2_score(outer_test[TARGET], preds)}
             results_adni.append(row)
-            
+
             # test on OASIS
             preds = model.predict(oasis)
             row = {'model': svm_name,
@@ -288,7 +288,7 @@ for r in range(REPEATS):
                    'rmse': mean_squared_error(oasis[TARGET], preds, squared=False),
                    'r2': r2_score(oasis[TARGET], preds)}
             results_oasis.append(row)
-            
+
             # save model
             save_models[svm_name].append(deepcopy(model))
 
@@ -300,7 +300,7 @@ results_oasis.to_csv(os.path.join(OUTPUT, 'oasis_results.csv'), index=False)
 
 with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
     pickle.dump(save_models, f)
-    
+
 #%%
 
 # ---- save plots
@@ -311,7 +311,7 @@ n_train = len(adni) - n_test
 
 if not os.path.isdir(OUTPUT):
     os.mkdir(OUTPUT)
-    
+
 # colors
 palette = (['gray'] +
            ['#E59C9C'] * 3 +

@@ -21,7 +21,7 @@ from sklearn.svm import SVR
 # Base Class -----
 
 class ATNPredictor:
-    
+
     def __repr__(self):
         names = inspect.getfullargspec(self.__init__).args
         d = {}
@@ -35,7 +35,7 @@ class ATNPredictor:
                         for k, v in d.items()])
         classname = self.__class__.__name__
         s = f"{classname}({kv})"
-        
+
         return s
 
 # Binary predictors ----
@@ -47,7 +47,7 @@ class BinaryZScore(ATNPredictor):
         self.control_col = control_col
         self.zcutoff = zcutoff
         self.operator = operator.ge if greater else operator.le
-        
+
         self.cutoff = None
         self.mean = None
         self.std = None
@@ -224,3 +224,49 @@ class MultivariateSVR:
     def predict(self, data):
         X = data[self.predictors].to_numpy()
         return self.pipeline.predict(X)
+
+# ATN predictory dictionary -----
+
+ATN_PREDICTORS_DICT = {
+    'amyloid': {
+        'binary': {
+            'composite_1.11': BinaryManual('AMYLOID_COMPOSITE', 1.11),
+            'centiloid_20': BinaryManual('Centiloid', 20)},
+        'categorical': {
+            'composite_quantiles': Quantiles('AMYLOID_COMPOSITE'),
+            'centiloid_quantiles': Quantiles('Centiloid')},
+        'continuous': {
+            'composite': Continuous('AMYLOID_COMPOSITE'),
+            'centiloid': Continuous('Centiloid')}},
+    'tau': {
+        'binary': {
+            'mtt_gmm': BinaryGMM('META_TEMPORAL_SUVR'),
+            'mtt_z2.0': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.0),
+            'mtt_z2.5': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.5),
+            'mtt_1.20': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.20),
+            'mtt_1.21': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.21),
+            'mtt_1.23': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.23),
+            'mtt_1.33':  BinaryManual('META_TEMPORAL_SUVR', cutoff=1.33)},
+        'categorical': {
+            'mtt_quantiles': Quantiles('META_TEMPORAL_SUVR'),
+            'braak_stage_gmm': CategoricalStager(['BRAAK1_SUVR', 'BRAAK34_SUVR', 'BRAAK56_SUVR'])},
+        'continuous': {
+            'mtt': Continuous('META_TEMPORAL_SUVR'),
+            'braak1': Continuous('BRAAK1_SUVR'),
+            'braak34': Continuous('BRAAK34_SUVR'),
+            'braak56': Continuous('BRAAK56_SUVR')}
+        },
+    'neurodegeneration': {
+        'binary': {
+            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
+            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.5, greater=False),
+            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
+            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.5, greater=False)},
+        'categorical': {
+            'hipp_quantiles': Quantiles('HIPPOCAMPUS_VOLUME'),
+            'mttvol_quantiles': Quantiles('META_TEMPORAL_VOLUME')},
+        'continuous': {
+            'hipp': Continuous('HIPPOCAMPUS_VOLUME'),
+            'mttvol': Continuous('META_TEMPORAL_VOLUME')}},
+    }
+

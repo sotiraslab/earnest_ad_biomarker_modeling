@@ -25,13 +25,7 @@ from helpers import (get_combo_atn_model,
                      results_boxplot,
                      svm_best_param_lookup,
                      test_atn_linear_model)
-from model_classes import (BinaryGMM,
-                           BinaryManual,
-                           BinaryZScore,
-                           CategoricalStager,
-                           Continuous,
-                           MultivariateSVR,
-                           Quantiles)
+from model_classes import ATN_PREDICTORS_DICT, MultivariateSVR
 
 # ---- Variables
 OUTER_SPLITS = 5
@@ -64,52 +58,7 @@ oasis = pd.read_csv(PATH_OASIS_DATA)
 oasis['Sex'] = np.where(oasis['Sex'] == 'Male', 1., 0.)
 oasis['HasE4'] = oasis['HasE4'].astype(float)
 
-# ---- ATN predeictors
-
-ATN_PREDICTORS = {
-    'amyloid': {
-        'binary': {
-            'composite_wm_1.11': BinaryManual('AMYLOID_COMPOSITE', 1.11),
-            'centiloid_20': BinaryManual('Centiloid', 20)},
-        'categorical': {
-            'composite_wm_quantiles': Quantiles('AMYLOID_COMPOSITE'),
-            'centiloid_quantiles': Quantiles('Centiloid')},
-        'continuous': {
-            'composite_wm': Continuous('AMYLOID_COMPOSITE'),
-            'centiloid': Continuous('Centiloid')}},
-    'tau': {
-        'binary': {
-            'mtt_gmm': BinaryGMM('META_TEMPORAL_SUVR'),
-            'mtt_z2.0': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.0),
-            'mtt_z2.5': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.5),
-            'mtt_1.20': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.20),
-            'mtt_1.21': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.21),
-            'mtt_1.23': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.23),
-            'mtt_1.33':  BinaryManual('META_TEMPORAL_SUVR', cutoff=1.33)},
-        'categorical': {
-            'mtt_quantiles': Quantiles('META_TEMPORAL_SUVR'),
-            'braak_stage_gmm': CategoricalStager(['BRAAK1_SUVR', 'BRAAK34_SUVR', 'BRAAK56_SUVR'])},
-        'continuous': {
-            'mtt': Continuous('META_TEMPORAL_SUVR'),
-            'braak1': Continuous('BRAAK1_SUVR'),
-            'braak34': Continuous('BRAAK34_SUVR'),
-            'braak56': Continuous('BRAAK56_SUVR')}
-        },
-    'neurodegeneration': {
-        'binary': {
-            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.5, greater=False),
-            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.5, greater=False)},
-        'categorical': {
-            'hipp_quantiles': Quantiles('HIPPOCAMPUS_VOLUME'),
-            'mttvol_quantiles': Quantiles('META_TEMPORAL_VOLUME')},
-        'continuous': {
-            'hipp': Continuous('HIPPOCAMPUS_VOLUME'),
-            'mttvol': Continuous('META_TEMPORAL_VOLUME')}},
-    }
-
-# ---- Setup models
+# ---- Setup SVM models
 
 amy_columns = list(adni.columns[adni.columns.str.startswith('AV45')])
 tau_columns = list(adni.columns[adni.columns.str.startswith('FTP')])
@@ -168,7 +117,7 @@ for r in range(REPEATS):
             inner_test = outer_train.iloc[inner_test_index, :]
 
             # testing many ATN models
-            for atn, measure_dict in ATN_PREDICTORS.items():
+            for atn, measure_dict in ATN_PREDICTORS_DICT.items():
                 for measure_type, model_dict in measure_dict.items():
                     for name, model in model_dict.items():
 
@@ -214,15 +163,15 @@ for r in range(REPEATS):
 
         # develop combinations
         FINAL_ATN_MODELS = {
-            'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary'),
-            'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'binary', 'binary'),
-            'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'categorical', 'binary'),
-            'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'categorical'),
-            'All categorical': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical'),
-            'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'binary', 'binary'),
-            'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'continuous', 'binary'),
-            'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'continuous'),
-            'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
+            'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'binary', 'binary'),
+            'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'categorical', 'binary', 'binary'),
+            'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'categorical', 'binary'),
+            'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'binary', 'categorical'),
+            'All categorical': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'categorical', 'categorical', 'categorical'),
+            'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'continuous', 'binary', 'binary'),
+            'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'continuous', 'binary'),
+            'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'binary', 'binary', 'continuous'),
+            'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_DICT, 'continuous', 'continuous', 'continuous'),
             }
 
         print()

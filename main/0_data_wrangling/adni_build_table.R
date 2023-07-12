@@ -3,6 +3,8 @@
 sh <- suppressPackageStartupMessages
 
 sh(library(ADNIMERGE))
+sh(library(ggplot2))
+sh(library(lme4))
 sh(library(lubridate))
 sh(library(stringr))
 sh(library(this.path))
@@ -75,7 +77,8 @@ link.av45 <- left_join(tau, av45, by='RID') %>%
   mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
   group_by(TauID) %>%
   slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
-  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
+  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
+  ungroup()
 
 # link.fbb <- left_join(tau, fbb, by='RID') %>%
 #   mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
@@ -133,26 +136,6 @@ df$Dementia <- ifelse(df$CDR >= 0.5 & ! is.na(df$CDR),
 df[is.na(df$CDR), 'Dementia'] <- 'Unknown'
 df$Control <- ifelse(! df$AmyloidPositive & df$Dementia == 'No', 1, 0)
 
-# === add MMSE ======
-
-# add MMSE
-mmse.adni <- mmse %>%
-  mutate(DateMMSE = ifelse(is.na(EXAMDATE),
-                           get.examdate.from.registry(mmse),
-                           EXAMDATE),
-         DateMMSE = as_datetime(ymd(DateMMSE))) %>%
-  dplyr::select(RID, DateMMSE, MMSCORE) %>%
-  rename(MMSE=MMSCORE)
-
-mmse.merged <- left_join(df, mmse.adni, by='RID') %>%
-  mutate(MMSEDiff = difftime(MeanImagingDate, DateMMSE, units='days')) %>%
-  group_by(TauID) %>%
-  slice_min(abs(MMSEDiff), with_ties = F) %>%
-  ungroup() %>%
-  mutate(MMSE = ifelse(! is.na(MMSEDiff) & abs(MMSEDiff) > THRESHOLD.COGNITIVE.DAYS, NA, MMSE))  
-
-df <- mmse.merged
-
 # === Add APOE ======
 
 a1 <- select(apoeres, RID, APGEN1, APGEN2)
@@ -171,44 +154,6 @@ all.apoe <- all.apoe %>%
 df <- left_join(df, all.apoe, by='RID')
 df$HasE4 <- ifelse(is.na(df$APOEGenotype), NA, grepl('4', df$APOEGenotype))
 
-# === Add neuropsych ======
-
-# for computation of PACC, need some neuropsych & ADAS cog Q4
-# see https://adni.bitbucket.io/reference/pacc.html
-
-# 1. Neuropsych battery
-nps <- neurobat %>%
-  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
-                                 get.examdate.from.registry(neurobat),
-                                 EXAMDATE),
-         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
-  select(RID, DateNeuropsych, LDELTOTAL, DIGITSCOR, TRABSCOR)
-
-df <- left_join(df, nps, by='RID') %>%
-  mutate(DiffNPS = as.numeric(abs(difftime(MeanImagingDate, DateNeuropsych, units='days')))) %>%
-  group_by(TauID) %>%
-  slice_min(DiffNPS, with_ties = F)
-
-bad.nps <- (df$DiffNPS > 365) | (is.na(df$DiffNPS))
-df[bad.nps, c('LDELTOTAL', 'DIGITSCOR', 'TRABSCOR')] <- NA
-
-# 2. ADAS
-adascog <- adas %>%
-  mutate(DateADAS = ifelse(is.na(EXAMDATE),
-                           get.examdate.from.registry(adas),
-                           EXAMDATE),
-         DateADAS = as_datetime(ymd(DateADAS))) %>%
-  select(RID, DateADAS, Q4SCORE) %>%
-  rename(ADASQ4=Q4SCORE)
-
-df <- left_join(df, adascog, by='RID') %>%
-  mutate(DiffADAS = as.numeric(abs(difftime(MeanImagingDate, DateADAS, units='days')))) %>%
-  group_by(TauID) %>%
-  slice_min(DiffADAS, with_ties = F)
-
-bad.adas <- (df$DiffADAS > 365) | (is.na(df$DiffADAS))
-df[bad.adas, c('ADASQ4')] <- NA
-
 # === Add demographics ======
 
 min.ages <- ptdemog %>%
@@ -221,7 +166,8 @@ min.ages <- ptdemog %>%
   mutate(AgeBL = as.numeric(AgeBL)) %>%
   drop_na(AgeBL) %>%
   group_by(RID) %>%
-  slice_min(DateDemogBL)
+  slice_min(DateDemogBL) %>%
+  ungroup
 
 df.age <- left_join(df, min.ages, by='RID')
 df.age$TimeSinceBL <- as.numeric(difftime(df.age$MeanImagingDate, df.age$DateDemogBL, units='days')) / 365.25
@@ -270,8 +216,93 @@ icv <- read.csv(PATH.ICV)
 
 df <- left_join(df, icv, by = 'TauID')
 
-# === Compute PACC =========
+# === Add PACC =========
 
+# for computation of PACC, need some neuropsych & ADAS cog Q4
+# see https://adni.bitbucket.io/reference/pacc.html
+
+pacc.df <- df %>%
+  select(RID)
+
+# 1. Neuropsych battery
+nps <- neurobat %>%
+  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
+                                 get.examdate.from.registry(neurobat),
+                                 EXAMDATE),
+         DateNeuropsych = as_datetime(ymd(DateNeuropsych)),
+         LDELTOTAL = as.numeric(LDELTOTAL)) %>%
+  select(RID, DateNeuropsych, LDELTOTAL, DIGITSCOR, TRABSCOR)
+
+pacc.df <- left_join(pacc.df, nps, by='RID')
+
+# 2. ADAS
+adascog <- adas %>%
+  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
+                                 get.examdate.from.registry(adas),
+                                 EXAMDATE),
+         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
+  select(RID, DateNeuropsych, Q4SCORE) %>%
+  rename(ADASQ4=Q4SCORE)
+
+pacc.df <- left_join(pacc.df, adascog, by=c('RID', 'DateNeuropsych'))
+
+# 3. MMSE 
+mmse.adni <- mmse %>%
+  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
+                                 get.examdate.from.registry(mmse),
+                                 EXAMDATE),
+         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
+  dplyr::select(RID, DateNeuropsych, MMSCORE) %>%
+  rename(MMSE=MMSCORE)
+
+pacc.df <- left_join(pacc.df, mmse.adni, by=c('RID', 'DateNeuropsych')) %>%
+  arrange(RID, DateNeuropsych) %>%
+  drop_na(DateNeuropsych)
+
+# Group assessments which occur at nearby dates
+
+LINK.THR <- 60 # days
+
+pacc.df <- pacc.df %>%
+  group_by(RID) %>%
+  mutate(NPSDateDiff = c(0, as.numeric(difftime(DateNeuropsych[-1],
+                                                DateNeuropsych[-n()],
+                                                units="days")))) %>%
+  ungroup()
+
+pacc.df$NPSDateGroup <- cumsum(abs(pacc.df$NPSDateDiff) > LINK.THR)
+
+select.first <- function(col) {
+  return(first(col[! is.na(col)]))
+}
+
+
+# this also gets used later for computing longitudinal change in pacc
+pacc.df.group <- pacc.df %>%
+  group_by(RID, NPSDateGroup) %>%
+  summarise(
+    DatePACC = as_datetime(mean(DateNeuropsych)),
+    DatePACCMin = min(DateNeuropsych),
+    DatePACCMax = max(DateNeuropsych),
+    DatePACCDiff = as.numeric(difftime(DatePACCMax, DatePACCMin, units='days')),
+    LDELTOTAL = as.numeric(select.first(LDELTOTAL)),
+    DIGITSCOR = as.numeric(select.first(DIGITSCOR)),
+    TRABSCOR = as.numeric(select.first(TRABSCOR)),
+    ADASQ4 = as.numeric(select.first(ADASQ4)),
+    MMSE = as.numeric(select.first(MMSE))
+  ) %>%
+  ungroup()
+
+# merge into df
+df <- left_join(df, pacc.df.group, by="RID") %>%
+  mutate(DiffImagingPACC = as.numeric(difftime(MeanImagingDate, DatePACC, units = 'days'))) %>%
+  group_by(TauID) %>%
+  slice_min(abs(DiffImagingPACC), with_ties = F) %>%
+  filter(abs(DiffImagingPACC) < THRESHOLD.COGNITIVE.DAYS) %>%
+  ungroup() %>%
+  arrange(RID)
+
+# Compute PACC
 # done relative to baseline CN group
 # this is using the modified formula recommended by ADNIMERGE R
 # https://adni.bitbucket.io/reference/pacc.html
@@ -289,6 +320,51 @@ na.cols <- c('Age', 'Sex', 'PACC', 'HasE4', 'CDRBinned')
 df.withna <- df
 df <- df %>%
   drop_na(all_of(na.cols))
+
+# === Compute longitudinal change in PACC =======
+
+# this will only be available for some
+
+cn.data <- df %>%
+  filter(Dementia == "No")
+
+pacc.long <- df %>%
+  select(RID, DatePACC, Age, CDRBinned) %>%
+  rename(DatePACC.BL=DatePACC) %>%
+  left_join(pacc.df.group, by="RID") %>%
+  group_by(RID) %>%
+  filter(DatePACC >= DatePACC.BL) %>%
+  ungroup()
+
+pacc.long$PACC <- compute.pacc(pacc.long,
+                               pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
+                               cn.data = cn.data,
+                               higher.better = c(F, T, F, T),
+                               min.required = 2)
+pacc.long <- pacc.long %>%
+  filter(! is.na(PACC)) %>%
+  group_by(RID) %>%
+  filter(n() >= 2) %>%
+  mutate(DeltaPACCDate = as.numeric(difftime(DatePACC, DatePACC.BL, units='days')) / 365.25,
+         Long.Age = Age + DeltaPACCDate) %>% 
+  ungroup()
+
+m <- lmer(PACC ~ DeltaPACCDate + (1+DeltaPACCDate|RID), data=pacc.long)
+pacc.long$PACC.LMER.Predict <- predict(m, pacc.long)
+
+ggplot(pacc.long, aes(x=Long.Age, y=PACC)) +
+  geom_point(aes(color=CDRBinned), alpha = .7) + 
+  geom_line(aes(y=PACC.LMER.Predict, group=RID, color=CDRBinned), alpha= .7)
+
+ggsave("longitudinal_pacc_model.png", width=8, height=6, units='in')
+
+coefs <- coef(m)$RID %>%
+  select(DeltaPACCDate) %>%
+  dplyr::rename(DeltaPACC=DeltaPACCDate) %>%
+  rownames_to_column(var="RID") %>%
+  mutate(RID=as.numeric(RID))
+
+df <- left_join(df, coefs, by='RID')
 
 # === variables for selecting ROIs ======
 

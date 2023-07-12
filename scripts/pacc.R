@@ -1,8 +1,20 @@
 
 compute.pacc <- function(df, pacc.columns,
-                         cn.mask, min.required = 2,
+                         cn.mask = NULL, cn.data = NULL, min.required = 2,
                          higher.better = NULL) {
-  cn.data <- df[cn.mask, ]
+  
+  if (is.null(cn.mask) & is.null(cn.data)) {
+    stop("Must provide only one of `cn.mask` or `cn.data`")
+  }
+  
+  if (! is.null(cn.mask) & ! is.null(cn.data)) {
+    stop("Must provide only one of `cn.mask` or `cn.data`")
+  }
+  
+  if (is.null(cn.data)) {
+    cn.data <- df[cn.mask, ]
+  } 
+  
   n = nrow(df)
   k = length(pacc.columns)
   

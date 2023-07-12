@@ -21,9 +21,6 @@ main/**/*.png
 main/**/*.pickle
 main/**/*.slurmlog
 
-# chpc script
-sync_chpc.sh
-
 # Rplots
 Rplots.pdf
 

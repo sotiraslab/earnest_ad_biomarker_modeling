@@ -10,6 +10,8 @@ SCRIPTS=('control_baseline.py'
 'binary_baseline.py'
 'binary_baseline_CN.py'
 'binary_baseline_DEM.py'
+'control_baseline_longitudinal.py'
+'binary_baseline_longitudinal.py'
 )
 
 for script in "${SCRIPTS[@]}"

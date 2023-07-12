@@ -4,6 +4,7 @@
 sh <- suppressPackageStartupMessages
 
 sh(library(ggplot2))
+sh(library(lme4))
 sh(library(stringr))
 sh(library(this.path))
 sh(library(tidyverse))

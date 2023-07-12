@@ -221,7 +221,7 @@ df <- left_join(df, icv, by = 'TauID')
 # for computation of PACC, need some neuropsych & ADAS cog Q4
 # see https://adni.bitbucket.io/reference/pacc.html
 
-pacc.df <- df %>%
+subs <- df %>%
   select(RID)
 
 # 1. Neuropsych battery
@@ -233,7 +233,7 @@ nps <- neurobat %>%
          LDELTOTAL = as.numeric(LDELTOTAL)) %>%
   select(RID, DateNeuropsych, LDELTOTAL, DIGITSCOR, TRABSCOR)
 
-pacc.df <- left_join(pacc.df, nps, by='RID')
+nps <- left_join(subs, nps, by='RID')
 
 # 2. ADAS
 adascog <- adas %>%
@@ -244,7 +244,7 @@ adascog <- adas %>%
   select(RID, DateNeuropsych, Q4SCORE) %>%
   rename(ADASQ4=Q4SCORE)
 
-pacc.df <- left_join(pacc.df, adascog, by=c('RID', 'DateNeuropsych'))
+adascog <- left_join(subs, adascog, by='RID')
 
 # 3. MMSE 
 mmse.adni <- mmse %>%
@@ -255,7 +255,14 @@ mmse.adni <- mmse %>%
   dplyr::select(RID, DateNeuropsych, MMSCORE) %>%
   rename(MMSE=MMSCORE)
 
-pacc.df <- left_join(pacc.df, mmse.adni, by=c('RID', 'DateNeuropsych')) %>%
+mmse.adni <- left_join(subs, mmse.adni, by='RID')
+
+# 4. Join all
+pacc.df <- df %>%
+  select(RID) %>%
+  full_join(nps, by='RID') %>%
+  full_join(adascog, by=c('RID', 'DateNeuropsych')) %>%
+  full_join(mmse.adni, by=c('RID', 'DateNeuropsych')) %>%
   arrange(RID, DateNeuropsych) %>%
   drop_na(DateNeuropsych)
 
@@ -356,7 +363,7 @@ ggplot(pacc.long, aes(x=Long.Age, y=PACC)) +
   geom_point(aes(color=CDRBinned), alpha = .7) + 
   geom_line(aes(y=PACC.LMER.Predict, group=RID, color=CDRBinned), alpha= .7)
 
-ggsave("longitudinal_pacc_model.png", width=8, height=6, units='in')
+ggsave("adni_longitudinal_pacc_model.png", width=8, height=6, units='in')
 
 coefs <- coef(m)$RID %>%
   select(DeltaPACCDate) %>%

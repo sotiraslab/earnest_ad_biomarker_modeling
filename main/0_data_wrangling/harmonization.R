@@ -310,7 +310,7 @@ after <- ttest.df(adni.harmonized[a.mask, ], oasis.harmonized[o.mask, ], cols)
 
 # === box plots =======
 
-harmonization.boxplot <- function(adni.data, oasis.data, a.mask, o.mask,
+harmonization.boxplot <- function(adni.data, oasis.data, mask.fun=NULL,
                                   cols, side='l', title='') {
   if (side == 'l') {
     cols <- cols[str_detect(cols, 'LEFT|LH_')]
@@ -320,9 +320,14 @@ harmonization.boxplot <- function(adni.data, oasis.data, a.mask, o.mask,
     stop("Side must be l or r.")
   }
   
-  a <- adni.data[a.mask, cols]
+  if (! is.null(mask.fun)) {
+    adni.data <- adni.data[mask.fun(adni.data), ]
+    oasis.data <- oasis.data[mask.fun(oasis.data), ]
+  }
+  
+  a <- adni.data[, cols]
   a$Dataset <- 'ADNI'
-  b <- oasis.data[o.mask, cols]
+  b <- oasis.data[, cols]
   b$Dataset <- 'OASIS'
   
   plot.data <- rbind(a, b) %>%
@@ -330,59 +335,57 @@ harmonization.boxplot <- function(adni.data, oasis.data, a.mask, o.mask,
   
   p <- ggplot(plot.data, aes(x=region, y=value, fill=Dataset)) +
     geom_boxplot() +
-    theme(axis.text.x = element_text(angle=60, hjust=1)) +
+    theme(axis.text.x = element_blank()) +
     ggtitle(title)
   
   return (p)
 }
 
-# harmonization.boxplot(adni.harmonized, oasis.harmonized,
-#                       a.mask = adni$CDRFactor == 0.5,
-#                       o.mask = oasis$CDRFactor == 0.5,
-#                       cols=gm.rois, title='MCI - Harmonized')
-
-
-
-a.mask <- adni$CDRFactor == 0.5
-o.mask <- oasis$CDRFactor == 0.5
-side <- 'l'
-cols <- gm.rois
-title='MCI - Harmonized'
-
-if (side == 'l') {
-  cols <- cols[str_detect(cols, 'LEFT|LH_')]
-} else if (side == 'r') {
-  cols <- cols[str_detect(cols, 'RIGHT|RH_')]
-} else {
-  stop("Side must be l or r.")
+boxplot.loop <- function() {
+  
+  output <- 'harmonization_boxplots'
+  dir.create(output, showWarnings = F)
+  
+  columns <- list(av45.rois, ftp.rois, gm.rois)
+  names <- c("av45", "ftp", "gm")
+  
+  masks <- list(
+    function (x) x$CDRFactor == 0 & x$AmyloidPositive == 0,
+    function (x) x$CDRFactor == 0 & x$AmyloidPositive == 1,
+    function (x) x$CDRFactor == 0.5,
+    function (x) x$CDRFactor == 1.0
+  )
+  mask.names <- c('CN', 'Preclinical', 'MCI', 'Dementia')
+  
+  print("MAKING BOXPLOTS...")
+  
+  for (i in 1:3) {
+    cols <- columns[[i]]
+    name <- names[i]
+    
+    for (j in 1:4) {
+      mask.fun <- masks[[j]]
+      mask.name <- mask.names[[j]]
+      
+      print(c(name, mask.name))
+      
+      # original
+      savename <- sprintf('%s_%s_original.png', name, mask.name)
+      title <- sprintf('%s - %s - Original', name, mask.name)
+      p <- harmonization.boxplot(adni, oasis,
+                                 mask.fun = mask.fun,
+                                 cols=cols, title=title, side='l')
+      ggsave(file.path(output, savename), width=16, height=4, units='in')
+      
+      # harmonized
+      savename <- sprintf('%s_%s_harmonized.png', name, mask.name)
+      title <- sprintf('%s - %s - Harmonized', name, mask.name)
+      p <- harmonization.boxplot(adni.harmonized, oasis.harmonized,
+                                 mask.fun = mask.fun,
+                                 cols=cols, title=title, side='l')
+      ggsave(file.path(output, savename), width=16, height=4, units='in')
+    }
+  }
 }
 
-a <- adni[a.mask, cols]
-a$Dataset <- 'ADNI'
-a$Harmonized <- F
-
-b <- oasis[o.mask, cols]
-b$Dataset <- 'OASIS'
-b$Harmonized <- F
-
-c <- adni.harmonized[a.mask, cols]
-c$Dataset <- 'ADNI'
-c$Harmonized <- T
-
-d <- oasis.harmonized[o.mask, cols]
-d$Dataset <- 'OASIS'
-d$Harmonized <- T
-
-plot.data <- rbind(a, b, c, d) %>%
-  pivot_longer(all_of(cols), names_to = 'region', values_to = 'value')
-
-p <- ggplot(plot.data, aes(x=region, y=value, fill=Dataset)) +
-  geom_boxplot() +
-  theme(axis.text.x = element_text(angle=60, hjust=1)) +
-  ggtitle(title) + 
-  transition_states(Harmonized)
-
-# animate(p)
-# anim_save('test.gif')
-
-
+boxplot.loop()

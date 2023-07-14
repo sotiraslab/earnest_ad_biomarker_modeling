@@ -277,7 +277,7 @@ combat.evaluation <- function(modality, adni.mask, oasis.mask) {
 
 # === plots =====
 
-output <- 'harmonization_figures'
+output <- 'harmonization_brain_maps'
 dir.create(output, showWarnings = F)
 
 for (m in c('av45', 'ftp', 'gm')) {
@@ -298,3 +298,91 @@ for (m in c('av45', 'ftp', 'gm')) {
 
 write.csv(adni.harmonized, '../../data/derivatives/adni_harmonized.csv', row.names = F, quote = F, na = '')
 write.csv(oasis.harmonized, '../../data/derivatives/oasis_harmonized.csv', row.names = F, quote = F, na = '')
+
+# === experiment cell ======
+
+a.mask <- adni$CDRFactor == 0.5
+o.mask <- oasis$CDRFactor == 0.5
+cols <- ftp.rois
+
+before <- ttest.df(adni[a.mask, ], oasis[o.mask, ], cols)
+after <- ttest.df(adni.harmonized[a.mask, ], oasis.harmonized[o.mask, ], cols)
+
+# === box plots =======
+
+harmonization.boxplot <- function(adni.data, oasis.data, a.mask, o.mask,
+                                  cols, side='l', title='') {
+  if (side == 'l') {
+    cols <- cols[str_detect(cols, 'LEFT|LH_')]
+  } else if (side == 'r') {
+    cols <- cols[str_detect(cols, 'RIGHT|RH_')]
+  } else {
+    stop("Side must be l or r.")
+  }
+  
+  a <- adni.data[a.mask, cols]
+  a$Dataset <- 'ADNI'
+  b <- oasis.data[o.mask, cols]
+  b$Dataset <- 'OASIS'
+  
+  plot.data <- rbind(a, b) %>%
+    pivot_longer(all_of(cols), names_to = 'region', values_to = 'value')
+  
+  p <- ggplot(plot.data, aes(x=region, y=value, fill=Dataset)) +
+    geom_boxplot() +
+    theme(axis.text.x = element_text(angle=60, hjust=1)) +
+    ggtitle(title)
+  
+  return (p)
+}
+
+# harmonization.boxplot(adni.harmonized, oasis.harmonized,
+#                       a.mask = adni$CDRFactor == 0.5,
+#                       o.mask = oasis$CDRFactor == 0.5,
+#                       cols=gm.rois, title='MCI - Harmonized')
+
+
+
+a.mask <- adni$CDRFactor == 0.5
+o.mask <- oasis$CDRFactor == 0.5
+side <- 'l'
+cols <- gm.rois
+title='MCI - Harmonized'
+
+if (side == 'l') {
+  cols <- cols[str_detect(cols, 'LEFT|LH_')]
+} else if (side == 'r') {
+  cols <- cols[str_detect(cols, 'RIGHT|RH_')]
+} else {
+  stop("Side must be l or r.")
+}
+
+a <- adni[a.mask, cols]
+a$Dataset <- 'ADNI'
+a$Harmonized <- F
+
+b <- oasis[o.mask, cols]
+b$Dataset <- 'OASIS'
+b$Harmonized <- F
+
+c <- adni.harmonized[a.mask, cols]
+c$Dataset <- 'ADNI'
+c$Harmonized <- T
+
+d <- oasis.harmonized[o.mask, cols]
+d$Dataset <- 'OASIS'
+d$Harmonized <- T
+
+plot.data <- rbind(a, b, c, d) %>%
+  pivot_longer(all_of(cols), names_to = 'region', values_to = 'value')
+
+p <- ggplot(plot.data, aes(x=region, y=value, fill=Dataset)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle=60, hjust=1)) +
+  ggtitle(title) + 
+  transition_states(Harmonized)
+
+# animate(p)
+# anim_save('test.gif')
+
+

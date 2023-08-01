@@ -17,7 +17,6 @@ setwd(this.dir())
 # === Set paths ======
 
 PATH.PTDEMOG.CSV <- '../../data/rawdata/PTDEMOG.csv'
-PATH.ICV <- '../../data/derivatives/adni_icvs.csv'
 
 PATH.PACC.SCRIPT <- '../../scripts/pacc.R'
 PATH.EXAMDATE.SCRIPT <- '../../scripts/adni_examdate.R'
@@ -45,8 +44,14 @@ scan.id <- function(RID, EXAMDATE) {
 
 tau <- ucberkeleyav1451 %>%
   mutate(DateTau = as_datetime(ymd(EXAMDATE)),
-         TauID = scan.id(RID, EXAMDATE)) %>%
-  select(RID, DateTau, TauID) %>%
+         TauID = scan.id(RID, EXAMDATE),
+         META_TEMPORAL_TAU = META_TEMPORAL_SUVR,
+         BRAAK1_TAU = BRAAK1_SUVR,
+         BRAAK34_TAU = BRAAK34_SUVR,
+         BRAAK56_TAU = BRAAK56_SUVR,
+         META_TEMPORAL_VOL = META_TEMPORAL_VOLUME) %>%
+  select(RID, DateTau, TauID, META_TEMPORAL_TAU,
+         BRAAK1_TAU, BRAAK34_TAU, BRAAK56_TAU, META_TEMPORAL_VOL) %>%
   group_by(RID) %>%
   slice_min(DateTau, with_ties = F) %>%
   ungroup()
@@ -60,9 +65,10 @@ av45 <- ucberkeleyav45 %>%
          AmyloidTracer = 'AV45',
          AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.11CUTOFF),
          AmyloidID = scan.id(RID, EXAMDATE),
-         Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03)) %>%
+         Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03),
+         AMYLOID_COMPOSITE = SUMMARYSUVR_WHOLECEREBNORM) %>%
   select(RID, DateAmyloid, AmyloidID, AmyloidTracer,
-         AmyloidPositive, AmyloidID, Centiloid)
+         AmyloidPositive, AmyloidID, Centiloid, AMYLOID_COMPOSITE)
 
 # fbb <- ucberkeleyfbb %>%
 #   mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
@@ -212,9 +218,22 @@ df <- df.sex %>%
 
 # === Add ICV ======
 
-icv <- read.csv(PATH.ICV)
+icvs <- adnimerge %>%
+  select(RID, ICV) %>%
+  group_by(RID) %>%
+  summarise(ICV=mean(ICV, na.rm=T)) %>%
+  ungroup() %>%
+  mutate(RID = as.numeric(RID))
 
-df <- left_join(df, icv, by = 'TauID')
+df.icv <- left_join(df, icvs, by='RID')
+
+male.icv <- mean(df.icv[df$Sex == 'Male', 'ICV'], na.rm = T)
+female.icv <- mean(df.icv[df$Sex == 'Female', 'ICV'], na.rm = T)
+
+df.icv$ICV <- ifelse(df.icv$Sex == 'Male' & is.na(df.icv$ICV), male.icv, df.icv$ICV)
+df.icv$ICV <- ifelse(df.icv$Sex == 'Female' & is.na(df.icv$ICV), female.icv, df.icv$ICV)
+
+df <- df.icv
 
 # === Add PACC =========
 
@@ -436,6 +455,10 @@ rois$TauID <- scan.id(ucberkeleyav1451$RID, ucberkeleyav1451$EXAMDATE)
 
 df <- left_join(df, rois, by = 'TauID') %>%
   mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
+
+# === compute hippocampus volume ======
+
+df$HIPPOCAMPUS_VOL = df$LEFT_HIPPOCAMPUS_VOLUME + df$RIGHT_HIPPOCAMPUS_VOLUME
 
 # === save ========
 

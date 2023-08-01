@@ -16,7 +16,7 @@ from scipy.optimize import root_scalar
 from sklearn.mixture import GaussianMixture
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVR
+from sklearn.svm import SVR, LinearSVR
 
 # Base Class -----
 
@@ -211,9 +211,17 @@ class MultivariateSVR:
     def __init__(self, predictors, target, **kwargs):
         self.predictors = predictors
         self.target = target
+
+        kernel = kwargs.get('kernel', None)
+        if kernel and kernel == 'linear':
+            del kwargs['kernel']
+            SVM = LinearSVR(max_iter=int(1e5), **kwargs)
+        else:
+            SVM = SVR(**kwargs)
         self.kwargs = kwargs
 
-        self.pipeline = Pipeline([('scaler', StandardScaler()), ('svm', SVR(**kwargs))])
+        self.pipeline = Pipeline([('scaler', StandardScaler()),
+                                  ('svm', SVM)])
 
     def fit(self, data):
         X = data[self.predictors].to_numpy()
@@ -246,34 +254,34 @@ ATN_PREDICTORS_DICT = {
             'centiloid': Continuous('Centiloid')}},
     'tau': {
         'binary': {
-            'mtt_gmm': BinaryGMM('META_TEMPORAL_SUVR'),
-            'mtt_z2.0': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.0),
-            'mtt_z2.5': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.5),
-            'mtt_1.20': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.20),
-            'mtt_1.21': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.21),
-            'mtt_1.23': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.23),
-            'mtt_1.33':  BinaryManual('META_TEMPORAL_SUVR', cutoff=1.33)},
+            'mtt_gmm': BinaryGMM('META_TEMPORAL_TAU'),
+            'mtt_z2.0': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.0),
+            'mtt_z2.5': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.5),
+            'mtt_1.20': BinaryManual('META_TEMPORAL_TAU', cutoff=1.20),
+            'mtt_1.21': BinaryManual('META_TEMPORAL_TAU', cutoff=1.21),
+            'mtt_1.23': BinaryManual('META_TEMPORAL_TAU', cutoff=1.23),
+            'mtt_1.33':  BinaryManual('META_TEMPORAL_TAU', cutoff=1.33)},
         'categorical': {
-            'mtt_quantiles': Quantiles('META_TEMPORAL_SUVR'),
-            'braak_stage_gmm': CategoricalStager(['BRAAK1_SUVR', 'BRAAK34_SUVR', 'BRAAK56_SUVR'])},
+            'mtt_quantiles': Quantiles('META_TEMPORAL_TAU'),
+            'braak_stage_gmm': CategoricalStager(['BRAAK1_TAU', 'BRAAK34_TAU', 'BRAAK56_TAU'])},
         'continuous': {
-            'mtt': Continuous('META_TEMPORAL_SUVR'),
-            'braak1': Continuous('BRAAK1_SUVR'),
-            'braak34': Continuous('BRAAK34_SUVR'),
-            'braak56': Continuous('BRAAK56_SUVR')}
+            'mtt': Continuous('META_TEMPORAL_TAU'),
+            'braak1': Continuous('BRAAK1_TAU'),
+            'braak34': Continuous('BRAAK34_TAU'),
+            'braak56': Continuous('BRAAK56_TAU')}
         },
     'neurodegeneration': {
         'binary': {
-            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.5, greater=False),
-            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.5, greater=False)},
+            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.0, greater=False),
+            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.5, greater=False),
+            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.0, greater=False),
+            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.5, greater=False)},
         'categorical': {
-            'hipp_quantiles': Quantiles('HIPPOCAMPUS_VOLUME'),
-            'mttvol_quantiles': Quantiles('META_TEMPORAL_VOLUME')},
+            'hipp_quantiles': Quantiles('HIPPOCAMPUS_VOL'),
+            'mttvol_quantiles': Quantiles('META_TEMPORAL_VOL')},
         'continuous': {
-            'hipp': Continuous('HIPPOCAMPUS_VOLUME'),
-            'mttvol': Continuous('META_TEMPORAL_VOLUME')}},
+            'hipp': Continuous('HIPPOCAMPUS_VOL'),
+            'mttvol': Continuous('META_TEMPORAL_VOL')}},
     }
 
 BINARY_DATA_DRIVEN = {
@@ -288,16 +296,16 @@ BINARY_DATA_DRIVEN = {
         },
     'tau': {
         'binary': {
-            'mtt_gmm': BinaryGMM('META_TEMPORAL_SUVR'),
-            'mtt_z2.0': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.0),
-            'mtt_z2.5': BinaryZScore('META_TEMPORAL_SUVR', 'Control', zcutoff=2.5)}
+            'mtt_gmm': BinaryGMM('META_TEMPORAL_TAU'),
+            'mtt_z2.0': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.0),
+            'mtt_z2.5': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.5)}
         },
     'neurodegeneration': {
         'binary': {
-            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.5, greater=False),
-            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.5, greater=False)},
+            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.0, greater=False),
+            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.5, greater=False),
+            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.0, greater=False),
+            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.5, greater=False)},
         }
     }
 
@@ -309,16 +317,16 @@ BINARY_ESTABLISHED = {
         },
     'tau': {
         'binary': {
-            'mtt_1.20': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.20),
-            'mtt_1.21': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.21),
-            'mtt_1.23': BinaryManual('META_TEMPORAL_SUVR', cutoff=1.23),
-            'mtt_1.33':  BinaryManual('META_TEMPORAL_SUVR', cutoff=1.33)},
+            'mtt_1.20': BinaryManual('META_TEMPORAL_TAU', cutoff=1.20),
+            'mtt_1.21': BinaryManual('META_TEMPORAL_TAU', cutoff=1.21),
+            'mtt_1.23': BinaryManual('META_TEMPORAL_TAU', cutoff=1.23),
+            'mtt_1.33':  BinaryManual('META_TEMPORAL_TAU', cutoff=1.33)},
         },
     'neurodegeneration': {
         'binary': {
-            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOLUME', control_col='Control', zcutoff=-2.5, greater=False),
-            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.0, greater=False),
-            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOLUME', control_col='Control', zcutoff=-2.5, greater=False)},
+            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.0, greater=False),
+            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.5, greater=False),
+            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.0, greater=False),
+            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.5, greater=False)},
         },
     }

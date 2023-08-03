@@ -75,7 +75,7 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
               'SVM (combined)': roi_columns}
 
 SVM_PARAMS = {
-    'C': list(2. ** np.arange(-5., 1., 2)),
+    'C': list(2. ** np.arange(-5., 15., 2)),
     'kernel': ['linear']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))
@@ -253,7 +253,7 @@ palette = (['gray'] +
             ['#99C494'])
 
 name = 'adni_rmse_boxplot.png'
-title = 'Accuracy'
+title = 'Accuracy (all)'
 adni_plot, adni_stats = results_boxplot(results_adni,
                                         save=os.path.join(OUTPUT, name),
                                         title=title,

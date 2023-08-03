@@ -468,43 +468,45 @@ df$HIPPOCAMPUS_VOL = df$LEFT_HIPPOCAMPUS_VOLUME + df$RIGHT_HIPPOCAMPUS_VOLUME
 # and the ADNI1/2/GO vs. ADNI3 assays have values on very different scales
 # might need to do some more reading  to figure this out, but leaving be for now
 
-# a <- df
-# b <- df
-# 
-# old.csf <- upennbiomk_master %>%
-#   mutate(RID = as.numeric(RID),
-#          DateCSF = as_datetime(mdy(DRAWDTE))) %>%
-#   select(RID, DateCSF, ABETA, TAU, PTAU)
-# 
-# a <- left_join(a, old.csf, by='RID') %>%
-#   mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
-#   group_by(TauID) %>%
-#   slice_min(abs(DiffTauCSF), with_ties = F) %>%
-#   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
-#   ungroup() %>%
-#   select(TauID, DateTau, ABETA, TAU, PTAU)
-# 
-# bmk10 <- upennbiomk10 %>%
-#   select(RID, DRAWDATE, ABETA40, ABETA42, TAU, PTAU) %>%
-#   rename(DateCSF=DRAWDATE) %>%
-#   mutate(DateCSF=as_datetime(mdy(DateCSF)))
-# 
-# bmk12 <- upennbiomk12_2020 %>%
-#   select(RID, EXAMDATE, AB40, ABETA, TAU, PTAU) %>%
-#   rename(DateCSF=EXAMDATE,
-#          ABETA40=AB40,
-#          ABETA42=ABETA) %>%
-#   mutate(DateCSF = as_datetime(ymd(DateCSF)))
-# 
-# new.csf <- rbind(bmk10, bmk12)
-# 
-# b <- left_join(b, new.csf, by='RID') %>%
-#   mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
-#   group_by(TauID) %>%
-#   slice_min(abs(DiffTauCSF), with_ties = F) %>%
-#   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
-#   ungroup() %>%
-#   select(TauID, DateTau, ABETA42, TAU, PTAU)
+# a merges the older CSF values
+# b merges the newer CSF values
+a <- df
+b <- df
+
+old.csf <- upennbiomk_master %>%
+  mutate(RID = as.numeric(RID),
+         DateCSF = as_datetime(mdy(DRAWDTE))) %>%
+  select(RID, DateCSF, ABETA, TAU, PTAU)
+
+a <- left_join(a, old.csf, by='RID') %>%
+  mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
+  group_by(TauID) %>%
+  slice_min(abs(DiffTauCSF), with_ties = F) %>%
+  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
+  ungroup() %>%
+  select(TauID, DateTau, ABETA, TAU, PTAU)
+
+bmk10 <- upennbiomk10 %>%
+  select(RID, DRAWDATE, ABETA40, ABETA42, TAU, PTAU) %>%
+  rename(DateCSF=DRAWDATE) %>%
+  mutate(DateCSF=as_datetime(mdy(DateCSF)))
+
+bmk12 <- upennbiomk12_2020 %>%
+  select(RID, EXAMDATE, AB40, ABETA, TAU, PTAU) %>%
+  rename(DateCSF=EXAMDATE,
+         ABETA40=AB40,
+         ABETA42=ABETA) %>%
+  mutate(DateCSF = as_datetime(ymd(DateCSF)))
+
+new.csf <- rbind(bmk10, bmk12)
+
+b <- left_join(b, new.csf, by='RID') %>%
+  mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
+  group_by(TauID) %>%
+  slice_min(abs(DiffTauCSF), with_ties = F) %>%
+  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
+  ungroup() %>%
+  select(TauID, DateTau, ABETA42, TAU, PTAU)
 
 # === save ========
 

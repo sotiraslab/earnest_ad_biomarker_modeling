@@ -13,6 +13,7 @@ from copy import deepcopy
 import itertools as it
 import pickle
 import os
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,7 +40,7 @@ COVARIATES = ['Age', 'Sex', 'HasE4']
 STRATIFY_COLUMN = 'CDRBinned'
 
 # ---- Paths
-PATH_ADNI_DATA = '../../data/derivatives/adni_harmonized_augmented.csv'
+PATH_ADNI_DATA = '../../data/derivatives/adni_base_table.csv'
 PATH_OASIS_DATA = '../../data/derivatives/oasis_harmonized_augmented.csv'
 
 # ---- Output
@@ -53,10 +54,6 @@ if not os.path.isdir(OUTPUT):
 adni = pd.read_csv(PATH_ADNI_DATA)
 adni['Sex'] = np.where(adni['Sex'] == 'Male', 1., 0.)
 adni['HasE4'] = adni['HasE4'].astype(float)
-
-oasis = pd.read_csv(PATH_OASIS_DATA)
-oasis['Sex'] = np.where(oasis['Sex'] == 'Male', 1., 0.)
-oasis['HasE4'] = oasis['HasE4'].astype(float)
 
 # ---- Setup SVM models
 
@@ -80,7 +77,6 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
 
 SVM_PARAMS = {
     'C': list(2. ** np.arange(-5., 15., 2)),
-    'gamma': list(2. ** np.arange(-5., 15., 2)),
     'kernel': ['rbf']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))
@@ -88,13 +84,14 @@ SVM_SEARCH = [dict(zip(SVM_PARAMS.keys(), v)) for v in param_combos]
 
 # ---- Main
 results_adni = []
-results_oasis = []
 save_models = defaultdict(list)
+
+# this happens a lot with the linear SVM for certain values of C
+# some models are converging, however
+warnings.filterwarnings('ignore', message='Liblinear failed to converge')
 
 def testing_filter(dataset):
     return dataset.loc[dataset['CDRBinned'] != '0.0', ].copy()
-
-oasis = testing_filter(oasis)
 
 # repeats of nested CV
 for r in range(REPEATS):
@@ -209,19 +206,6 @@ for r in range(REPEATS):
                    **metrics}
             results_adni.append(row)
 
-            # testing on OASIS
-            metrics = test_atn_linear_model(models=model,
-                                            covariates=COVARIATES,
-                                            target=TARGET,
-                                            train_data=outer_train,
-                                            test_data=oasis)
-            row = {'model': name,
-                   'fold': i,
-                   'repeat': r,
-                   **metrics}
-            results_oasis.append(row)
-
-
             # save model
             save_models[name].append(deepcopy(model))
 
@@ -241,23 +225,11 @@ for r in range(REPEATS):
                    'r2': r2_score(outer_test[TARGET], preds)}
             results_adni.append(row)
 
-            # test on OASIS
-            preds = model.predict(oasis)
-            row = {'model': svm_name,
-                   'fold': i,
-                   'repeat': r,
-                   'rmse': mean_squared_error(oasis[TARGET], preds, squared=False),
-                   'r2': r2_score(oasis[TARGET], preds)}
-            results_oasis.append(row)
-
             # save model
             save_models[svm_name].append(deepcopy(model))
 
 results_adni = pd.DataFrame(results_adni)
 results_adni.to_csv(os.path.join(OUTPUT, 'adni_results.csv'), index=False)
-
-results_oasis = pd.DataFrame(results_oasis)
-results_oasis.to_csv(os.path.join(OUTPUT, 'oasis_results.csv'), index=False)
 
 with open(os.path.join(OUTPUT, 'models.pickle'), 'wb') as f:
     pickle.dump(save_models, f)
@@ -285,7 +257,7 @@ palette = (['gray'] +
             ['#99C494'])
 
 name = 'adni_rmse_boxplot.png'
-title = 'Accuracy (ADNI)'
+title = 'Accuracy (dementia only)'
 adni_plot, adni_stats = results_boxplot(results_adni,
                                         save=os.path.join(OUTPUT, name),
                                         title=title,
@@ -293,13 +265,3 @@ adni_plot, adni_stats = results_boxplot(results_adni,
                                         n_train=n_train,
                                         baseline='Baseline',
                                         palette=palette)
-
-name = 'oasis_rmse_boxplot.png'
-title = 'Accuracy (OASIS)'
-oasis_plot, oasis_stats = results_boxplot(results_oasis,
-                                          save=os.path.join(OUTPUT, name),
-                                          title=title,
-                                          n_test=n_test,
-                                          n_train=n_train,
-                                          baseline='Baseline',
-                                          palette=palette)

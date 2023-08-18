@@ -72,8 +72,8 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
               'SVM (combined)': roi_columns}
 
 SVM_PARAMS = {
-    'C': list(2. ** np.arange(-5., 15., 2)),
-    'kernel': ['rbf']}
+    'C': list(2. ** np.arange(-5., 13., 2)),
+    'kernel': ['linear']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))
 SVM_SEARCH = [dict(zip(SVM_PARAMS.keys(), v)) for v in param_combos]

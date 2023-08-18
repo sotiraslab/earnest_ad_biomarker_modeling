@@ -1,6 +1,5 @@
 data
 scripts
-main
 main/1_modeling/binary_baseline.py
 main/1_modeling/binary_baseline_CN.py
 main/1_modeling/binary_baseline_DEM.py

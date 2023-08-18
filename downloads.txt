@@ -1,0 +1,10 @@
+main/1_modeling/binary_baseline
+main/1_modeling/binary_baseline_CN
+main/1_modeling/binary_baseline_DEM
+main/1_modeling/binary_baseline_longitudinal
+main/1_modeling/control_baseline
+main/1_modeling/control_baseline_CN
+main/1_modeling/control_baseline_DEM
+main/1_modeling/control_baseline_longitudinal
+main/1_modeling/data_driven_v_established
+main/1_modeling/*.slurmlog

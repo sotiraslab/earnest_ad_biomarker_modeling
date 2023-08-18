@@ -11,3 +11,5 @@ main/1_modeling/control_baseline_longitudinal.py
 main/1_modeling/data_driven_v_established.py
 main/1_modeling/run_modeling_chpc.sh
 main/1_modeling/call_python.sh
+main/1_modeling/helpers.py
+main/1_modeling/model_classes.py

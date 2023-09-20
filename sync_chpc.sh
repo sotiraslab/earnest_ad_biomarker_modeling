@@ -8,7 +8,7 @@ UPLOADS='uploads.txt'
 DOWNLOADS='downloads.txt'
 
 # upload
-rsync -avRr --files-from="${UPLOADS}" . $LOGIN:${CHPC_PATH}/.
+rsync -avRr --files-from="${UPLOADS}" . "$LOGIN:${CHPC_PATH}/."
 
 # download
 rsync -avRr --files-from="${DOWNLOADS}" "$LOGIN:${CHPC_PATH}/." '.'

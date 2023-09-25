@@ -21,6 +21,9 @@ from sklearn.svm import SVR, LinearSVR
 # Base Class -----
 
 class ATNPredictor:
+    
+    def __init__(self, nickname=None):
+        self.nickname = nickname
 
     def __repr__(self):
         names = inspect.getfullargspec(self.__init__).args
@@ -37,12 +40,17 @@ class ATNPredictor:
         s = f"{classname}({kv})"
 
         return s
+    
+    @property
+    def name(self):
+        return self.nickname if self.nickname else repr(self)
 
 # Binary predictors ----
 
 class BinaryZScore(ATNPredictor):
 
-    def __init__(self, y_col, control_col, zcutoff=2.0, greater=True):
+    def __init__(self, y_col, control_col, zcutoff=2.0, greater=True, nickname=None):
+        super().__init__(nickname)
         self.y_col = y_col
         self.control_col = control_col
         self.zcutoff = zcutoff
@@ -65,7 +73,8 @@ class BinaryZScore(ATNPredictor):
 
 class BinaryGMM(ATNPredictor):
 
-    def __init__(self, y_col, greater=True):
+    def __init__(self, y_col, greater=True, nickname=None):
+        super().__init__(nickname)
         self.y_col = y_col
         self.operator = operator.ge if greater else operator.le
 
@@ -94,7 +103,8 @@ class BinaryGMM(ATNPredictor):
 
 class BinaryManual(ATNPredictor):
 
-    def __init__(self, y_col, cutoff, greater=True):
+    def __init__(self, y_col, cutoff, greater=True, nickname=None):
+        super().__init__(nickname)
         self.y_col = y_col
         self.cutoff = cutoff
         self.operator = operator.ge if greater else operator.le
@@ -142,7 +152,8 @@ def assign_frequency_stage(data, groupings=None, p='any', atypical='NS'):
 
 class Quantiles(ATNPredictor):
 
-    def __init__(self, y_col):
+    def __init__(self, y_col, nickname=None):
+        super().__init__(nickname)
         self.y_col = y_col
 
         self.quantiles = None
@@ -156,7 +167,8 @@ class Quantiles(ATNPredictor):
 class CategoricalStager(ATNPredictor):
 
     def __init__(self, columns, groupings=None, method='gmm', non_stageable='NS',
-                 p='any', **kwargs):
+                 p='any', nickname=None, **kwargs):
+        super().__init__(nickname)
         self.columns = columns
         self.groupings = groupings
         self.method = method
@@ -195,7 +207,8 @@ class CategoricalStager(ATNPredictor):
 
 class Continuous(ATNPredictor):
 
-    def __init__(self, y_col):
+    def __init__(self, y_col, nickname=None):
+        super().__init__(nickname)
         self.y_col = y_col
 
     def fit(self, data):
@@ -238,50 +251,50 @@ class MultivariateSVR:
 ATN_PREDICTORS_DICT = {
     'amyloid': {
         'binary': {
-            'composite_1.11': BinaryManual('AMYLOID_COMPOSITE', 1.11),
-            'centiloid_20': BinaryManual('Centiloid', 20),
-            'composite_gmm': BinaryGMM('AMYLOID_COMPOSITE'),
-            'centiloid_gmm': BinaryGMM('Centiloid'),
-            'composite_z2.0': BinaryZScore('AMYLOID_COMPOSITE', zcutoff=2.0, control_col='Control'),
-            'composite_z2.5': BinaryZScore('AMYLOID_COMPOSITE', zcutoff=2.5, control_col='Control'),
-            'centiloid_z2.0': BinaryZScore('Centiloid', zcutoff=2.0, control_col='Control'),
-            'centiloid_z2.5': BinaryZScore('Centiloid', zcutoff=2.5, control_col='Control')},
+            'composite_1.11': BinaryManual('AMYLOID_COMPOSITE', 1.11, nickname='Amyloid Composite (SUVR>1.11)'),
+            'centiloid_20': BinaryManual('Centiloid', 20, nickname='Centiloid (>20)'),
+            'composite_gmm': BinaryGMM('AMYLOID_COMPOSITE', nickname='Amyloid Composite (GMM)'),
+            'centiloid_gmm': BinaryGMM('Centiloid', nickname='Centiloid (GMM)'),
+            'composite_z2.0': BinaryZScore('AMYLOID_COMPOSITE', zcutoff=2.0, control_col='Control', nickname='Amyloid Composite (z>2.0)'),
+            'composite_z2.5': BinaryZScore('AMYLOID_COMPOSITE', zcutoff=2.5, control_col='Control', nickname='Amyloid Composite (z>2.5)'),
+            'centiloid_z2.0': BinaryZScore('Centiloid', zcutoff=2.0, control_col='Control', nickname='Centiloid (z>2.0)'),
+            'centiloid_z2.5': BinaryZScore('Centiloid', zcutoff=2.5, control_col='Control', nickname='Centiloid (z>2.5)')},
         'categorical': {
-            'composite_quantiles': Quantiles('AMYLOID_COMPOSITE'),
-            'centiloid_quantiles': Quantiles('Centiloid')},
+            'composite_quantiles': Quantiles('AMYLOID_COMPOSITE', nickname='Amyloid Composite (Quantiles)'),
+            'centiloid_quantiles': Quantiles('Centiloid', nickname='Centiloid (Quantiles)')},
         'continuous': {
-            'composite': Continuous('AMYLOID_COMPOSITE'),
-            'centiloid': Continuous('Centiloid')}},
+            'composite': Continuous('AMYLOID_COMPOSITE', nickname='Amyloid Composite (Quantiles)'),
+            'centiloid': Continuous('Centiloid', nickname='Centiloid (Quantiles)')}},
     'tau': {
         'binary': {
-            'mtt_gmm': BinaryGMM('META_TEMPORAL_TAU'),
-            'mtt_z2.0': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.0),
-            'mtt_z2.5': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.5),
-            'mtt_1.20': BinaryManual('META_TEMPORAL_TAU', cutoff=1.20),
-            'mtt_1.21': BinaryManual('META_TEMPORAL_TAU', cutoff=1.21),
-            'mtt_1.23': BinaryManual('META_TEMPORAL_TAU', cutoff=1.23),
-            'mtt_1.33':  BinaryManual('META_TEMPORAL_TAU', cutoff=1.33)},
+            'mtt_gmm': BinaryGMM('META_TEMPORAL_TAU', nickname='MTT (GMM)'),
+            'mtt_z2.0': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.0, nickname='MTT (z>2.0)'),
+            'mtt_z2.5': BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.5, nickname='MTT (z>2.5)'),
+            'mtt_1.20': BinaryManual('META_TEMPORAL_TAU', cutoff=1.20, nickname='MTT (SUVR>1.20)'),
+            'mtt_1.21': BinaryManual('META_TEMPORAL_TAU', cutoff=1.21, nickname='MTT (SUVR>1.21)'),
+            'mtt_1.23': BinaryManual('META_TEMPORAL_TAU', cutoff=1.23, nickname='MTT (SUVR>1.23'),
+            'mtt_1.33':  BinaryManual('META_TEMPORAL_TAU', cutoff=1.33, nickname='MTT (SUVR>1.33)')},
         'categorical': {
-            'mtt_quantiles': Quantiles('META_TEMPORAL_TAU'),
-            'braak_stage_gmm': CategoricalStager(['BRAAK1_TAU', 'BRAAK34_TAU', 'BRAAK56_TAU'])},
+            'mtt_quantiles': Quantiles('META_TEMPORAL_TAU', nickname='MTT (Quantiles)'),
+            'braak_stage_gmm': CategoricalStager(['BRAAK1_TAU', 'BRAAK34_TAU', 'BRAAK56_TAU'], nickname='Braak Staging')},
         'continuous': {
-            'mtt': Continuous('META_TEMPORAL_TAU'),
-            'braak1': Continuous('BRAAK1_TAU'),
-            'braak34': Continuous('BRAAK34_TAU'),
-            'braak56': Continuous('BRAAK56_TAU')}
+            'mtt': Continuous('META_TEMPORAL_TAU', nickname='MTT'),
+            'braak1': Continuous('BRAAK1_TAU', nickname='Braak1'),
+            'braak34': Continuous('BRAAK34_TAU', nickname='Braak34'),
+            'braak56': Continuous('BRAAK56_TAU', nickname='Braak56')}
         },
     'neurodegeneration': {
         'binary': {
-            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.0, greater=False),
-            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.5, greater=False),
-            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.0, greater=False),
-            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.5, greater=False)},
+            'hipp_z2.0': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.0, greater=False, nickname='Hippocampus (z<-2.0)'),
+            'hipp_z2.5': BinaryZScore('HIPPOCAMPUS_VOL', control_col='Control', zcutoff=-2.5, greater=False, nickname='Hippocampus (z<-2.5)'),
+            'mttvol_z2.0': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.0, greater=False, nickname='MTV (z<-2.0)'),
+            'mttvol_z2.5': BinaryZScore('META_TEMPORAL_VOL', control_col='Control', zcutoff=-2.5, greater=False, nickname='MTV (z<-2.5)')},
         'categorical': {
-            'hipp_quantiles': Quantiles('HIPPOCAMPUS_VOL'),
-            'mttvol_quantiles': Quantiles('META_TEMPORAL_VOL')},
+            'hipp_quantiles': Quantiles('HIPPOCAMPUS_VOL', nickname='Hippocampus (Quantiles)'),
+            'mttvol_quantiles': Quantiles('META_TEMPORAL_VOL', nickname='MTV (Quantiles)')},
         'continuous': {
-            'hipp': Continuous('HIPPOCAMPUS_VOL'),
-            'mttvol': Continuous('META_TEMPORAL_VOL')}},
+            'hipp': Continuous('HIPPOCAMPUS_VOL', nickname='Hippocampus'),
+            'mttvol': Continuous('META_TEMPORAL_VOL', nickname='MTV')}},
     }
 
 BINARY_DATA_DRIVEN = {

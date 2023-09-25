@@ -66,7 +66,6 @@ plt.rcParams.update({
     'font.family': font_prop.get_name(),
     'font.size': 14})
 
-
 figure, axes = plt.subplots(nrows=3,
                             ncols=3,
                             figsize=(20, 12),

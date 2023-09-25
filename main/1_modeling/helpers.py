@@ -6,6 +6,7 @@ Created on Fri Jun 23 11:34:10 2023
 @author: tom.earnest
 """
 
+import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -195,6 +196,13 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
     boxplotdata = boxplotdata[order]
 
     # base plot
+    try:
+        font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
+        plt.rcParams.update({
+            'font.family': font_prop.get_name()})
+    except:
+        pass
+    
     fig, ax = plt.subplots(figsize=(6, 8))
     positions = list(range(len(order)))
     positions.reverse()

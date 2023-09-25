@@ -60,19 +60,20 @@ for model_type in model_types:
 
 # ---- plot
 
-
 # font
 font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
 plt.rcParams.update({
-    'font.family': font_prop.get_name()})
+    'font.family': font_prop.get_name(),
+    'font.size': 14})
 
 
-figure, axes = plt.subplots(nrows=len(model_types),
-                            ncols=1,
-                            figsize=(4, 16),
+figure, axes = plt.subplots(nrows=3,
+                            ncols=3,
+                            figsize=(20, 12),
                             sharex=True,
+                            sharey=True,
                             dpi=300)
-
+axes = axes.flatten()
 
 cols = len(experiment_names)
 for r, df in enumerate(plot_dataframes):
@@ -82,17 +83,29 @@ for r, df in enumerate(plot_dataframes):
     cmap = plt.get_cmap(cmaps[r]).reversed()
     colors = cmap((np.arange(unique_bars)/unique_bars) * .8) 
     for i in range(unique_bars):
+        
+        # TODO: get better labels/short names for models
+        label = df.index[i][:20]
+        
         height = df.iloc[i, :]
-        ax.bar(x=range(cols), height=height, bottom=bottom, label=df.index[i], color=colors[i, :])
+        ax.bar(x=range(cols), height=height, bottom=bottom, label=label, color=colors[i, :])
         bottom += height
         
     # format
     ax.set_ylim(0,1)
     ax.set_yticks([0, .5, 1])
-    ax.set_ylabel(model_types[r])
-    ax.legend(bbox_to_anchor=(1,1.05), loc="upper left")
+    ax.legend(bbox_to_anchor=(1,1), loc="upper left", fontsize=12)
     ax.set_xticks(range(cols))
     ax.set_xticklabels(experiment_names, rotation=45, ha='right')
-    
-        
 
+bigfont=24
+axes[0].set_ylabel('Amyloid', fontsize=bigfont)
+axes[3].set_ylabel('Tau', fontsize=bigfont)
+axes[6].set_ylabel('Neurodegeneration', fontsize=bigfont)
+
+axes[0].set_title('Binary', fontsize=bigfont)
+axes[1].set_title('Categorical', fontsize=bigfont)
+axes[2].set_title('Continuous', fontsize=bigfont)
+    
+plt.tight_layout()
+plt.savefig('selected_models.png', dpi=300)

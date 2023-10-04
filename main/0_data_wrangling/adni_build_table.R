@@ -462,29 +462,112 @@ df <- left_join(df, rois, by = 'TauID') %>%
 
 df$HIPPOCAMPUS_VOL = df$LEFT_HIPPOCAMPUS_VOLUME + df$RIGHT_HIPPOCAMPUS_VOLUME
 
+# === compute bilateral PET uptakes =======
+
+# needed for some staging models
+
+bilateral.pet.rois <- function(df, tracer) {
+  if (! tracer %in% c('tau', 'amyloid')) {
+    stop('`tracer` must be "tau" or "amyloid"')
+  }
+  
+  if (tracer == 'tau') {
+    startpat <- 'FTP'
+  } else {
+    startpat <- 'AV45'
+  }
+  
+  all.cols <- colnames(df)
+  pet.lh.cols <- all.cols[str_detect(all.cols, sprintf('%s_CTX_LH_|%s_LEFT_', startpat, startpat))]
+  pet.rh.cols <- all.cols[str_detect(all.cols, sprintf('%s_CTX_RH_|%s_RIGHT_', startpat, startpat))]
+  pet.lh <- df[, pet.lh.cols]
+  pet.rh <- df[, pet.rh.cols]
+  vol.lh <- df[, all.cols[str_detect(all.cols, 'CTX_LH_.*_VOLUME|LEFT_.*_VOLUME')]]
+  vol.rh <- df[, all.cols[str_detect(all.cols, 'CTX_RH_.*_VOLUME|RIGHT_.*_VOLUME')]]
+  tot.vol <- vol.lh + vol.rh
+  lh.weight <- vol.lh / tot.vol
+  rh.weight <- vol.rh / tot.vol
+  weighted.pet <- (lh.weight * pet.lh) + (rh.weight * pet.rh)
+  colnames(weighted.pet) <- colnames(pet.lh)
+  colnames(weighted.pet) <- str_replace(colnames(weighted.pet), 'LH_|LEFT_', 'TOT_')
+  
+  return (weighted.pet)
+}
+
+amy.bl <- bilateral.pet.rois(df, 'amyloid')
+tau.bl <- bilateral.pet.rois(df, 'tau')
+
+df <- df %>%
+  bind_cols(amy.bl, tau.bl)
+
+# === add Mattsson composites =======
+
+cols <- colnames(df)
+av45.df <- df[, str_detect(cols, 'AV45_') & str_detect(cols, 'TOT_')]
+acols <- colnames(av45.df)
+
+MattssonEarly.regions <- c('PRECUNEUS',
+                           'POSTERIORCINGULATE',
+                           'ISTHMUSCINGULATE',
+                           'INSULA',
+                           'MEDIALORBITOFRONTAL',
+                           'LATERALORBITOFRONTAL')
+MattssonEarly.df <- av45.df[, str_detect(acols, paste(MattssonEarly.regions, collapse='|'))]
+
+MattssonIntermediate.regions <- c('BANKSSTS',
+                                  'CAUDALMIDDLEFRONTAL',
+                                  'CUNEUS',
+                                  'FRONTALPOLE',
+                                  'FUSIFORM',
+                                  'INFERIORPARIETAL',
+                                  'INFERIORTEMPORAL',
+                                  'LATERALOCCIPITAL',
+                                  'MIDDLETEMPORAL',
+                                  'PARAHIPPOCAMPAL',
+                                  'PARSOPERCULARIS',
+                                  'PASORBITALIS',
+                                  'PARSTRIANGULARIS',
+                                  'PUTAMEN',
+                                  'ROSTRALANTERIORCINGULATE',
+                                  'ROSTRALMIDDLEFRONTAL',
+                                  'SUPERIORFRONTAL',
+                                  'SUPERIORPARIETAL',
+                                  'SUPERIORTEMPORAL',
+                                  'SUPRAMARGINAL')
+MattssonIntermediate.df <- av45.df[, str_detect(acols, paste(MattssonIntermediate.regions, collapse='|'))]
+
+MattssonLate.regions <- c('LINGUAL',
+                          'PERICALCARINE',
+                          'PARACENTRAL',
+                          'PRECENTRAL',
+                          'POSTCENTRAL')
+MattssonLate.df <- av45.df[, str_detect(acols, paste(MattssonLate.regions, collapse='|'))]
+
+df$MattssonEarlySUVR <- rowMeans(MattssonEarly.df)
+df$MattssonIntermediateSUVR <- rowMeans(MattssonIntermediate.df)
+df$MattssonLateSUVR <- rowMeans(MattssonLate.df)
+
 # === CSF markers =======
 
 # looks like the CSF markers are too sparse for this dataset
 # and the ADNI1/2/GO vs. ADNI3 assays have values on very different scales
-# might need to do some more reading  to figure this out, but leaving be for now
+# might need to do some more reading  to figure this out
+# for now just taking the newer measures
 
-# a merges the older CSF values
-# b merges the newer CSF values
-a <- df
-b <- df
-
-old.csf <- upennbiomk_master %>%
-  mutate(RID = as.numeric(RID),
-         DateCSF = as_datetime(mdy(DRAWDTE))) %>%
-  select(RID, DateCSF, ABETA, TAU, PTAU)
-
-a <- left_join(a, old.csf, by='RID') %>%
-  mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
-  group_by(TauID) %>%
-  slice_min(abs(DiffTauCSF), with_ties = F) %>%
-  filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
-  ungroup() %>%
-  select(TauID, DateTau, ABETA, TAU, PTAU)
+# --->  this code merges the older values
+# old.csf <- upennbiomk_master %>%
+#   mutate(RID = as.numeric(RID),
+#          DateCSF = as_datetime(mdy(DRAWDTE))) %>%
+#   select(RID, DateCSF, ABETA, TAU, PTAU)
+# 
+# df <- left_join(df, old.csf, by='RID') %>%
+#   mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
+#   group_by(TauID) %>%
+#   slice_min(abs(DiffTauCSF), with_ties = F) %>%
+#   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
+#   ungroup() %>%
+#   select(TauID, DateTau, ABETA, TAU, PTAU)
+# ---> 
 
 bmk10 <- upennbiomk10 %>%
   select(RID, DRAWDATE, ABETA40, ABETA42, TAU, PTAU) %>%

@@ -57,8 +57,8 @@ adni['HasE4'] = adni['HasE4'].astype(float)
 
 # ---- Setup SVM models
 
-amy_columns = list(adni.columns[adni.columns.str.startswith('AV45')])
-tau_columns = list(adni.columns[adni.columns.str.startswith('FTP')])
+amy_columns = list(adni.columns[adni.columns.str.startswith('AV45') & ~adni.columns.str.contains('TOT')])
+tau_columns = list(adni.columns[adni.columns.str.startswith('FTP') & ~adni.columns.str.contains('TOT')])
 gm_columns = list(adni.columns[adni.columns.str.endswith('VOLUME') & ~ adni.columns.str.contains('BRAAK|META')])
 gm_columns = [col for col in gm_columns if col != 'HIPPOCAMPUS_VOLUME']
 roi_columns = amy_columns + tau_columns + gm_columns

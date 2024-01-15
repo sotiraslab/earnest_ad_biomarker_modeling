@@ -20,7 +20,7 @@ do
     name=$(basename $script .py)
     log=${name}.slurmlog
 
-    COMMAND=(sbatch -J $name -o $log -t '72:00:00' -N 1 -n 1 --mem=128GB --account='aristeidis_sotiras' --partition=='tier2_cpu' call_python.sh $script)
+    COMMAND=(sbatch -J $name -o $log -t '72:00:00' -N 1 -n 1 --mem=128GB --account='aristeidis_sotiras' --partition='tier2_cpu' call_python.sh $script)
     echo "${COMMAND[@]}"
     "${COMMAND[@]}"
 

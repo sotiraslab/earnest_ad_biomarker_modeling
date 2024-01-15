@@ -72,7 +72,7 @@ SVM_MODELS = {'SVM (amyloid)': amy_columns,
               'SVM (combined)': roi_columns}
 
 SVM_PARAMS = {
-    'C': list(2. ** np.arange(-5., 13., 2)),
+    'C': list(2. ** np.arange(-5., 7., 2)),
     'kernel': ['linear']}
 
 param_combos = list(it.product(*SVM_PARAMS.values()))

@@ -248,6 +248,41 @@ class MultivariateSVR:
 
 # ATN predictory dictionary -----
 
+collij_regions = [
+    "AV45_CTX_TOT_POSTERIORCINGULATE_SUVR",
+    "AV45_CTX_TOT_ISTHMUSCINGULATE_SUVR",
+    "CollijAnteriorCingulate",
+    
+    "AV45_CTX_TOT_LATERALORBITOFRONTAL_SUVR",
+    "AV45_CTX_TOT_PARACENTRAL_SUVR",
+    "AV45_CTX_TOT_PRECUNEUS_SUVR",
+    "AV45_CTX_TOT_MEDIALORBITOFRONTAL_SUVR",
+    
+    "AV45_CTX_TOT_INSULA_SUVR",
+    "AV45_CTX_TOT_FUSIFORM_SUVR",
+    "AV45_CTX_TOT_PRECENTRAL_SUVR",
+    "AV45_CTX_TOT_INFERIORTEMPORAL_SUVR",
+    "AV45_CTX_TOT_PARAHIPPOCAMPAL_SUVR",
+    "CollijInferiorFrontal",
+    "AV45_CTX_TOT_SUPERIORFRONTAL_SUVR",
+    "AV45_CTX_TOT_LINGUAL_SUVR",
+    "AV45_CTX_TOT_SUPRAMARGINAL_SUVR",
+    "AV45_CTX_TOT_INFERIORPARIETAL_SUVR",
+    "AV45_CTX_TOT_CUNEUS_SUVR",
+    "CollijMiddleFrontal",
+    
+    "AV45_CTX_TOT_LATERALOCCIPITAL_SUVR",
+    "AV45_CTX_TOT_SUPERIORPARIETAL_SUVR",
+    "AV45_CTX_TOT_MIDDLETEMPORAL_SUVR",
+    "AV45_CTX_TOT_SUPERIORTEMPORAL_SUVR",
+    "AV45_CTX_TOT_POSTCENTRAL_SUVR",
+    "AV45_CTX_TOT_ENTORHINAL_SUVR",
+    "AV45_CTX_TOT_FRONTALPOLE_SUVR",
+    "AV45_CTX_TOT_TEMPORALPOLE_SUVR"
+    ]
+
+collij_groupings = [0] * 3 + [1] * 4 + [2] * 12 + [3] * 8
+
 ATN_PREDICTORS_DICT = {
     'amyloid': {
         'binary': {
@@ -261,7 +296,9 @@ ATN_PREDICTORS_DICT = {
             'centiloid_z2.5': BinaryZScore('Centiloid', zcutoff=2.5, control_col='Control', nickname='Centiloid (z>2.5)')},
         'categorical': {
             'composite_quantiles': Quantiles('AMYLOID_COMPOSITE', nickname='Amyloid Composite (Quantiles)'),
-            'centiloid_quantiles': Quantiles('Centiloid', nickname='Centiloid (Quantiles)')},
+            'centiloid_quantiles': Quantiles('Centiloid', nickname='Centiloid (Quantiles)',),
+            'mattsson_staging_gmm': CategoricalStager(['MattssonEarlySUVR', 'MattssonIntermediateSUVR', 'MattssonLateSUVR'], nickname='Mattsson Staging'),
+            'collij_staging_gmm': CategoricalStager(collij_regions, groupings=collij_groupings, p=.5, nickname='Collij Staging')},
         'continuous': {
             'composite': Continuous('AMYLOID_COMPOSITE', nickname='Amyloid Composite (Quantiles)'),
             'centiloid': Continuous('Centiloid', nickname='Centiloid (Quantiles)')}},

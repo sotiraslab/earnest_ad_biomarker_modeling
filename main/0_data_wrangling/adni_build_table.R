@@ -547,6 +547,41 @@ df$MattssonEarlySUVR <- rowMeans(MattssonEarly.df)
 df$MattssonIntermediateSUVR <- rowMeans(MattssonIntermediate.df)
 df$MattssonLateSUVR <- rowMeans(MattssonLate.df)
 
+# === Add Collij 2020 merged regions =======
+
+volume.weighted.mean <- function(pet.data, vol.data, search.columns) {
+  
+  pattern <- paste(search.columns, collapse='|')
+  pet.cols <- colnames(pet.data)[str_detect(colnames(pet.data), pattern)]
+  vol.cols <- colnames(vol.data)[str_detect(colnames(vol.data), pattern)]
+  
+  ncols <- length(pet.cols)
+  print(sprintf('%s column(s) selected for averaging:', ncols))
+  print(pet.cols)
+  
+  pet <- pet.data[, pet.cols]
+  vol <- vol.data[, vol.cols]
+  
+  volumes.norm <- vol / rowSums(vol)
+  pet.norm <- pet * volumes.norm
+  result <- rowSums(pet.norm)
+  
+  return(result)
+}
+
+pet.data <- df %>% select(matches('AV45_CTX_(LH|RH)_.*_SUVR'))
+vol.data <- df %>% select(matches('CTX_(LH|RH)_.*_VOLUME'))
+compare.cols <- data.frame(a=colnames(pet.data), b=colnames(vol.data))
+
+x <- c('ANTERIORCINGULATE')
+df$CollijAnteriorCingulate <- volume.weighted.mean(pet.data, vol.data, x)
+
+x <- c('PARSOPERCULARIS', 'PARSTRIANGULARIS', 'PARSORBITALIS')
+df$CollijInferiorFrontal <- volume.weighted.mean(pet.data, vol.data, x)
+
+x <- c('CAUDALMIDDLEFRONTAL', 'ROSTRALMIDDLEFRONTAL')
+df$CollijMiddleFrontal <- volume.weighted.mean(pet.data, vol.data, x)
+
 # === CSF markers =======
 
 # looks like the CSF markers are too sparse for this dataset
@@ -583,7 +618,7 @@ bmk12 <- upennbiomk12_2020 %>%
 
 new.csf <- rbind(bmk10, bmk12)
 
-b <- left_join(b, new.csf, by='RID') %>%
+df.csf <- left_join(df, new.csf, by='RID') %>%
   mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
   group_by(TauID) %>%
   slice_min(abs(DiffTauCSF), with_ties = F) %>%

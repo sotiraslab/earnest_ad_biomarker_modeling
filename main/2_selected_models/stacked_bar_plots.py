@@ -49,7 +49,7 @@ plot_dataframes = []
 for model_type in model_types:
     data = []
     for experiment in experiments:
-        selected_models = [str(m[0]) for m in experiment[model_type]]
+        selected_models = [m[0].nickname for m in experiment[model_type]]
         counts = Counter(selected_models)
         data.append(counts)
         

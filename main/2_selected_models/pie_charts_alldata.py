@@ -9,7 +9,7 @@ Created on Wed Sep 20 09:51:00 2023
 # ---- imports
 from collections import Counter
 import os
-import pickle 
+import pickle
 import sys
 
 import matplotlib.font_manager as fm
@@ -28,7 +28,7 @@ def load_results(folder):
     ppath = os.path.join(folder, 'models.pickle')
     with open(ppath, 'rb') as f:
         models = pickle.load(f)
-        
+
     return models
 
 models = load_results('../1_modeling/control_baseline')
@@ -58,58 +58,51 @@ for model_type in model_types:
     selected_models = [m[0].nickname for m in models[model_type]]
     counts = Counter(selected_models)
     data.append(counts)
-        
+
     df = pd.DataFrame(data).T.sort_index()
-    df = df.reindex(get_all_test_model_names(model_type)).fillna(0)
+    df = df.reindex(get_all_test_model_names(model_type)).fillna(0).sort_values(0, ascending=False)
+    df.index = df.index.str.replace('Amyloid ', '')
     plot_dataframes.append(df)
 
 # # ---- plot
 
-# # font
-# font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
-# plt.rcParams.update({
-#     'font.family': font_prop.get_name(),
-#     'font.size': 14})
+# font
+font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
+plt.rcParams.update({
+    'font.family': font_prop.get_name(),
+    'font.size': 14})
 
-# figure, axes = plt.subplots(nrows=3,
-#                             ncols=3,
-#                             figsize=(20, 12),
-#                             sharex=True,
-#                             sharey=True,
-#                             dpi=300)
-# axes = axes.flatten()
+figure, axes = plt.subplots(nrows=3,
+                            ncols=3,
+                            figsize=(20, 14),
+                            sharex=True,
+                            sharey=True,
+                            dpi=150)
+# plt.subplots_adjust(wspace=2)
 
-# cols = len(experiment_names)
-# for r, df in enumerate(plot_dataframes):
-#     ax = axes[r]
-#     unique_bars = len(df) 
-#     bottom = np.zeros(cols)
-#     cmap = plt.get_cmap(cmaps[r]).reversed()
-#     colors = cmap((np.arange(unique_bars)/unique_bars) * .8) 
-#     for i in range(unique_bars):
-        
-#         # TODO: get better labels/short names for models
-#         label = df.index[i][:20]
-        
-#         height = df.iloc[i, :]
-#         ax.bar(x=range(cols), height=height, bottom=bottom, label=label, color=colors[i, :])
-#         bottom += height
-        
-#     # format
-#     ax.set_ylim(0,1)
-#     ax.set_yticks([0, .5, 1])
-#     ax.legend(bbox_to_anchor=(1,1), loc="upper left", fontsize=12)
-#     ax.set_xticks(range(cols))
-#     ax.set_xticklabels(experiment_names, rotation=45, ha='right')
+axes = axes.flatten()
 
-# bigfont=24
-# axes[0].set_ylabel('Amyloid', fontsize=bigfont)
-# axes[3].set_ylabel('Tau', fontsize=bigfont)
-# axes[6].set_ylabel('Neurodegeneration', fontsize=bigfont)
+for r, df in enumerate(plot_dataframes):
+    ax = axes[r]
+    cmap = plt.get_cmap(cmaps[r]).reversed()
+    ntypes = len(df)
+    colors = cmap((np.arange(ntypes)/ntypes) * .8)
 
-# axes[0].set_title('Binary', fontsize=bigfont)
-# axes[1].set_title('Categorical', fontsize=bigfont)
-# axes[2].set_title('Continuous', fontsize=bigfont)
-    
-# plt.tight_layout()
-# plt.savefig('selected_models.png', dpi=300)
+    ax.pie(df[0], labels=None, colors=colors)
+
+
+    # format
+    ax.legend(bbox_to_anchor=(.9,.5), loc="center left", fontsize=14,
+              labels = df.index)
+
+bigfont=24
+axes[0].set_ylabel('Amyloid', fontsize=bigfont)
+axes[3].set_ylabel('Tau', fontsize=bigfont)
+axes[6].set_ylabel('Neurodegeneration', fontsize=bigfont)
+
+axes[0].set_title('Binary', fontsize=bigfont)
+axes[1].set_title('Categorical', fontsize=bigfont)
+axes[2].set_title('Continuous', fontsize=bigfont)
+
+plt.tight_layout()
+plt.savefig('pie_chart_for_all.png', dpi=300)

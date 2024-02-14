@@ -16,18 +16,15 @@ setwd(this.dir())
 
 # === Set paths ======
 
-PATH.PTDEMOG.CSV <- '../../data/rawdata/PTDEMOG.csv'
-
+PATH.LOAD.ADNI <- '../../scripts/load_adni_table.R'
 PATH.PACC.SCRIPT <- '../../scripts/pacc.R'
 PATH.EXAMDATE.SCRIPT <- '../../scripts/adni_examdate.R'
 
-PATH.OUTPUT <- '../../data/derivatives/adni_base_table.csv'
-PATH.DERIVATIVES = '../../data/derivatives'
+PATH.OUTPUT <- '../../outputs'
 
+source(PATH.LOAD.ADNI)
 source(PATH.PACC.SCRIPT)
 source(PATH.EXAMDATE.SCRIPT)
-
-dir.create(PATH.DERIVATIVES, showWarnings = F)
 
 # === Set variables ======
 
@@ -44,42 +41,36 @@ scan.id <- function(RID, EXAMDATE) {
 # separate merges for amyloid/FBB and concatenation
 # just need to check that some individuals didn't get duplicate scans
 
-tau <- ucberkeleyav1451 %>%
-  mutate(DateTau = as_datetime(ymd(EXAMDATE)),
-         TauID = scan.id(RID, EXAMDATE),
-         META_TEMPORAL_TAU = META_TEMPORAL_SUVR,
-         BRAAK1_TAU = BRAAK1_SUVR,
-         BRAAK34_TAU = BRAAK34_SUVR,
-         BRAAK56_TAU = BRAAK56_SUVR,
-         META_TEMPORAL_VOL = META_TEMPORAL_VOLUME) %>%
-  select(RID, DateTau, TauID, META_TEMPORAL_TAU,
-         BRAAK1_TAU, BRAAK34_TAU, BRAAK56_TAU, META_TEMPORAL_VOL) %>%
+# check for subjects with both PVC and non-PVC
+tau.nopvc <- load.adni.table('TAU_6MM')
+tau.pvc <- load.adni.table('TAUPVC_6MM')
+
+tau.both <- inner_join(tau.nopvc[, c('RID', 'SCANDATE')],
+                       tau.pvc[, c('RID', 'SCANDATE')])
+
+tau <- tau.both %>%
+  mutate(DateTau = as_datetime(ymd(SCANDATE)),
+         TauID = scan.id(RID, SCANDATE)) %>%
+  select(RID, DateTau, TauID) %>%
   group_by(RID) %>%
   slice_min(DateTau, with_ties = F) %>%
   ungroup()
 
-# Centiloid conversion for ADNI: 
-# https://adni.loni.usc.edu/wp-content/themes/freshnews-dev-v2/documents/pet/ADNI%20Centiloids%20Final.pdf
+amy <- load.adni.table('AMY_6MM')
 
-av45 <- ucberkeleyav45 %>%
-  mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
-         AmyloidID = scan.id(RID, EXAMDATE),
+# centiloid is manually calculated using
+# equation in UC Berkeley Amyloid PET docs PDF
+# gives a continuous measure rather than integer
+av45 <- amy %>%
+  filter(TRACER == 'FBP') %>%
+  mutate(DateAmyloid=as_datetime(ymd(SCANDATE)),
+         AmyloidID = scan.id(RID, SCANDATE),
          AmyloidTracer = 'AV45',
-         AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.11CUTOFF),
-         AmyloidID = scan.id(RID, EXAMDATE),
-         Centiloid = as.numeric((196.9*SUMMARYSUVR_WHOLECEREBNORM) - 196.03),
-         AMYLOID_COMPOSITE = SUMMARYSUVR_WHOLECEREBNORM) %>%
+         AmyloidPositive = AMYLOID_STATUS,
+         AmyloidComposite = SUMMARY_SUVR,
+         Centiloid = (188.22 * SUMMARY_SUVR) - 189.16) %>%
   select(RID, DateAmyloid, AmyloidID, AmyloidTracer,
-         AmyloidPositive, AmyloidID, Centiloid, AMYLOID_COMPOSITE)
-
-# fbb <- ucberkeleyfbb %>%
-#   mutate(DateAmyloid=as_datetime(ymd(EXAMDATE)),
-#          AmyloidID = scan.id(RID, EXAMDATE),
-#          AmyloidTracer = 'FBB',
-#          AmyloidPositive = as.numeric(SUMMARYSUVR_WHOLECEREBNORM_1.08CUTOFF),
-#          AmyloidID = scan.id(RID, EXAMDATE),
-#          Centiloid = as.numeric((159.08*SUMMARYSUVR_WHOLECEREBNORM) - 151.65)) %>%
-#   select(RID, DateAmyloid, AmyloidID, AmyloidTracer, AmyloidPositive, AmyloidID, Centiloid)
+         AmyloidPositive, AmyloidID, AmyloidComposite, Centiloid)
 
 link.av45 <- left_join(tau, av45, by='RID') %>%
   mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
@@ -87,12 +78,6 @@ link.av45 <- left_join(tau, av45, by='RID') %>%
   slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
   ungroup()
-
-# link.fbb <- left_join(tau, fbb, by='RID') %>%
-#   mutate(DiffTauAmyloid = as.numeric(difftime(DateTau, DateAmyloid, units = 'days'))) %>%
-#   group_by(TauID) %>%
-#   slice_min(abs(DiffTauAmyloid), with_ties = F) %>%
-#   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS)
 
 df <- link.av45 %>%
   mutate(MeanImagingDate = as_date(DateTau - (as.difftime(DiffTauAmyloid, units = 'days') / 2)),
@@ -175,48 +160,11 @@ min.ages <- ptdemog %>%
   drop_na(AgeBL) %>%
   group_by(RID) %>%
   slice_min(DateDemogBL) %>%
-  ungroup
+  ungroup()
 
 df.age <- left_join(df, min.ages, by='RID')
 df.age$TimeSinceBL <- as.numeric(difftime(df.age$MeanImagingDate, df.age$DateDemogBL, units='days')) / 365.25
 df.age$Age <- as.numeric(df.age$AgeBL + df.age$TimeSinceBL)
-
-# manually add some missing ages
-# these are not in ADNIMERGE::ptdemog but are in the downloaded study tables
-missing.age <- df.age[is.na(df.age$Age), ]
-replace.rids <- missing.age$RID
-
-demog.csv <- read.csv(PATH.PTDEMOG.CSV) %>%
-  select(RID, PTDOBMM, PTDOBYY) %>%
-  mutate(DOB=as.POSIXct(paste(PTDOBMM, 15, PTDOBYY, sep='/'), format='%m/%d/%Y')) %>%
-  filter(RID %in% replace.rids) %>%
-  select(RID, DOB)
-
-df.age <- left_join(df.age, demog.csv, by='RID') %>%
-  mutate(Age = ifelse(
-    is.na(Age),
-    as.numeric(difftime(MeanImagingDate, DOB, units='days') / 365.25),
-    Age)
-  )
-
-df <- select(df.age, -c(DOB, AgeBL, DateDemogBL, TimeSinceBL))
-
-# same for some missing sex
-df$Sex <- as.character(df$Sex)
-sex.missing <- df[is.na(df$Sex), ]
-
-demog.csv <- read.csv(PATH.PTDEMOG.CSV) %>%
-  select(RID, PTGENDER) %>%
-  filter(RID %in% sex.missing$RID) %>%
-  mutate(Sex.Missing=recode(PTGENDER, `1`='Male', `2`='Female')) %>%
-  select(-PTGENDER)
-
-df.sex <- left_join(df, demog.csv, by='RID') %>%
-  mutate(Sex = ifelse(is.na(Sex), Sex.Missing, Sex)) %>%
-  select(-Sex.Missing)
-
-df <- df.sex %>%
-  mutate(Sex.Integer = ifelse(Sex == 'Male', 1, 0))
 
 # === Add ICV ======
 
@@ -229,6 +177,7 @@ icvs <- adnimerge %>%
 
 df.icv <- left_join(df, icvs, by='RID')
 
+# ICVs are imputed for those missing
 male.icv <- mean(df.icv[df$Sex == 'Male', 'ICV'], na.rm = T)
 female.icv <- mean(df.icv[df$Sex == 'Female', 'ICV'], na.rm = T)
 
@@ -237,9 +186,24 @@ df.icv$ICV <- ifelse(df.icv$Sex == 'Female' & is.na(df.icv$ICV), female.icv, df.
 
 df <- df.icv
 
-# === Add PACC =========
+# === Add cognitive measures =========
 
-# for computation of PACC, need some neuropsych & ADAS cog Q4
+adsp <- load.adni.table('ADSP')
+
+adsp <- adsp %>%
+  mutate(DateADSP = as_datetime(ymd(EXAMDATE))) %>%
+  select(RID, DateADSP, PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP)
+
+df.adsp <- left_join(df, adsp, by='RID') %>%
+  mutate(DiffImagingADSP = as.numeric(difftime(MeanImagingDate, DateADSP, units = 'days'))) %>%
+  group_by(RID) %>%
+  slice_min(order_by=abs(DiffImagingADSP), with_ties = F) %>%
+  ungroup() %>%
+  filter(abs(DiffImagingADSP) < THRESHOLD.COGNITIVE.DAYS)
+
+# === Add cognitive measures =========
+
+# for computation of cognitive measures (PACC), need some neuropsych & ADAS cog Q4
 # see https://adni.bitbucket.io/reference/pacc.html
 
 subs <- df %>%

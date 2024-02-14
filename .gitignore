@@ -6,13 +6,9 @@
 # DS_Store
 .DS_Store
 
-# rawdata
-data/rawdata/*
-!data/rawdata/README.md
-
-# derivatives
-data/derivatives/*
-!data/derivatives/adni_icvs.csv
+# inputs
+inputs/*
+!inputs/README.md
 
 # main
 main/**/*.csv

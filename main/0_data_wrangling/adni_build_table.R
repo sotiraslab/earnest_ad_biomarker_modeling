@@ -166,6 +166,8 @@ df.age <- left_join(df, min.ages, by='RID')
 df.age$TimeSinceBL <- as.numeric(difftime(df.age$MeanImagingDate, df.age$DateDemogBL, units='days')) / 365.25
 df.age$Age <- as.numeric(df.age$AgeBL + df.age$TimeSinceBL)
 
+df <- df.age
+
 # === Add ICV ======
 
 icvs <- adnimerge %>%
@@ -188,171 +190,61 @@ df <- df.icv
 
 # === Add cognitive measures =========
 
-adsp <- load.adni.table('ADSP')
+adsp <- load.adni.table('ADSP_PHC')
 
 adsp <- adsp %>%
   mutate(DateADSP = as_datetime(ymd(EXAMDATE))) %>%
   select(RID, DateADSP, PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP)
+adsp$PHC_GLOBAL <- rowMeans(adsp[, c('PHC_MEM', 'PHC_EXF', 'PHC_LAN', 'PHC_VSP')])
 
-df.adsp <- left_join(df, adsp, by='RID') %>%
-  mutate(DiffImagingADSP = as.numeric(difftime(MeanImagingDate, DateADSP, units = 'days'))) %>%
+#save for calculating longitudinal change
+df.adsp.long <- left_join(df, adsp, by='RID') %>%
+  mutate(DiffImagingADSP = as.numeric(difftime(MeanImagingDate, DateADSP, units = 'days')))
+
+df.adsp <- df.adsp.long %>%
   group_by(RID) %>%
   slice_min(order_by=abs(DiffImagingADSP), with_ties = F) %>%
   ungroup() %>%
   filter(abs(DiffImagingADSP) < THRESHOLD.COGNITIVE.DAYS)
 
-# === Add cognitive measures =========
-
-# for computation of cognitive measures (PACC), need some neuropsych & ADAS cog Q4
-# see https://adni.bitbucket.io/reference/pacc.html
-
-subs <- df %>%
-  select(RID)
-
-# 1. Neuropsych battery
-nps <- neurobat %>%
-  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
-                                 get.examdate.from.registry(neurobat),
-                                 EXAMDATE),
-         DateNeuropsych = as_datetime(ymd(DateNeuropsych)),
-         LDELTOTAL = as.numeric(LDELTOTAL)) %>%
-  select(RID, DateNeuropsych, LDELTOTAL, DIGITSCOR, TRABSCOR)
-
-nps <- left_join(subs, nps, by='RID')
-
-# 2. ADAS
-adascog <- adas %>%
-  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
-                                 get.examdate.from.registry(adas),
-                                 EXAMDATE),
-         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
-  select(RID, DateNeuropsych, Q4SCORE) %>%
-  rename(ADASQ4=Q4SCORE)
-
-adascog <- left_join(subs, adascog, by='RID')
-
-# 3. MMSE 
-mmse.adni <- mmse %>%
-  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
-                                 get.examdate.from.registry(mmse),
-                                 EXAMDATE),
-         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
-  dplyr::select(RID, DateNeuropsych, MMSCORE) %>%
-  rename(MMSE=MMSCORE)
-
-mmse.adni <- left_join(subs, mmse.adni, by='RID')
-
-# 4. Join all
-pacc.df <- df %>%
-  select(RID) %>%
-  full_join(nps, by='RID') %>%
-  full_join(adascog, by=c('RID', 'DateNeuropsych')) %>%
-  full_join(mmse.adni, by=c('RID', 'DateNeuropsych')) %>%
-  arrange(RID, DateNeuropsych) %>%
-  drop_na(DateNeuropsych)
-
-# Group assessments which occur at nearby dates
-
-LINK.THR <- 60 # days
-
-pacc.df <- pacc.df %>%
-  group_by(RID) %>%
-  mutate(NPSDateDiff = c(0, as.numeric(difftime(DateNeuropsych[-1],
-                                                DateNeuropsych[-n()],
-                                                units="days")))) %>%
-  ungroup()
-
-pacc.df$NPSDateGroup <- cumsum(abs(pacc.df$NPSDateDiff) > LINK.THR)
-
-select.first <- function(col) {
-  return(first(col[! is.na(col)]))
-}
-
-
-# this also gets used later for computing longitudinal change in pacc
-pacc.df.group <- pacc.df %>%
-  group_by(RID, NPSDateGroup) %>%
-  summarise(
-    DatePACC = as_datetime(mean(DateNeuropsych)),
-    DatePACCMin = min(DateNeuropsych),
-    DatePACCMax = max(DateNeuropsych),
-    DatePACCDiff = as.numeric(difftime(DatePACCMax, DatePACCMin, units='days')),
-    LDELTOTAL = as.numeric(select.first(LDELTOTAL)),
-    DIGITSCOR = as.numeric(select.first(DIGITSCOR)),
-    TRABSCOR = as.numeric(select.first(TRABSCOR)),
-    ADASQ4 = as.numeric(select.first(ADASQ4)),
-    MMSE = as.numeric(select.first(MMSE))
-  ) %>%
-  ungroup()
-
-# merge into df
-df <- left_join(df, pacc.df.group, by="RID") %>%
-  mutate(DiffImagingPACC = as.numeric(difftime(MeanImagingDate, DatePACC, units = 'days'))) %>%
-  group_by(TauID) %>%
-  slice_min(abs(DiffImagingPACC), with_ties = F) %>%
-  filter(abs(DiffImagingPACC) < THRESHOLD.COGNITIVE.DAYS) %>%
-  ungroup() %>%
-  arrange(RID)
-
-# Compute PACC
-# done relative to baseline CN group
-# this is using the modified formula recommended by ADNIMERGE R
-# https://adni.bitbucket.io/reference/pacc.html
-
-df$PACC <- compute.pacc(df,
-                        pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
-                        cn.mask = df$Dementia == 'No',
-                        higher.better = c(F, T, F, T),
-                        min.required = 2)
+df <- df.adsp
 
 # === remove NAs =========
 
-na.cols <- c('Age', 'Sex', 'PACC', 'HasE4', 'CDRBinned')
+na.cols <- c('Age', 'Sex', 'PHC_GLOBAL', 'HasE4', 'CDRBinned')
 
 df.withna <- df
 df <- df %>%
   drop_na(all_of(na.cols))
 
-# === Compute longitudinal change in PACC =======
+# === Compute longitudinal change in PHC =======
 
-# this will only be available for some
+joiner <- df.adsp.long %>%
+  select(RID, DateADSP, PHC_GLOBAL, PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP) %>%
+  filter(! is.na(PHC_GLOBAL))
 
-cn.data <- df %>%
-  filter(Dementia == "No")
-
-pacc.long <- df %>%
-  select(RID, DatePACC, Age, CDRBinned) %>%
-  rename(DatePACC.BL=DatePACC) %>%
-  left_join(pacc.df.group, by="RID") %>%
+long.data <- df %>%
+  select(RID, DateADSP, Age, CDRBinned) %>%
+  rename(DateADSP.BL=DateADSP) %>%
+  left_join(joiner, by='RID') %>%
   group_by(RID) %>%
-  filter(DatePACC >= DatePACC.BL) %>%
-  ungroup()
-
-pacc.long$PACC <- compute.pacc(pacc.long,
-                               pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
-                               cn.data = cn.data,
-                               higher.better = c(F, T, F, T),
-                               min.required = 2)
-pacc.long <- pacc.long %>%
-  filter(! is.na(PACC)) %>%
-  group_by(RID) %>%
+  mutate(DeltaADSPDate = as.numeric(difftime(DateADSP, DateADSP.BL, units='days')) / 365.25,
+         Long.Age = Age + DeltaADSPDate) %>% 
+  filter(DateADSP >= DateADSP.BL) %>%
   filter(n() >= 2) %>%
-  mutate(DeltaPACCDate = as.numeric(difftime(DatePACC, DatePACC.BL, units='days')) / 365.25,
-         Long.Age = Age + DeltaPACCDate) %>% 
   ungroup()
 
-m <- lmer(PACC ~ DeltaPACCDate + (1+DeltaPACCDate|RID), data=pacc.long)
-pacc.long$PACC.LMER.Predict <- predict(m, pacc.long)
+# longitudinal modelling
+m <- lmer(PHC_GLOBAL ~ DeltaADSPDate + (1+DeltaADSPDate|RID), data=long.data)
+long.data$PHC_GLOBAL.LMER.Predict <- predict(m, long.data)
 
-ggplot(pacc.long, aes(x=Long.Age, y=PACC)) +
+ggplot(long.data, aes(x=Long.Age, y=PHC_GLOBAL)) +
   geom_point(aes(color=CDRBinned), alpha = .7) + 
-  geom_line(aes(y=PACC.LMER.Predict, group=RID, color=CDRBinned), alpha= .7)
-
-ggsave("adni_longitudinal_pacc_model.png", width=8, height=6, units='in')
+  geom_line(aes(y=PHC_GLOBAL.LMER.Predict, group=RID, color=CDRBinned), alpha= .7)
 
 coefs <- coef(m)$RID %>%
-  select(DeltaPACCDate) %>%
-  dplyr::rename(DeltaPACC=DeltaPACCDate) %>%
+  select(DeltaADSPDate) %>%
+  dplyr::rename(DeltaADSP=DeltaADSPDate) %>%
   rownames_to_column(var="RID") %>%
   mutate(RID=as.numeric(RID))
 

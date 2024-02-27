@@ -263,56 +263,74 @@ SUBCORTICAL_PAT = paste(SUBCORTICAL, collapse='|')
 
 # === Add ROIs : AV45 ======
 
-rois <- ucberkeleyav45 %>%
-  select(WHOLECEREBELLUM_SUVR,
-         matches('CTX.*SUVR') & ! contains('UNKNOWN'),
-         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
-  mutate(across(contains('SUVR'), function (x) x / WHOLECEREBELLUM_SUVR)) %>%
-  select(-WHOLECEREBELLUM_SUVR)
+base.rois <- load.adni.table('AMY')
+
+rois <- base.rois %>%
+  select(matches('CTX_(LH|RH)_.*SUVR') & ! contains('UNKNOWN'),
+         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR') & matches('^(LEFT|RIGHT)'))
 
 colnames(rois) <- paste('AV45', colnames(rois), sep='_')
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.DERIVATIVES, 'av45_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'av45_regions.csv'), row.names = F)
 
-rois$AmyloidID <- scan.id(ucberkeleyav45$RID, ucberkeleyav45$EXAMDATE)
+rois$AmyloidID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 
 df <- left_join(df, rois, by = 'AmyloidID')
 
-# === Add ROIs : FTP ======
+# === Add ROIs : FTP (non-PVC) ======
 
-rois <- ucberkeleyav1451 %>%
-  select(INFERIORCEREBELLUM_SUVR,
-         matches('CTX.*SUVR') & ! contains('UNKNOWN'),
-         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR')) %>%
-  mutate(across(contains('SUVR'), function (x) x / INFERIORCEREBELLUM_SUVR)) %>%
-  select(-INFERIORCEREBELLUM_SUVR)
+base.rois <- load.adni.table('TAU_6MM')
+
+rois <- base.rois %>%
+  select(matches('CTX_(LH|RH)_.*SUVR') & ! contains('UNKNOWN'),
+         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR') & matches('^(LEFT|RIGHT)'))
 
 colnames(rois) <- paste('FTP', colnames(rois), sep='_')
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.DERIVATIVES, 'ftp_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'ftp_regions.csv'), row.names = F)
 
-rois$TauID <- scan.id(ucberkeleyav1451$RID, ucberkeleyav1451$EXAMDATE)
+rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 
 df <- left_join(df, rois, by = 'TauID')
 
 # === Add ROIs : Volume ======
 
-rois <- ucberkeleyav1451 %>%
-  select(matches('CTX.*VOLUME') & ! contains('UNKNOWN'),
-         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('VOLUME'))
+base.rois <- load.adni.table('TAU_6MM')
+
+rois <- base.rois %>%
+  select(matches('CTX_(LH|RH)_.*VOLUME') & ! contains('SUVR'),
+         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('VOLUME') & matches('^(LEFT|RIGHT)'))
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.DERIVATIVES, 'gm_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'gm_regions.csv'), row.names = F)
 
-rois$TauID <- scan.id(ucberkeleyav1451$RID, ucberkeleyav1451$EXAMDATE)
+rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 
 df <- left_join(df, rois, by = 'TauID') %>%
   mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
+
+# === Add ROIs : PVC Tau ======
+
+base.rois <- load.adni.table('TAUPVC_6MM')
+
+rois <- base.rois %>%
+  select(matches('CTX_(LH|RH)_.*SUVR') & ! contains('UNKNOWN'),
+         matches(SUBCORTICAL_PAT, ignore.case = T) & contains('SUVR') & matches('^(LEFT|RIGHT)'))
+
+colnames(rois) <- paste('FTPPVC', colnames(rois), sep='_')
+
+roi.names <- data.frame(Region=colnames(rois)) %>%
+  mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
+write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'ftppvc_regions.csv'), row.names = F)
+
+rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
+
+df <- left_join(df, rois, by = 'TauID')
 
 # === compute hippocampus volume ======
 
@@ -323,14 +341,16 @@ df$HIPPOCAMPUS_VOL = df$LEFT_HIPPOCAMPUS_VOLUME + df$RIGHT_HIPPOCAMPUS_VOLUME
 # needed for some staging models
 
 bilateral.pet.rois <- function(df, tracer) {
-  if (! tracer %in% c('tau', 'amyloid')) {
+  if (! tracer %in% c('tau', 'amyloid', 'pvc')) {
     stop('`tracer` must be "tau" or "amyloid"')
   }
   
   if (tracer == 'tau') {
     startpat <- 'FTP'
-  } else {
+  } else  if (tracer == 'amyloid') {
     startpat <- 'AV45'
+  } else if (tracer == 'pvc') {
+    startpat <- 'FTPPVC'
   }
   
   all.cols <- colnames(df)
@@ -343,6 +363,8 @@ bilateral.pet.rois <- function(df, tracer) {
   tot.vol <- vol.lh + vol.rh
   lh.weight <- vol.lh / tot.vol
   rh.weight <- vol.rh / tot.vol
+  print(length(pet.lh.cols))
+  print(length(pet.rh.cols))
   weighted.pet <- (lh.weight * pet.lh) + (rh.weight * pet.rh)
   colnames(weighted.pet) <- colnames(pet.lh)
   colnames(weighted.pet) <- str_replace(colnames(weighted.pet), 'LH_|LEFT_', 'TOT_')
@@ -352,9 +374,10 @@ bilateral.pet.rois <- function(df, tracer) {
 
 amy.bl <- bilateral.pet.rois(df, 'amyloid')
 tau.bl <- bilateral.pet.rois(df, 'tau')
+tau.pvc.bl <- bilateral.pet.rois(df, 'pvc')
 
 df <- df %>%
-  bind_cols(amy.bl, tau.bl)
+  bind_cols(amy.bl, tau.bl, tau.pvc.bl)
 
 # === add Mattsson composites =======
 
@@ -440,12 +463,10 @@ df$CollijMiddleFrontal <- volume.weighted.mean(pet.data, vol.data, x)
 
 # === CSF markers =======
 
-# looks like the CSF markers are too sparse for this dataset
+# looks like the CSF markers are sparser for this dataset
 # and the ADNI1/2/GO vs. ADNI3 assays have values on very different scales
-# might need to do some more reading  to figure this out
-# for now just taking the newer measures
 
-# --->  this code merges the older values
+# --->  this code merges the older values (1/2/GO)
 # old.csf <- upennbiomk_master %>%
 #   mutate(RID = as.numeric(RID),
 #          DateCSF = as_datetime(mdy(DRAWDTE))) %>%
@@ -480,9 +501,9 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
   slice_min(abs(DiffTauCSF), with_ties = F) %>%
   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
   ungroup() %>%
-  select(TauID, DateTau, ABETA42, TAU, PTAU)
+  filter(! is.na(PTAU))
 
 # === save ========
 
-dir.create(dirname(PATH.OUTPUT), showWarnings = F)
-write.csv(df, PATH.OUTPUT, quote = F, na = '', row.names = F)
+write.csv(df, file.path(PATH.OUTPUT, 'datasets', 'maindata.csv'), quote = F, na = '', row.names = F)
+write.csv(df.csf, file.path(PATH.OUTPUT, 'datasets', 'maindata_csf.csv'), quote = F, na = '', row.names = F)

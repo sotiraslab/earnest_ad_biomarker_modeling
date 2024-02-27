@@ -209,14 +209,6 @@ df.adsp <- df.adsp.long %>%
 
 df <- df.adsp
 
-# === remove NAs =========
-
-na.cols <- c('Age', 'Sex', 'PHC_GLOBAL', 'HasE4', 'CDRBinned')
-
-df.withna <- df
-df <- df %>%
-  drop_na(all_of(na.cols))
-
 # === Compute longitudinal change in PHC =======
 
 joiner <- df.adsp.long %>%
@@ -294,6 +286,7 @@ roi.names <- data.frame(Region=colnames(rois)) %>%
 write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'ftp_regions.csv'), row.names = F)
 
 rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
+rois$META_TEMPORAL_TAU <- base.rois$META_TEMPORAL_SUVR
 
 df <- left_join(df, rois, by = 'TauID')
 
@@ -310,6 +303,7 @@ roi.names <- data.frame(Region=colnames(rois)) %>%
 write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'gm_regions.csv'), row.names = F)
 
 rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
+rois$META_TEMPORAL_VOL <- base.rois$META_TEMPORAL_VOLUME
 
 df <- left_join(df, rois, by = 'TauID') %>%
   mutate(across(ends_with('_VOLUME'), function (x) (x * 1000 / ICV)))
@@ -460,6 +454,79 @@ df$CollijInferiorFrontal <- volume.weighted.mean(pet.data, vol.data, x)
 
 x <- c('CAUDALMIDDLEFRONTAL', 'ROSTRALMIDDLEFRONTAL')
 df$CollijMiddleFrontal <- volume.weighted.mean(pet.data, vol.data, x)
+
+# === Braak regions =======
+
+braak1.regs <- c('ENTORHINAL')
+
+braak3.regs <- c('PARAHIPPOCAMPAL',
+                 'FUSIFORM',
+                 'LINGUAL',
+                 'AMYGDALA')
+
+braak4.regs <- c('MIDDLETEMPORAL',
+                 'CAUDALANTERIORCINGULATE',
+                 'ROSTRALANTERIORCINGULATE',
+                 'POSTERIORCINGULATE',
+                 'ISTHMUSCINGULATE',
+                 'INSULA',
+                 'INFERIORTEMPORAL',
+                 'TEMPORALPOLE')
+
+braak5.regs <- c('SUPERIORFRONTAL',
+                 'LATERALORBITOFRONTAL',
+                 'MEDIALORBITOFRONTAL',
+                 'FRONTALPOLE',
+                 'CAUDALMIDDLEFRONTAL',
+                 'ROSTRALMIDDLEFRONTAL',
+                 'PARSOPERCULARIS',
+                 'PARSORBITALIS',
+                 'PARSTRIANGULARIS',
+                 'LATERALOCCIPITAL',
+                 'SUPRAMARGINAL',
+                 'INFERIORPARIETAL',
+                 'SUPERIORTEMPORAL',
+                 'SUPERIORPARIETAL',
+                 'PRECUNEUS',
+                 'BANKSSTS',
+                 'TRANSVERSETEMPORAL')
+
+braak6.regs <- c('PERICALCARINE',
+                 'POSTCENTRAL',
+                 '_CUNEUS', # underscore so you don't precuneus also
+                 'PRECENTRAL',
+                 'PARACENTRAL')
+
+df.tau <- df %>%
+  select(matches('FTP_.*_SUVR') & ! contains('TOT_'))
+df.taupvc <- df %>%
+  select(matches('FTPPVC_.*_SUVR') & ! contains('TOT_'))
+df.vol <- df %>%
+  select(matches('_VOLUME'))
+
+# tau w/o PVC
+df$BRAAK1_TAU <- volume.weighted.mean(df.tau, df.vol, braak1.regs)
+df$BRAAK3_TAU <- volume.weighted.mean(df.tau, df.vol, braak3.regs)
+df$BRAAK4_TAU <- volume.weighted.mean(df.tau, df.vol, braak4.regs)
+df$BRAAK5_TAU <- volume.weighted.mean(df.tau, df.vol, braak5.regs)
+df$BRAAK6_TAU <- volume.weighted.mean(df.tau, df.vol, braak6.regs)
+
+# tau w/ PVC
+df$BRAAK1_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak1.regs)
+df$BRAAK3_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak3.regs)
+df$BRAAK4_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak4.regs)
+df$BRAAK5_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak5.regs)
+df$BRAAK6_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak6.regs)
+
+# === remove NAs =========
+
+all.cols <- colnames(df)
+na.cols <- c('Age', 'Sex', 'PHC_GLOBAL', 'HasE4', 'CDRBinned')
+roi.cols <- all.cols[str_detect(all.cols, '_SUVR|_VOLUME')]
+
+df.withna <- df
+df <- df %>%
+  drop_na(all_of(na.cols), all_of(roi.cols))
 
 # === CSF markers =======
 

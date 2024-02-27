@@ -572,5 +572,9 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
 
 # === save ========
 
+df.long <- df %>%
+  filter(! is.na(DeltaADSP))
+
 write.csv(df, file.path(PATH.OUTPUT, 'datasets', 'maindata.csv'), quote = F, na = '', row.names = F)
+write.csv(df, file.path(PATH.OUTPUT, 'datasets', 'maindata_long.csv'), quote = F, na = '', row.names = F)
 write.csv(df.csf, file.path(PATH.OUTPUT, 'datasets', 'maindata_csf.csv'), quote = F, na = '', row.names = F)

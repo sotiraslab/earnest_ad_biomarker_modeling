@@ -323,6 +323,7 @@ roi.names <- data.frame(Region=colnames(rois)) %>%
 write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'ftppvc_regions.csv'), row.names = F)
 
 rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
+rois$META_TEMPORAL_TAUPVC <- base.rois$META_TEMPORAL_SUVR
 
 df <- left_join(df, rois, by = 'TauID')
 
@@ -527,6 +528,11 @@ roi.cols <- all.cols[str_detect(all.cols, '_SUVR|_VOLUME')]
 df.withna <- df
 df <- df %>%
   drop_na(all_of(na.cols), all_of(roi.cols))
+
+# === ML-friendly variables =======
+
+df$SexBinary <- ifelse(df$Sex == 'Male', 1, 0)
+df$HasE4Binary <- ifelse(df$HasE4, 1, 0)
 
 # === CSF markers =======
 

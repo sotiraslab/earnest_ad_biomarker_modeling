@@ -512,12 +512,18 @@ df$BRAAK4_TAU <- volume.weighted.mean(df.tau, df.vol, braak4.regs)
 df$BRAAK5_TAU <- volume.weighted.mean(df.tau, df.vol, braak5.regs)
 df$BRAAK6_TAU <- volume.weighted.mean(df.tau, df.vol, braak6.regs)
 
+df$BRAAK34_TAU <- volume.weighted.mean(df.tau, df.vol, c(braak3.regs, braak4.regs))
+df$BRAAK56_TAU <- volume.weighted.mean(df.tau, df.vol, c(braak5.regs, braak6.regs))
+
 # tau w/ PVC
 df$BRAAK1_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak1.regs)
 df$BRAAK3_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak3.regs)
 df$BRAAK4_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak4.regs)
 df$BRAAK5_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak5.regs)
 df$BRAAK6_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, braak6.regs)
+
+df$BRAAK34_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, c(braak3.regs, braak4.regs))
+df$BRAAK56_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, c(braak5.regs, braak6.regs))
 
 # === remove NAs =========
 

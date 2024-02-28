@@ -241,13 +241,13 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
     ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
 
     # stats
-    if stats is not None:
+    if stats:
         idx = bool(nadeau_bengio)
-        stats = compute_stats(results, baseline=baseline, n_train=n_train, n_test=n_test)[idx]
+        stats_table = compute_stats(results, baseline=baseline, n_train=n_train, n_test=n_test)[idx]
 
-        for i in range(len(stats)):
+        for i in range(len(stats_table)):
 
-            p = stats.iloc[i, :]['p-val-fdr']
+            p = stats_table.iloc[i, :]['p-val-fdr']
             if p > 0.05:
                 continue
 
@@ -255,7 +255,7 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
             stars = '**' if p <= 0.01 else stars
             stars = '***' if p <= 0.001 else stars
 
-            model = stats.iloc[i, :]['model']
+            model = stats_table.iloc[i, :]['model']
             rng = (boxplotdata[model].max() - boxplotdata[model].min())
             x =  boxplotdata[model].max() + 0.12 * rng
             y = len(order) - i - 2
@@ -268,4 +268,4 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
         plt.tight_layout()
         fig.savefig(save, dpi=300)
         
-    return ax.get_figure, stats
+    return ax.get_figure, stats_table

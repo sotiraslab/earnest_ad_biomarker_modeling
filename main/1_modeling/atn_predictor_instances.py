@@ -51,26 +51,26 @@ collij_groupings = [0] * 3 + [1] * 4 + [2] * 12 + [3] * 8
 
 # ---- Amyloid -----
 AMYLOID_BINARY = [
-    BinaryManual('AMYLOID_COMPOSITE', 1.11, nickname='Amyloid Composite (SUVR>1.11)'),
+    BinaryManual('AmyloidComposite', 1.11, nickname='Amyloid Composite (SUVR>1.11)'),
     BinaryManual('Centiloid', 20, nickname='Centiloid (>20)'),
-    BinaryGMM('AMYLOID_COMPOSITE', nickname='Amyloid Composite (GMM)'),
+    BinaryGMM('AmyloidComposite', nickname='Amyloid Composite (GMM)'),
     BinaryGMM('Centiloid', nickname='Centiloid (GMM)'),
-    BinaryZScore('AMYLOID_COMPOSITE', zcutoff=2.0, control_col='Control', nickname='Amyloid Composite (z>2.0)'),
-    BinaryZScore('AMYLOID_COMPOSITE', zcutoff=2.5, control_col='Control', nickname='Amyloid Composite (z>2.5)'),
+    BinaryZScore('AmyloidComposite', zcutoff=2.0, control_col='Control', nickname='Amyloid Composite (z>2.0)'),
+    BinaryZScore('AmyloidComposite', zcutoff=2.5, control_col='Control', nickname='Amyloid Composite (z>2.5)'),
     BinaryZScore('Centiloid', zcutoff=2.0, control_col='Control', nickname='Centiloid (z>2.0)'),
     BinaryZScore('Centiloid', zcutoff=2.5, control_col='Control', nickname='Centiloid (z>2.5)')
     ]
 
 AMYLOID_CATEGORICAL = [
-    Quantiles('AMYLOID_COMPOSITE', nickname='Amyloid Composite (Quantiles)'),
+    Quantiles('AmyloidComposite', nickname='Amyloid Composite (Quantiles)'),
     Quantiles('Centiloid', nickname='Centiloid (Quantiles)'),
     CategoricalStager(['MattssonEarlySUVR', 'MattssonIntermediateSUVR', 'MattssonLateSUVR'], nickname='Mattsson Staging'),
     CategoricalStager(collij_regions, groupings=collij_groupings, p=.5, nickname='Collij Staging')
     ]
 
 AMYLOID_CONTINUOUS = [
-    Continuous('AMYLOID_COMPOSITE', nickname='Amyloid Composite (Quantiles)'),
-    Continuous('Centiloid', nickname='Centiloid (Quantiles)')
+    Continuous('AmyloidComposite', nickname='Amyloid Composite'),
+    Continuous('Centiloid', nickname='Centiloid')
     ]
 
 # ---- Tau (no-PVC) -----
@@ -87,7 +87,8 @@ TAU_BINARY = [
 
 TAU_CATEGORICAL = [
     Quantiles('META_TEMPORAL_TAU', nickname='MTT (Quantiles)'),
-    CategoricalStager(['BRAAK1_TAU', 'BRAAK34_TAU', 'BRAAK56_TAU'], nickname='Braak Staging')
+    CategoricalStager(['BRAAK1_TAU', 'BRAAK34_TAU', 'BRAAK56_TAU'], nickname='Braak Staging (3)'),
+    CategoricalStager(['BRAAK1_TAU', 'BRAAK3_TAU', 'BRAAK4_TAU', 'BRAAK5_TAU', 'BRAAK6_TAU'], nickname='Braak Staging (6)')
     ]
 
 TAU_CONTINUOUS = [
@@ -119,23 +120,49 @@ GM_CONTINUOUS = [
 # ---- Tau (PVC) ----
 
 TAUPVC_BINARY = [
-    BinaryGMM('META_TEMPORAL_TAUPVC', nickname='MTT (GMM)'),
-    BinaryZScore('META_TEMPORAL_TAUPVC', 'Control', zcutoff=2.0, nickname='MTT (z>2.0)'),
-    BinaryZScore('META_TEMPORAL_TAUPVC', 'Control', zcutoff=2.5, nickname='MTT (z>2.5)'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.20, nickname='MTT (SUVR>1.20)'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.21, nickname='MTT (SUVR>1.21)'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.23, nickname='MTT (SUVR>1.23'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.33, nickname='MTT (SUVR>1.33)')
+    BinaryGMM('META_TEMPORAL_TAUPVC', nickname='MTT (GMM) [PVC]'),
+    BinaryZScore('META_TEMPORAL_TAUPVC', 'Control', zcutoff=2.0, nickname='MTT (z>2.0) [PVC]'),
+    BinaryZScore('META_TEMPORAL_TAUPVC', 'Control', zcutoff=2.5, nickname='MTT (z>2.5) [PVC]'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.20, nickname='MTT (SUVR>1.20) [PVC]'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.21, nickname='MTT (SUVR>1.21) [PVC]'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.23, nickname='MTT (SUVR>1.23 [PVC]'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.33, nickname='MTT (SUVR>1.33) [PVC]')
     ]
 
 TAUPVC_CATEGORICAL = [
-    Quantiles('META_TEMPORAL_TAUPVC', nickname='MTT (Quantiles)'),
-    CategoricalStager(['BRAAK1_TAUPVC', 'BRAAK34_TAUPVC', 'BRAAK56_TAUPVC'], nickname='Braak Staging')
+    Quantiles('META_TEMPORAL_TAUPVC', nickname='MTT (Quantiles) [PVC]'),
+    CategoricalStager(['BRAAK1_TAUPVC', 'BRAAK34_TAUPVC', 'BRAAK56_TAUPVC'], nickname='Braak Staging (3) [PVC]'),
+    CategoricalStager(['BRAAK1_TAUPVC', 'BRAAK3_TAUPVC', 'BRAAK4_TAUPVC', 'BRAAK5_TAUPVC', 'BRAAK6_TAUPVC'], nickname='Braak Staging (6) [PVC]')
     ]
 
 TAUPVC_CONTINUOUS = [
-    Continuous('META_TEMPORAL_TAUPVC', nickname='MTT'),
-    Continuous('BRAAK1_TAUPVC', nickname='Braak1'),
-    Continuous('BRAAK34_TAUPVC', nickname='Braak34'),
-    Continuous('BRAAK56_TAUPVC', nickname='Braak56')
+    Continuous('META_TEMPORAL_TAUPVC', nickname='MTT [PVC]'),
+    Continuous('BRAAK1_TAUPVC', nickname='Braak1 [PVC]'),
+    Continuous('BRAAK34_TAUPVC', nickname='Braak34 [PVC]'),
+    Continuous('BRAAK56_TAUPVC', nickname='Braak56 [PVC]')
     ]
+
+# ---- Big dictionary -----
+
+ATN_PREDICTORS = {
+    'amyloid': {
+        'binary': AMYLOID_BINARY,
+        'categorical': AMYLOID_CATEGORICAL,
+        'continuous': AMYLOID_CONTINUOUS
+        },
+    'tau': {
+        'binary': TAU_BINARY,
+        'categorical': TAU_CATEGORICAL,
+        'continuous': TAU_CONTINUOUS
+        }, 
+    'gm': {
+        'binary': GM_BINARY,
+        'categorical': GM_CATEGORICAL,
+        'continuous': GM_CONTINUOUS
+        },
+    'taupvc': {
+        'binary': TAUPVC_BINARY,
+        'categorical': TAUPVC_CATEGORICAL,
+        'continuous': TAUPVC_CONTINUOUS
+        }, 
+    }

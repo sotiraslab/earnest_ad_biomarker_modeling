@@ -128,8 +128,10 @@ def assign_frequency_stage(data, groupings=None, p='any', atypical='NS'):
     stage_mat = np.zeros((len(data), n))
 
     for i in unique_stages:
-        sub = data[:, np.array(groupings) == i]
-        freqs = sub.sum(axis=1) / data.shape[1]
+        regions_in_stage = (np.array(groupings) == i)
+        n_regions_in_stage = regions_in_stage.sum()
+        sub = data[:, regions_in_stage]
+        freqs = sub.sum(axis=1) / n_regions_in_stage
 
         if p == 'any':
             positive = freqs > 0

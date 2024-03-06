@@ -17,9 +17,10 @@ from helpers import test_atn_linear_model
 def experiment_test_all_atn_predictors(dataset, target,
                                        covariates=['Age', 'SexBinary', 'HasE4Binary'],
                                        stratify='CDRBinned',
-                                       splits=5,
-                                       repeats=5,
-                                       seed=0):
+                                       splits=10,
+                                       repeats=10,
+                                       seed=0,
+                                       savepath=None):
     
     # hold results
     results = []
@@ -40,6 +41,20 @@ def experiment_test_all_atn_predictors(dataset, target,
             outer_train = dataset.iloc[outer_train_index, :]
             outer_test = dataset.iloc[outer_test_index, :]
             
+            # test baseline model (no ATN info)
+            metrics = test_atn_linear_model(models=[],
+                                            covariates=covariates,
+                                            target=target,
+                                            train_data=outer_train,
+                                            test_data=outer_test)
+            row = {'biomarker': 'NA',
+                   'variable_type': 'NA',
+                   'name': 'Baseline',
+                   'fold': i,
+                   'repeat': r,
+                   **metrics}
+            results.append(row)
+            
             # test ATN models
             for biomarker, variable_dict in ATN_PREDICTORS.items():
                 for variable_type, model_list in variable_dict.items():
@@ -55,22 +70,8 @@ def experiment_test_all_atn_predictors(dataset, target,
                                'fold': i,
                                'repeat': r,
                                **metrics}
-                        results.append(row)
+                        results.append(row)   
                         
-            # test baseline model (no ATN info)
-            metrics = test_atn_linear_model(models=[],
-                                            covariates=covariates,
-                                            target=target,
-                                            train_data=outer_train,
-                                            test_data=outer_test)
-            row = {'biomarker': 'NA',
-                   'variable_type': 'NA',
-                   'name': 'baseline',
-                   'fold': i,
-                   'repeat': r,
-                   **metrics}
-            results.append(row)
-            
             end = time.time()
             seconds = round(end - start, 2)
             elapsed = round(end - start_time, 2)
@@ -78,4 +79,11 @@ def experiment_test_all_atn_predictors(dataset, target,
             print(f'Elapsed: {elapsed}s')
                         
     results_df = pd.DataFrame(results)
+    
+    if savepath:
+        print('')
+        print(f'Saving results to "{savepath}"...')
+        results_df.to_csv(savepath, index=False)
+        print('Done!')
+    
     return results_df

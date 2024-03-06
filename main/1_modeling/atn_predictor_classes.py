@@ -22,7 +22,9 @@ from sklearn.svm import SVR, LinearSVR
 
 class ATNPredictor:
     
-    def __init__(self, nickname=None):
+    def __init__(self, atn=None, variable_type=None, nickname=None):
+        self.atn = atn
+        self.variable_type = variable_type
         self.nickname = nickname
 
     def __repr__(self):
@@ -49,8 +51,8 @@ class ATNPredictor:
 
 class BinaryZScore(ATNPredictor):
 
-    def __init__(self, y_col, control_col, zcutoff=2.0, greater=True, nickname=None):
-        super().__init__(nickname)
+    def __init__(self, y_col, control_col, zcutoff=2.0, greater=True, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='binary')
         self.y_col = y_col
         self.control_col = control_col
         self.zcutoff = zcutoff
@@ -73,8 +75,8 @@ class BinaryZScore(ATNPredictor):
 
 class BinaryGMM(ATNPredictor):
 
-    def __init__(self, y_col, greater=True, nickname=None):
-        super().__init__(nickname)
+    def __init__(self, y_col, greater=True, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='binary')
         self.y_col = y_col
         self.operator = operator.ge if greater else operator.le
 
@@ -103,8 +105,8 @@ class BinaryGMM(ATNPredictor):
 
 class BinaryManual(ATNPredictor):
 
-    def __init__(self, y_col, cutoff, greater=True, nickname=None):
-        super().__init__(nickname)
+    def __init__(self, y_col, cutoff, greater=True, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='binary')
         self.y_col = y_col
         self.cutoff = cutoff
         self.operator = operator.ge if greater else operator.le
@@ -154,8 +156,8 @@ def assign_frequency_stage(data, groupings=None, p='any', atypical='NS'):
 
 class Quantiles(ATNPredictor):
 
-    def __init__(self, y_col, nickname=None):
-        super().__init__(nickname)
+    def __init__(self, y_col, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='categorical')
         self.y_col = y_col
 
         self.quantiles = None
@@ -169,8 +171,8 @@ class Quantiles(ATNPredictor):
 class CategoricalStager(ATNPredictor):
 
     def __init__(self, columns, groupings=None, method='gmm', non_stageable='NS',
-                 p='any', nickname=None, **kwargs):
-        super().__init__(nickname)
+                 p='any', atn=None, nickname=None, **kwargs):
+        super().__init__(atn=atn, nickname=nickname, variable_type='categorical')
         self.columns = columns
         self.groupings = groupings
         self.method = method
@@ -209,8 +211,8 @@ class CategoricalStager(ATNPredictor):
 
 class Continuous(ATNPredictor):
 
-    def __init__(self, y_col, nickname=None):
-        super().__init__(nickname)
+    def __init__(self, y_col, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='continuous')
         self.y_col = y_col
 
     def fit(self, data):

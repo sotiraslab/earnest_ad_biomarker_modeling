@@ -186,13 +186,14 @@ def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
 
 # ---- Plot
 
-def results_boxplot(results, baseline='Baseline', save=None, stats=True,
+def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True,
                     nadeau_bengio=True, title=None, palette=None,
-                    n_train=None, n_test=None):
+                    n_train=None, n_test=None, order=None):
 
     # data
-    order = results['model'].unique()
-    boxplotdata = results.pivot(index=['fold', 'repeat'],columns='model', values='rmse')
+    if order is None:
+        order = results[groupby].unique()
+    boxplotdata = results.pivot(index=['fold', 'repeat'], columns=groupby, values='rmse')
     boxplotdata = boxplotdata[order]
 
     # base plot
@@ -241,6 +242,7 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
     ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
 
     # stats
+    stats_table = None
     if stats:
         idx = bool(nadeau_bengio)
         stats_table = compute_stats(results, baseline=baseline, n_train=n_train, n_test=n_test)[idx]
@@ -255,7 +257,7 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
             stars = '**' if p <= 0.01 else stars
             stars = '***' if p <= 0.001 else stars
 
-            model = stats_table.iloc[i, :]['model']
+            model = stats_table.iloc[i, :][groupby]
             rng = (boxplotdata[model].max() - boxplotdata[model].min())
             x =  boxplotdata[model].max() + 0.12 * rng
             y = len(order) - i - 2
@@ -268,4 +270,4 @@ def results_boxplot(results, baseline='Baseline', save=None, stats=True,
         plt.tight_layout()
         fig.savefig(save, dpi=300)
         
-    return ax.get_figure, stats_table
+    return ax.get_figure(), stats_table

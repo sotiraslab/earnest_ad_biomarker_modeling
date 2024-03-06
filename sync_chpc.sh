@@ -7,6 +7,7 @@ CHPC_PATH='/mnt/beegfs/scratch/tom.earnest/atn_cognition'
 echo ""
 echo "!! REMINDER !!"
 echo "    Make sure the CHPC repo is up to date (git pull)!"
+echo ""
 
 # upload
 # only the input data and processed tables are synced

@@ -3,6 +3,11 @@
 LOGIN=$CHPC2
 CHPC_PATH='/mnt/beegfs/scratch/tom.earnest/atn_cognition'
 
+# reminder
+echo ""
+echo "!! REMINDER !!"
+echo "    Make sure the CHPC repo is up to date (git pull)!"
+
 # upload
 # only the input data and processed tables are synced
 rsync -av inputs $LOGIN:${CHPC_PATH}

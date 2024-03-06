@@ -238,11 +238,16 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
         ax.set_title(title, loc='left')
 
     # baseline
-    baseline_median = np.median(boxplotdata[baseline])
-    ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
+    if baseline:
+        baseline_median = np.median(boxplotdata[baseline])
+        ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
 
     # stats
     stats_table = None
+    
+    if stats and baseline is None:
+        raise ValueError('Must select baseline if requesting stats.')
+    
     if stats:
         idx = bool(nadeau_bengio)
         stats_table = compute_stats(results, baseline=baseline, n_train=n_train, n_test=n_test)[idx]

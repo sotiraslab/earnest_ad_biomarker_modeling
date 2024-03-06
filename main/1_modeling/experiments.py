@@ -8,7 +8,7 @@ Created on Tue Feb 27 15:16:00 2024
 
 import time
 
-from sklearn.metrics import mean_squared_error, r2_score
+import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
 from atn_predictor_instances import ATN_PREDICTORS
@@ -25,6 +25,7 @@ def experiment_test_all_atn_predictors(dataset, target,
     results = []
     
     # repeats of cross validation
+    start_time = time.time()
     for r in range(repeats):
         
         cv = StratifiedKFold(n_splits=splits, random_state=r+seed, shuffle=True)
@@ -72,40 +73,9 @@ def experiment_test_all_atn_predictors(dataset, target,
             
             end = time.time()
             seconds = round(end - start, 2)
+            elapsed = round(end - start_time, 2)
             print(f'Time: {seconds}s')
-                
+            print(f'Elapsed: {elapsed}s')
                         
     results_df = pd.DataFrame(results)
     return results_df
-
-import pandas as pd
-dataset = pd.read_csv('../../outputs/datasets/maindata.csv')
-results = experiment_test_all_atn_predictors(dataset, target='PHC_GLOBAL',
-                                             repeats=10, splits=10)
-
-#%%
-import numpy as np
-import matplotlib.pyplot as plt
-
-from scipy.stats import gaussian_kde
-
-transposed = results.pivot(index=['repeat', 'fold'], columns='name', values='rmse')
-transposed = transposed.loc[:, ~ transposed.columns.str.contains('PVC')]
-
-fig, ax = plt.subplots(figsize=(6, 12))
-
-for i in range(transposed.shape[1]):
-    values = transposed.iloc[:, i]
-    kde = gaussian_kde(values)
-    x = np.linspace(transposed.min(axis=None), transposed.max(axis=None), 100)
-    y = kde(x)
-    y /= y.max()
-    y += i
-    # ax.plot(x, y)
-    ax.fill_between(x, y1=y, y2=i, alpha=.3)
-    
-ax.set_yticks(range(transposed.shape[1]))
-ax.set_yticklabels(transposed.columns)
-
-
-

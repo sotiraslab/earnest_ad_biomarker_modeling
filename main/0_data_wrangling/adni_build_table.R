@@ -26,6 +26,11 @@ source(PATH.LOAD.ADNI)
 source(PATH.PACC.SCRIPT)
 source(PATH.EXAMDATE.SCRIPT)
 
+# === Create output folder ======
+
+outfolder <- file.path(PATH.OUTPUT, 'maindata')
+dir.create(outfolder, showWarnings = F)
+
 # === Set variables ======
 
 THRESHOLD.IMAGING.DAYS = 365
@@ -265,7 +270,7 @@ colnames(rois) <- paste('AV45', colnames(rois), sep='_')
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'av45_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(outfolder, 'av45_regions.csv'), row.names = F)
 
 rois$AmyloidID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 
@@ -283,7 +288,7 @@ colnames(rois) <- paste('FTP', colnames(rois), sep='_')
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'ftp_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(outfolder, 'ftp_regions.csv'), row.names = F)
 
 rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 rois$META_TEMPORAL_TAU <- base.rois$META_TEMPORAL_SUVR
@@ -300,7 +305,7 @@ rois <- base.rois %>%
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'gm_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(outfolder, 'gm_regions.csv'), row.names = F)
 
 rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 rois$META_TEMPORAL_VOL <- base.rois$META_TEMPORAL_VOLUME
@@ -320,7 +325,7 @@ colnames(rois) <- paste('FTPPVC', colnames(rois), sep='_')
 
 roi.names <- data.frame(Region=colnames(rois)) %>%
   mutate(Cortical=ifelse(str_detect(tolower(Region), SUBCORTICAL_PAT), 'subcortical', 'cortical'))
-write.csv(roi.names, file.path(PATH.OUTPUT, 'datasets', 'ftppvc_regions.csv'), row.names = F)
+write.csv(roi.names, file.path(outfolder, 'ftppvc_regions.csv'), row.names = F)
 
 rois$TauID <- scan.id(base.rois$RID, base.rois$SCANDATE)
 rois$META_TEMPORAL_TAUPVC <- base.rois$META_TEMPORAL_SUVR
@@ -587,6 +592,6 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
 df.long <- df %>%
   filter(! is.na(DeltaADSP))
 
-write.csv(df, file.path(PATH.OUTPUT, 'datasets', 'maindata.csv'), quote = F, na = '', row.names = F)
-write.csv(df, file.path(PATH.OUTPUT, 'datasets', 'maindata_long.csv'), quote = F, na = '', row.names = F)
-write.csv(df.csf, file.path(PATH.OUTPUT, 'datasets', 'maindata_csf.csv'), quote = F, na = '', row.names = F)
+write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
+write.csv(df, file.path(outfolder, 'maindata_long.csv'), quote = F, na = '', row.names = F)
+write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)

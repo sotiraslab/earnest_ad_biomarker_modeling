@@ -6,14 +6,23 @@ Created on Wed Mar  6 09:12:35 2024
 @author: tom.earnest
 """
 
+import argparse
 import os
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 
 from experiments import experiment_svm
 from helpers import results_boxplot
+
+def parse():
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--short', action='store_true')
+    parser.add_argument('--rerun', action='store_true')
+    parser.add_argument('--replot', action='store_true')
+    
+    return parser.parse_args()
 
 def main(rerun=False, replot=True, short=False):
     
@@ -87,4 +96,6 @@ def main(rerun=False, replot=True, short=False):
 
     
 if __name__ == '__main__':
-    main(short=True)
+    args = parse()
+    kwargs = vars(args)
+    main(**kwargs)

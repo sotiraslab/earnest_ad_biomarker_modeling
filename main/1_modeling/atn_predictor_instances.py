@@ -51,7 +51,7 @@ collij_groupings = [0] * 3 + [1] * 4 + [2] * 12 + [3] * 8
 
 # ---- Amyloid -----
 AMYLOID_BINARY = [
-    BinaryManual('AmyloidComposite', 1.11, nickname='Amyloid Composite (SUVR>1.11)', atn='amyloid'),
+    BinaryManual('AmyloidComposite', 1.11, nickname='Landau (SUVR>1.11)', atn='amyloid'),
     BinaryManual('Centiloid', 20, nickname='Centiloid (>20)', atn='amyloid'),
     BinaryGMM('AmyloidComposite', nickname='Amyloid Composite (GMM)', atn='amyloid'),
     BinaryGMM('Centiloid', nickname='Centiloid (GMM)', atn='amyloid'),
@@ -79,10 +79,10 @@ TAU_BINARY = [
     BinaryGMM('META_TEMPORAL_TAU', nickname='MTT (GMM)', atn='tau'),
     BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.0, nickname='MTT (z>2.0)', atn='tau'),
     BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.5, nickname='MTT (z>2.5)', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.20, nickname='MTT (SUVR>1.20)', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.21, nickname='MTT (SUVR>1.21)', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.23, nickname='MTT (SUVR>1.23', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.33, nickname='MTT (SUVR>1.33)', atn='tau')
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.20, nickname='Jack Sens.', atn='tau'),
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.21, nickname='Jack Spec.', atn='tau'),
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.23, nickname='Jack Acc-Young', atn='tau'),
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.33, nickname='Jack Acc-Matched', atn='tau')
     ]
 
 TAU_CATEGORICAL = [
@@ -123,10 +123,10 @@ TAUPVC_BINARY = [
     BinaryGMM('META_TEMPORAL_TAUPVC', nickname='MTT (GMM) [PVC]', atn='taupvc'),
     BinaryZScore('META_TEMPORAL_TAUPVC', 'Control', zcutoff=2.0, nickname='MTT (z>2.0) [PVC]', atn='taupvc'),
     BinaryZScore('META_TEMPORAL_TAUPVC', 'Control', zcutoff=2.5, nickname='MTT (z>2.5) [PVC]', atn='taupvc'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.20, nickname='MTT (SUVR>1.20) [PVC]', atn='taupvc'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.21, nickname='MTT (SUVR>1.21) [PVC]', atn='taupvc'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.23, nickname='MTT (SUVR>1.23 [PVC]', atn='taupvc'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.33, nickname='MTT (SUVR>1.33) [PVC]', atn='taupvc')
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.20, nickname='Jack Sens. [PVC]', atn='taupvc'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.21, nickname='Jack Spec. [PVC]', atn='taupvc'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.23, nickname='Jack Acc-Young [PVC]', atn='taupvc'),
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.33, nickname='MJack Acc-Matched [PVC]', atn='taupvc')
     ]
 
 TAUPVC_CATEGORICAL = [
@@ -155,7 +155,7 @@ ATN_PREDICTORS = {
         'categorical': TAU_CATEGORICAL,
         'continuous': TAU_CONTINUOUS
         }, 
-    'gm': {
+    'neurodegeneration': {
         'binary': GM_BINARY,
         'categorical': GM_CATEGORICAL,
         'continuous': GM_CONTINUOUS

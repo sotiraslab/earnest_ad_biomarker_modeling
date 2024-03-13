@@ -134,6 +134,14 @@ def experiment_svm(dataset, target,
                   'ATN SVM': roi_columns,
                   'ATN SVM [PVC]': roipvc_columns}
     
+    BIOMARKERS = {'Amyloid SVM': 'amyloid',
+                  'Tau SVM': 'tau',
+                  'Tau SVM [PVC]': 'taupvc',
+                  'GM SVM': 'neurodegeneration',
+                  'ATN SVM': 'multimodal',
+                  'ATN SVM [PVC]': 'multimodal'}
+    
+    
     if search_C is None:
         search_C = list(2. ** np.arange(-9, 1, 1))
     
@@ -211,6 +219,7 @@ def experiment_svm(dataset, target,
                 # test on ADNI
                 preds = model.predict(outer_test)
                 row = {'model': svm_name,
+                       'biomarker': BIOMARKERS[svm_name],
                        'fold': i,
                        'repeat': r,
                        'rmse': mean_squared_error(outer_test[target], preds, squared=False),

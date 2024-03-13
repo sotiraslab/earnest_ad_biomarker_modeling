@@ -20,7 +20,7 @@ def parse():
     
     parser.add_argument('--short', action='store_true')
     parser.add_argument('--rerun', action='store_true')
-    parser.add_argument('--replot', action='store_true')
+    parser.add_argument('--noplot', action='store_true')
     
     return parser.parse_args()
 
@@ -98,4 +98,6 @@ def main(rerun=False, replot=True, short=False):
 if __name__ == '__main__':
     args = parse()
     kwargs = vars(args)
+    kwargs['replot'] = not kwargs['noplot']
+    del kwargs['noplot']
     main(**kwargs)

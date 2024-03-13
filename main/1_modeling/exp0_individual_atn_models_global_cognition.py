@@ -6,6 +6,7 @@ Created on Wed Mar  6 09:12:35 2024
 @author: tom.earnest
 """
 
+import argparse
 import os
 
 import matplotlib.pyplot as plt
@@ -13,6 +14,14 @@ import pandas as pd
 
 from experiments import experiment_test_all_atn_predictors
 from helpers import results_boxplot
+
+def parse():
+    parser = argparse.ArgumentParser()
+    
+    parser.add_argument('--rerun', action='store_true')
+    parser.add_argument('--noplot', action='store_true')
+    
+    return parser.parse_args()
 
 def main(rerun=False, replot=True):
     
@@ -46,7 +55,7 @@ def main(rerun=False, replot=True):
         plot_path = os.path.join(output_folder, 'boxplot.svg')
         colors = {'amyloid': '#882255',
                   'tau': '#117733',
-                  'gm': '#332288',
+                  'neurodegeneration': '#332288',
                   None: 'Gray'}
         vartypes = {'binary': "BIN",
                     'categorical': "CAT",
@@ -90,4 +99,8 @@ def main(rerun=False, replot=True):
         fig.savefig(plot_path, dpi=300)
     
 if __name__ == '__main__':
-    main()
+    args = parse()
+    kwargs = vars(args)
+    kwargs['replot'] = not kwargs['noplot']
+    del kwargs['noplot']
+    main(**kwargs)

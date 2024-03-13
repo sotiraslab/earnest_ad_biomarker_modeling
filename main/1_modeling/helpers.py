@@ -188,12 +188,13 @@ def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
 
 def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True,
                     nadeau_bengio=True, title=None, palette=None,
-                    n_train=None, n_test=None, order=None):
+                    n_train=None, n_test=None, order=None,
+                    pivot_index=['fold', 'repeat'], pivot_values='rmse'):
 
     # data
     if order is None:
         order = results[groupby].unique()
-    boxplotdata = results.pivot(index=['fold', 'repeat'], columns=groupby, values='rmse')
+    boxplotdata = results.pivot(index=pivot_index, columns=groupby, values=pivot_values)
     boxplotdata = boxplotdata[order]
 
     # base plot

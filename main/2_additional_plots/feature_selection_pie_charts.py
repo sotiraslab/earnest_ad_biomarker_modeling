@@ -112,7 +112,7 @@ outfolder = '../../outputs/additional_plots'
 if not os.path.isdir(outfolder):
     os.mkdir(outfolder)
     
-outfile = os.path.join(outfolder, 'combo_atn_models_feature_selection_global_cognition.png')
+outfile = os.path.join(outfolder, 'combo_atn_models_feature_selection_global_cognition.svg')
 
 plt.tight_layout()
 plt.savefig(outfile, dpi=300)

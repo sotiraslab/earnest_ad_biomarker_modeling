@@ -222,6 +222,8 @@ def experiment_svm(dataset, target,
                        'biomarker': BIOMARKERS[svm_name],
                        'fold': i,
                        'repeat': r,
+                       'ntrain': len(outer_train),
+                       'ntest': len(outer_test),
                        'rmse': mean_squared_error(outer_test[target], preds, squared=False),
                        'r2': r2_score(outer_test[target], preds)}
                 results.append(row)
@@ -349,6 +351,8 @@ def experiment_combo_atn_vs_baseline(dataset, target,
                 row = {'model': name,
                        'fold': i,
                        'repeat': r,
+                       'ntrain': len(outer_train),
+                       'ntest': len(outer_test),
                        **metrics}
                 results.append(row)
     

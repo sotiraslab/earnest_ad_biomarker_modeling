@@ -259,6 +259,9 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
         idx = bool(nadeau_bengio)
         stats_table = compute_stats(results, baseline=baseline, n_train=n_train, n_test=n_test)[idx]
 
+        xmin, xmax = ax.get_xlim()
+        xrng = xmax - xmin
+
         for i in range(len(stats_table)):
 
             p = stats_table.iloc[i, :]['p-val-fdr']
@@ -275,8 +278,10 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
             y = len(order) - i - 2
             ax.text(x, y, s=stars, rotation=90, ha='center', va='center',
                     fontsize=20, fontweight='bold', color='darkorange')
-
-
+            while x >= xmax:
+                xmax = xmax + (0.05*xrng)
+                ax.set_xlim(xmin, xmax)
+            
     # save
     if save is not None:
         plt.tight_layout()

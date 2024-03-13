@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 13 09:54:56 2024
+
+@author: tom.earnest
+"""
+
+import os
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from helpers import results_boxplot
+
+# def main():
+    
+this_dir = os.path.dirname(os.path.abspath(__file__))
+exp2_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp2_combo_atn_models_global_cognition'))
+exp1_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition_short'))
+
+exp2_results = os.path.join(exp2_folder, 'results.csv')
+exp1_results = os.path.join(exp1_folder, 'results.csv')
+
+if not os.path.exists(exp2_results) or not os.path.exists(exp1_results):
+    raise RuntimeError('Either results for exp2 or exp1 are missing.')
+    
+# concatenate data
+exp2 = pd.read_csv(exp2_results)
+exp1 = pd.read_csv(exp1_results)
+concat = pd.concat([exp2, exp1])
+concat = concat.loc[~concat['model'].str.contains('PVC')]
+    
+# output
+experiment_name = os.path.splitext(os.path.basename(__file__))[0]
+output_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', experiment_name))
+if not os.path.isdir(output_folder):
+    os.mkdir(output_folder)
+
+# general resources
+plot_path = os.path.join(output_folder, 'boxplot.svg')
+palette = (['gray'] +
+    ['#FFDDAA'] * 3 +
+    ['#F7A934'] +
+    ['#E59C9C'] * 3 +
+    ['#ba635d'] +
+    ['#AAC3E9'] * 3 +
+    ['#7DA1D8'] +
+    ['#B3E2AD'] * 3 +
+    ['#99C494'])
+
+# plot
+n_train = concat['ntrain'].values[0]
+n_test = concat['ntest'].values[0]
+fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',
+                         stats=True, palette=palette,
+                         n_train=n_train, n_test=n_test)
+
+plt.tight_layout()
+fig.savefig(plot_path, dpi=300)

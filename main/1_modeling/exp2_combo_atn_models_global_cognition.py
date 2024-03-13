@@ -52,7 +52,7 @@ def main(rerun=False, plot=True):
         target = 'PHC_GLOBAL'
         covariates=['Age', 'SexBinary', 'HasE4Binary']
         stratify='CDRBinned'
-        repeats=1
+        repeats=10
         outer_splits=10
         inner_splits=5
         outer_seed=0

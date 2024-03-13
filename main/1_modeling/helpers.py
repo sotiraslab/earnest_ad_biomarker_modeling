@@ -16,6 +16,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from statsmodels.stats.multitest import multipletests
 
+from atn_predictor_instances import get_models_by_nickname
+
 # ---- modeling helpers
 
 def get_atn_covariates(fitted_models, data):
@@ -28,18 +30,22 @@ def get_atn_covariates(fitted_models, data):
 
 def get_combo_atn_model(selected_models, atn_predictors_dict,
                         amyloid=None, tau=None,
-                        neurodegeneration=None):
+                        neurodegeneration=None,
+                        taupvc=False,
+                        biomarker_col='biomarker',
+                        vartype_col='variable_type',
+                        name_col='name'):
 
     df = selected_models
 
-    measure_types = [amyloid, tau, neurodegeneration]
-    modalities = ['amyloid', 'tau', 'neurodegeneration']
+    variable_types = [amyloid, tau, neurodegeneration]
+    biomarkers = ['amyloid', 'taupvc' if taupvc else 'tau', 'neurodegeneration']
     output = []
 
-    for measure_type, modality in zip(measure_types, modalities):
-        if measure_type is None: continue;
-        key = df.loc[(df['atn'] == modality) & (df['measure_type'] == measure_type)]['name'].iloc[0]
-        output.append(atn_predictors_dict[modality][measure_type][key])
+    for variable_type, biomarker in zip(variable_types, biomarkers ):
+        if variable_type is None: continue;
+        key = df.loc[(df[biomarker_col] == biomarker) & (df[vartype_col] == variable_type)][name_col].iloc[0]
+        output += get_models_by_nickname(key)
 
     return output
 
@@ -93,7 +99,7 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data):
     metrics = {'rmse': mean_squared_error(y_test, y_pred, squared=False),
                'r2': r2_score(y_test, y_pred)}
 
-    return metrics
+    return metrics, lm
 
 # ---- stats
 

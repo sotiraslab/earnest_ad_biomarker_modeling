@@ -179,3 +179,10 @@ ATN_PREDICTORS_FLAT = [*AMYLOID_BINARY,
                        *TAUPVC_BINARY,
                        *TAUPVC_CATEGORICAL,
                        *TAUPVC_CONTINUOUS]
+
+# Accessor functions -------
+
+def get_models_by_nickname(nicknames):
+    if isinstance(nicknames, str):
+        nicknames = [nicknames]
+    return [m for m in ATN_PREDICTORS_FLAT if m.nickname in nicknames]

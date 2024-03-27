@@ -49,8 +49,8 @@ def haufe_trick(W, X, Y):
 
 def get_haufe_weights(dataset, models, repeats, outer_splits, outer_seed, stratify):
     feats = len(models[0].predictors)
-    Amat = np.zeros((feats, 100))
-    Wmat = np.zeros((feats, 100))
+    Amat = np.zeros((feats, len(models)))
+    Wmat = np.zeros((feats, len(models)))
     for r in range(repeats):
         outer_cv = StratifiedKFold(n_splits=outer_splits, random_state=outer_seed + r, shuffle=True)
         # outer CV loop

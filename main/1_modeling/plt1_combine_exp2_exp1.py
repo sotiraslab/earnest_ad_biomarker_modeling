@@ -18,7 +18,7 @@ def main():
     
     this_dir = os.path.dirname(os.path.abspath(__file__))
     exp2_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp2_combo_atn_models_global_cognition'))
-    exp1_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition_short'))
+    exp1_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition'))
     
     exp2_results = os.path.join(exp2_folder, 'results.csv')
     exp1_results = os.path.join(exp1_folder, 'results.csv')

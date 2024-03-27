@@ -9,6 +9,7 @@ Created on Wed Mar 13 09:54:56 2024
 import os
 import warnings
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -87,6 +88,18 @@ def main():
         color = varcolors[var]
         ax.text(1.05, y, label, ha='left', va='center',
                 transform=ax.get_yaxis_transform(), color=color)
+        
+    # manually make legend
+    ax.legend(handles = [
+        mpatches.Patch(color=colors['amyloid'], label='Amyloid'),
+        mpatches.Patch(color=colors['tau'], label='Tau'),
+        mpatches.Patch(color=colors['neurodegeneration'], label='Neurodegeneration'),
+        ],
+        loc='lower right',
+        bbox_to_anchor=(1, 1),
+        ncol=3,
+        frameon=False)
+    
     plt.tight_layout()
     fig.savefig(plot_path, dpi=300)
     

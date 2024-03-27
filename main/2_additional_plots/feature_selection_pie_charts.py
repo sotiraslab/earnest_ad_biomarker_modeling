@@ -12,6 +12,7 @@ import os
 import pickle
 import sys
 
+from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,10 +36,12 @@ models = load_results('../../outputs/exp2_combo_atn_models_global_cognition/')
 
 # ---- collect stuff for plotting
 
+amyloid_cmap = LinearSegmentedColormap.from_list('Amyloid', colors=['#f7ebf1', '#882255'])
+
 model_types = ['Binary A', 'Categorical A', 'Continuous A',
                 'Binary T', 'Categorical T', 'Continuous T',
                 'Binary N', 'Categorical N', 'Continuous N']
-cmaps = ['Purples'] * 3 + ['Blues'] * 3 + ['Greens'] * 3
+cmaps = [amyloid_cmap] * 3 + ['Blues'] * 3 + ['Greens'] * 3
 
 # ---- function for converting "model_types" entry to something in ATN_PREDICTORS_DICT
 

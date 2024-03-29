@@ -6,6 +6,18 @@ source activate atn_cognition
 
 SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
          'exp1_svms_global_cognition.py'
+         'exp2_combo_atn_models_global_cognition.py'
+         'exp3_combo_atn_models_global_cognition_vs_binary.py'
+         'exp4a_combo_atn_models_memory_vs_binary.py'
+         'exp4b_svms_memory.py'
+         'exp5a_combo_atn_models_executive_functioning_vs_binary.py'
+         'exp5b_svms_executive_functioning.py'
+         'exp6a_combo_atn_models_language_vs_binary.py'
+         'exp6b_svms_language.py'
+         'exp7a_combo_atn_models_visuospatial_vs_binary.py'
+         'exp7b_svms_visuospatial.py'
+         'exp8a_combo_atn_models_longitudinal_cognition_vs_binary.py'
+         'exp8b_svms_longitudinal_cognition.py'
 )
 
 for script in "${SCRIPTS[@]}"

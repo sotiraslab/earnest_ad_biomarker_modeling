@@ -48,7 +48,7 @@ def main(rerun=False, plot=True):
         # for combining of results
         
         dataset = pd.read_csv('../../outputs/maindata/maindata.csv')
-        target = 'PHC_GLOBAL'
+        target = 'PHC_LAN'
         covariates=['Age', 'SexBinary', 'HasE4Binary']
         stratify='CDRBinned'
         repeats=10

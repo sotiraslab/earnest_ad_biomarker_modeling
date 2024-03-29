@@ -47,7 +47,7 @@ def main(rerun=False, plot=True):
         # seeds here should be same as exp1
         # for combining of results
         
-        dataset = pd.read_csv('../../outputs/maindata/maindata.csv')
+        dataset = pd.read_csv('../../outputs/maindata/maindata_long.csv')
         target = 'PHC_GLOBAL'
         covariates=['Age', 'SexBinary', 'HasE4Binary']
         stratify='CDRBinned'

@@ -126,7 +126,7 @@ TAUPVC_BINARY = [
     BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.20, nickname='Jack Sens. [PVC]', atn='taupvc'),
     BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.21, nickname='Jack Spec. [PVC]', atn='taupvc'),
     BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.23, nickname='Jack Acc-Young [PVC]', atn='taupvc'),
-    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.33, nickname='MJack Acc-Matched [PVC]', atn='taupvc')
+    BinaryManual('META_TEMPORAL_TAUPVC', cutoff=1.33, nickname='Jack Acc-Matched [PVC]', atn='taupvc')
     ]
 
 TAUPVC_CATEGORICAL = [

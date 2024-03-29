@@ -18,7 +18,7 @@ source('../../scripts/ggseg_plots.R')
 INFOLDER.LONG <- '../../outputs/exp1_svms_global_cognition'
 INFOLDER.SHORT <- '../../outputs/exp1_svms_global_cognition_short/'
 
-if (dir.exists(INFOLDER.LONG)) {
+if (file.exists(file.path(INFOLDER.LONG, 'results.csv'))) {
   INFOLDER <- INFOLDER.LONG
 } else {
   print('!!!!!!!!!!!!!!')
@@ -33,6 +33,7 @@ gm.path <- file.path(INFOLDER, 'svm_weights_haufe_GMSVM.csv')
 atn.path <- file.path(INFOLDER, 'svm_weights_haufe_ATNSVM.csv')
 
 OUTPUT <- '../../outputs/additional_plots/'
+dir.create(OUTPUT, showWarnings = F)
 
 # --- Add font -------
 

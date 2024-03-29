@@ -21,10 +21,10 @@ import pandas as pd
 import sys
 sys.path.append('../1_modeling')
 
-filepath = '../../outputs/exp2_combo_atn_models_global_cognition/models.pickle' 
+filepath = '../../outputs/exp2_combo_atn_models_global_cognition/models.pickle'
 with open(filepath, 'rb') as f:
     linear_models = pickle.load(f)
-    
+
 all_binary = linear_models['All binary']
 
 # ---- collect values into dataframe
@@ -55,7 +55,7 @@ def draw_meanline(ax, mean, y=.8, color='black', offset=0.01, text=None):
     #         s=text,
     #         color=color,
     #         transform=transform)
-    
+
 # base plot
 try:
     font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
@@ -112,4 +112,6 @@ tau_ax.set_xlabel('Cutoff (SUVR)')
 
 # save
 plt.tight_layout()
+if not os.path.exists('../../outputs/additional_plots'):
+    os.mkdir('../../outputs/additional_plots')
 fig.savefig('../../outputs/additional_plots/binary_pet_cutoffs.svg')

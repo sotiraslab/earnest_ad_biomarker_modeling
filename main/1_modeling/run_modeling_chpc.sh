@@ -23,7 +23,8 @@ SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
 for script in "${SCRIPTS[@]}"
 do
     name=$(basename $script .py)
-    log="../../outputs/${name}/slurm.log"
+    mkdir -p "../../outputs/logs"
+    log="../../outputs/logs/${name}_short.log"
 
     COMMAND=(sbatch
         -J $name

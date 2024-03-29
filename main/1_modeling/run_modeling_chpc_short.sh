@@ -43,7 +43,8 @@ do
     flags=${FLAGS[$i]}
 
     name=$(basename $script .py)
-    log="../../outputs/${name}/slurm.log"
+    mkdir -p "../../outputs/logs"
+    log="../../outputs/logs/${name}_short.log"
 
     COMMAND=(sbatch
         -J $name

@@ -43,7 +43,7 @@ def main(rerun=False, replot=True, short=False):
         
     # EXPERIMENT PARAMETERS
     dataset = pd.read_csv('../../outputs/maindata/maindata.csv')
-    target = 'PHC_EF'
+    target = 'PHC_EXF'
     covariates=['Age', 'SexBinary', 'HasE4Binary']
     stratify='CDRBinned'
     search_C = [2 ** -7] if short else list(2. ** np.arange(-9, 1, 1))

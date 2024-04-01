@@ -166,7 +166,8 @@ class Quantiles(ATNPredictor):
         self.quantiles = np.quantile(data[self.y_col], [.25, .5, .75, 1])
 
     def covariates(self, data):
-        return np.digitize(data[self.y_col], self.quantiles)[:, np.newaxis]
+        digitized = np.digitize(data[self.y_col], self.quantiles)
+        return pd.get_dummies(digitized).to_numpy().astype(float)
 
 class CategoricalStager(ATNPredictor):
 
@@ -205,7 +206,45 @@ class CategoricalStager(ATNPredictor):
 
         stages = assign_frequency_stage(binary, groupings=self.groupings,
                                         p=self.p, atypical=self.non_stageable)
-        return pd.get_dummies(stages).to_numpy()
+        return pd.get_dummies(stages).to_numpy().astype(float)
+    
+class GMMWithIndeterminateZone(ATNPredictor):
+
+    def __init__(self, y_col, margin=.1, greater=True, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='categorical')
+        self.y_col = y_col
+        self.margin = margin
+        self.greater = greater
+        self.operator = operator.ge if greater else operator.le
+
+        self.gmm = None
+        self.cutoff = None
+
+    def fit(self, data):
+        self.gmm = GaussianMixture(n_components=2)
+        self.gmm.fit(data[self.y_col].to_numpy()[:, np.newaxis])
+
+        means = self.gmm.means_
+        stds = np.sqrt(self.gmm.covariances_.flatten())
+        weights = self.gmm.weights_
+
+        g1 = lambda x: norm.pdf(x, loc = means[0], scale = stds[0]) * weights[0]
+        g2 = lambda x: norm.pdf(x, loc = means[1], scale = stds[1]) * weights[1]
+        diff = lambda x: g2(x) - g1(x)
+        try:
+            self.cutoff = root_scalar(diff, bracket=list(means)).root
+        except ValueError:
+            self.cutoff = (means[0] + 2*stds[0])[0]
+
+    def covariates(self, data):
+        y = data[self.y_col]
+        if self.margin == 0:
+            return np.where(self.operator(y, self.cutoff), 1., 0.)[:, np.newaxis]
+        
+        dim = 1 if self.greater else 0
+        probs = self.gmm.predict_proba(y.values.reshape(-1, 1))[:, dim]
+        digitized = np.digitize(probs, [0.5 - self.margin, 0.5 + self.margin])
+        return pd.get_dummies(digitized).to_numpy().astype(float)
 
 # Continuous predictors ----
 

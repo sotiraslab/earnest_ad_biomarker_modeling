@@ -10,6 +10,7 @@ from atn_predictor_classes import (BinaryGMM,
                                    BinaryManual,
                                    BinaryZScore,
                                    CategoricalStager,
+                                   GMMWithIndeterminateZone,
                                    Continuous,
                                    Quantiles)
 
@@ -65,7 +66,9 @@ AMYLOID_CATEGORICAL = [
     Quantiles('AmyloidComposite', nickname='Amyloid Composite (Quantiles)', atn='amyloid'),
     Quantiles('Centiloid', nickname='Centiloid (Quantiles)', atn='amyloid'),
     CategoricalStager(['MattssonEarlySUVR', 'MattssonIntermediateSUVR', 'MattssonLateSUVR'], nickname='Mattsson Staging', atn='amyloid'),
-    CategoricalStager(collij_regions, groupings=collij_groupings, p=.5, nickname='Collij Staging', atn='amyloid')
+    CategoricalStager(collij_regions, groupings=collij_groupings, p=.5, nickname='Collij Staging', atn='amyloid'),
+    GMMWithIndeterminateZone('AmyloidComposite', nickname='Amyloid Composite (UZ)', atn='amyloid'),
+    GMMWithIndeterminateZone('Centiloid', nickname='Centiloid (UZ)', atn='amyloid'),
     ]
 
 AMYLOID_CONTINUOUS = [
@@ -88,7 +91,8 @@ TAU_BINARY = [
 TAU_CATEGORICAL = [
     Quantiles('META_TEMPORAL_TAU', nickname='MTT (Quantiles)', atn='tau'),
     CategoricalStager(['BRAAK1_TAU', 'BRAAK34_TAU', 'BRAAK56_TAU'], nickname='Braak Staging (3)', atn='tau'),
-    CategoricalStager(['BRAAK1_TAU', 'BRAAK3_TAU', 'BRAAK4_TAU', 'BRAAK5_TAU', 'BRAAK6_TAU'], nickname='Braak Staging (6)', atn='tau')
+    CategoricalStager(['BRAAK1_TAU', 'BRAAK3_TAU', 'BRAAK4_TAU', 'BRAAK5_TAU', 'BRAAK6_TAU'], nickname='Braak Staging (6)', atn='tau'),
+    GMMWithIndeterminateZone('META_TEMPORAL_TAU', nickname='MTT (UZ)', atn='tau')
     ]
 
 TAU_CONTINUOUS = [
@@ -132,7 +136,8 @@ TAUPVC_BINARY = [
 TAUPVC_CATEGORICAL = [
     Quantiles('META_TEMPORAL_TAUPVC', nickname='MTT (Quantiles) [PVC]', atn='taupvc'),
     CategoricalStager(['BRAAK1_TAUPVC', 'BRAAK34_TAUPVC', 'BRAAK56_TAUPVC'], nickname='Braak Staging (3) [PVC]', atn='taupvc'),
-    CategoricalStager(['BRAAK1_TAUPVC', 'BRAAK3_TAUPVC', 'BRAAK4_TAUPVC', 'BRAAK5_TAUPVC', 'BRAAK6_TAUPVC'], nickname='Braak Staging (6) [PVC]', atn='taupvc')
+    CategoricalStager(['BRAAK1_TAUPVC', 'BRAAK3_TAUPVC', 'BRAAK4_TAUPVC', 'BRAAK5_TAUPVC', 'BRAAK6_TAUPVC'], nickname='Braak Staging (6) [PVC]', atn='taupvc'),
+    GMMWithIndeterminateZone('META_TEMPORAL_TAUPVC', nickname='MTT (UZ) [PVC]', atn='taupvc')
     ]
 
 TAUPVC_CONTINUOUS = [

@@ -53,13 +53,16 @@ collij_groupings = [0] * 3 + [1] * 4 + [2] * 12 + [3] * 8
 # ---- Amyloid -----
 AMYLOID_BINARY = [
     BinaryManual('AmyloidComposite', 1.11, nickname='Landau (SUVR>1.11)', atn='amyloid'),
+    BinaryManual('AmyloidComposite', 1.24, nickname='Su (SUVR>1.24)', atn='amyloid'),
+    BinaryManual('AmyloidComposite', 1.42, nickname='Jack RW', atn='amyloid'),
+    BinaryManual('AmyloidComposite', 1.30, nickname='Jack Spec.', atn='amyloid'),
+    BinaryManual('Centiloid', 15, nickname='Centiloid (>15)', atn='amyloid'),
     BinaryManual('Centiloid', 20, nickname='Centiloid (>20)', atn='amyloid'),
+    BinaryManual('Centiloid', 25, nickname='Centiloid (>25)', atn='amyloid'),
+    BinaryManual('Centiloid', 30, nickname='Centiloid (>30)', atn='amyloid'),
     BinaryGMM('AmyloidComposite', nickname='Amyloid Composite (GMM)', atn='amyloid'),
-    BinaryGMM('Centiloid', nickname='Centiloid (GMM)', atn='amyloid'),
     BinaryZScore('AmyloidComposite', zcutoff=2.0, control_col='Control', nickname='Amyloid Composite (z>2.0)', atn='amyloid'),
     BinaryZScore('AmyloidComposite', zcutoff=2.5, control_col='Control', nickname='Amyloid Composite (z>2.5)', atn='amyloid'),
-    BinaryZScore('Centiloid', zcutoff=2.0, control_col='Control', nickname='Centiloid (z>2.0)', atn='amyloid'),
-    BinaryZScore('Centiloid', zcutoff=2.5, control_col='Control', nickname='Centiloid (z>2.5)', atn='amyloid')
     ]
 
 AMYLOID_CATEGORICAL = [

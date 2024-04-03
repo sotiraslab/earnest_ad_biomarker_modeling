@@ -167,7 +167,14 @@ class Quantiles(ATNPredictor):
 
     def covariates(self, data):
         digitized = np.digitize(data[self.y_col], self.quantiles)
-        return pd.get_dummies(digitized).to_numpy().astype(float)
+        
+        # this step is needed!
+        # Else if you get a sample with one level missing
+        # it will be omitted in the get_dummies
+        # resulting in a DF with less than expcted columns
+        digitized_cat = pd.Categorical(digitized, categories=[0, 1, 2, 3])
+        
+        return pd.get_dummies(digitized_cat).to_numpy().astype(float)
 
 class CategoricalStager(ATNPredictor):
 
@@ -244,7 +251,14 @@ class GMMWithIndeterminateZone(ATNPredictor):
         dim = 1 if self.greater else 0
         probs = self.gmm.predict_proba(y.values.reshape(-1, 1))[:, dim]
         digitized = np.digitize(probs, [0.5 - self.margin, 0.5 + self.margin])
-        return pd.get_dummies(digitized).to_numpy().astype(float)
+        
+        # this step is needed!
+        # Else if you get a sample with one level missing
+        # it will be omitted in the get_dummies
+        # resulting in a DF with less than expcted columns
+        digitized_cat = pd.Categorical(digitized, categories=[0, 1, 2])
+        
+        return pd.get_dummies(digitized_cat).to_numpy().astype(float)
 
 # Continuous predictors ----
 

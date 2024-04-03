@@ -54,8 +54,8 @@ collij_groupings = [0] * 3 + [1] * 4 + [2] * 12 + [3] * 8
 AMYLOID_BINARY = [
     BinaryManual('AmyloidComposite', 1.11, nickname='Landau (SUVR>1.11)', atn='amyloid'),
     BinaryManual('AmyloidComposite', 1.24, nickname='Su (SUVR>1.24)', atn='amyloid'),
-    BinaryManual('AmyloidComposite', 1.42, nickname='Jack RW', atn='amyloid'),
-    BinaryManual('AmyloidComposite', 1.30, nickname='Jack Spec.', atn='amyloid'),
+    BinaryManual('AmyloidComposite', 1.42, nickname='Jack RW Amyloid', atn='amyloid'),
+    BinaryManual('AmyloidComposite', 1.30, nickname='Jack Spec. Aymloid', atn='amyloid'),
     BinaryManual('Centiloid', 15, nickname='Centiloid (>15)', atn='amyloid'),
     BinaryManual('Centiloid', 20, nickname='Centiloid (>20)', atn='amyloid'),
     BinaryManual('Centiloid', 25, nickname='Centiloid (>25)', atn='amyloid'),
@@ -85,10 +85,10 @@ TAU_BINARY = [
     BinaryGMM('META_TEMPORAL_TAU', nickname='MTT (GMM)', atn='tau'),
     BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.0, nickname='MTT (z>2.0)', atn='tau'),
     BinaryZScore('META_TEMPORAL_TAU', 'Control', zcutoff=2.5, nickname='MTT (z>2.5)', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.20, nickname='Jack Sens.', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.21, nickname='Jack Spec.', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.23, nickname='Jack Acc-Young', atn='tau'),
-    BinaryManual('META_TEMPORAL_TAU', cutoff=1.33, nickname='Jack Acc-Matched', atn='tau')
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.20, nickname='Jack Sens. MTT', atn='tau'),
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.21, nickname='Jack Spec. MTT', atn='tau'),
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.23, nickname='Jack Acc-Young MTT', atn='tau'),
+    BinaryManual('META_TEMPORAL_TAU', cutoff=1.33, nickname='Jack Acc-Matched MTT', atn='tau')
     ]
 
 TAU_CATEGORICAL = [

@@ -16,6 +16,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -101,8 +102,10 @@ def experiment_test_all_atn_predictors(dataset, target,
 def experiment_svm(dataset, target,
                    covariates=['Age', 'SexBinary', 'HasE4Binary'],
                    stratify='CDRBinned',
-                   search_C=None,
+                   search_C_linear=None,
+                   search_C_rbf=None,
                    search_kernel=None,
+                   search_gamma=None,
                    repeats=10,
                    outer_splits=10,
                    inner_splits=5,
@@ -141,16 +144,28 @@ def experiment_svm(dataset, target,
                   'ATN SVM': 'multimodal',
                   'ATN SVM [PVC]': 'multimodal'}
     
+    if search_C_linear is None:
+        search_C_linear = [2 ** -7]
+
+    if search_C_rbf is None:
+        search_C_rbf = [2 ** -7]
     
-    if search_C is None:
-        search_C = list(2. ** np.arange(-9, 1, 1))
-    
-    if search_kernel is None:
-        search_kernel = ['linear']
+    if search_gamma is None:
+        search_gamma = [2 ** -7]
         
-    SVM_PARAMS = {'C': search_C, 'kernel': search_kernel}
-    param_combos = list(it.product(*SVM_PARAMS.values()))
-    SVM_SEARCH = [dict(zip(SVM_PARAMS.keys(), v)) for v in param_combos]
+    searched_svm_paramters = ['C', 'gamma', 'kernel']
+        
+    SVM_SEARCH = []
+    if 'linear' in search_kernel:
+        linear_params = {'C': search_C_linear, 'gamma': [None], 'kernel': ['linear']}
+        linear_combos =  list(it.product(*linear_params.values()))
+        linear_search = [dict(zip(linear_params.keys(), v)) for v in linear_combos]
+        SVM_SEARCH += linear_search
+    if 'rbf' in search_kernel:
+        rbf_params = {'C': search_C_rbf, 'gamma': search_gamma, 'kernel': ['rbf']}
+        rbf_combos =  list(it.product(*rbf_params.values()))
+        rbf_search = [dict(zip(rbf_params.keys(), v)) for v in rbf_combos]
+        SVM_SEARCH += rbf_search
     
     # this happens a lot with the linear SVM for certain values of C
     # some models are converging, however
@@ -183,9 +198,12 @@ def experiment_svm(dataset, target,
                 inner_test = outer_train.iloc[inner_test_index, :]
                 
                 # testing many SVM models
+                
                 for svm_name, svm_features in SVM_MODELS.items():
                     for c, params in enumerate(SVM_SEARCH):
-                        print(f' - {svm_name} ({params})')
+                        # uncomment to print every model trained
+                        # much more verbose!
+                        # print(f' - {svm_name} ({params})')
                         model = MultivariateSVR(svm_features, target, **params)
                         model.fit(inner_train)
                         preds = model.predict(inner_test)
@@ -196,10 +214,10 @@ def experiment_svm(dataset, target,
                                'rmse': mean_squared_error(inner_test[target], preds, squared=False),
                                'r2': r2_score(inner_test[target], preds)}
                         inner_cv_svm_results.append(row)
-                
+                        
             # select best SVM model
             inner_cv_svm_results = pd.DataFrame(inner_cv_svm_results)
-            svm_model_averages = inner_cv_svm_results.groupby(['name'] + list(SVM_PARAMS.keys()))['rmse'].agg(mean="mean", std="std").reset_index()
+            svm_model_averages = inner_cv_svm_results.groupby(['name'] + searched_svm_paramters)['rmse'].agg(mean="mean", std="std").reset_index()
             best_by_params = svm_model_averages.groupby('name')['mean'].idxmin()
             svm_selected_models = svm_model_averages.iloc[best_by_params]
             
@@ -208,9 +226,9 @@ def experiment_svm(dataset, target,
             print(svm_selected_models)
     
             print()
-            print('[{str(dt.datetime.now())}] *OUTER TRAINING*')
+            print(f'[{str(dt.datetime.now())}] *OUTER TRAINING*')
             for svm_name, svm_features in SVM_MODELS.items():
-                best_params = svm_best_param_lookup(svm_selected_models, svm_name, list(SVM_PARAMS.keys()))
+                best_params = svm_best_param_lookup(svm_selected_models, svm_name, searched_svm_paramters)
                 model = MultivariateSVR(svm_features, target, **best_params)
                 model.fit(outer_train)
     
@@ -219,6 +237,7 @@ def experiment_svm(dataset, target,
                 # test on ADNI
                 preds = model.predict(outer_test)
                 row = {'model': svm_name,
+                       **best_params, 
                        'biomarker': BIOMARKERS[svm_name],
                        'fold': i,
                        'repeat': r,
@@ -227,6 +246,7 @@ def experiment_svm(dataset, target,
                        'rmse': mean_squared_error(outer_test[target], preds, squared=False),
                        'r2': r2_score(outer_test[target], preds)}
                 results.append(row)
+                print(f'   RMSE={row["rmse"]}')
 
                 # save model
                 models[svm_name].append(deepcopy(model))

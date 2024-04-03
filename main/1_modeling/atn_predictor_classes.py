@@ -271,6 +271,8 @@ class MultivariateSVR:
         kernel = kwargs.get('kernel', None)
         if kernel and kernel == 'linear':
             del kwargs['kernel']
+            if 'gamma' in kwargs:
+                del kwargs['gamma']
             SVM = LinearSVR(max_iter=int(1e5), **kwargs)
         else:
             SVM = SVR(**kwargs)

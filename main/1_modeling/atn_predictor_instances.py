@@ -194,3 +194,10 @@ def get_models_by_nickname(nicknames):
     if isinstance(nicknames, str):
         nicknames = [nicknames]
     return [m for m in ATN_PREDICTORS_FLAT if m.nickname in nicknames]
+
+# Check for duplicate names -------
+
+nicknames = [m.nickname for m in ATN_PREDICTORS_FLAT]
+nicknames_set = set(nicknames)
+assert len(nicknames) == len(nicknames_set), 'Resolve duplicated nicknames for ATN predictors!'
+    

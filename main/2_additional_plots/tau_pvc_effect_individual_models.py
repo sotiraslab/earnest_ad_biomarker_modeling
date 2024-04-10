@@ -8,15 +8,11 @@ Created on Wed Sep 20 09:51:00 2023
 
 # ---- imports
 import os
-import pickle
+import warnings
 
-import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import numpy as np
 import pandas as pd
-from pingouin import ttest
-from statsmodels.stats.multitest import multipletests
 
 import sys
 sys.path.append('../1_modeling')
@@ -26,33 +22,40 @@ sys.path.append('../1_modeling')
 if not os.path.exists('../../outputs/additional_plots'):
     os.mkdir('../../outputs/additional_plots')
 
-# ---- load saved models from binary combination experiment
+# ------ load results ------
 
-separate_models_path = '../../outputs/exp0_individual_atn_models_global_cognition/models.pickle'
-combo_models_path = '../../outputs/exp2_combo_atn_models_global_cognition/models.pickle'
-with open(separate_models_path, 'rb') as f:
-    sep_models = pickle.load(f)
+this_dir = os.path.dirname(os.path.abspath(__file__))
+exp0_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp0_individual_atn_models_global_cognition'))
+exp1_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition'))
+
+exp0_results = os.path.join(exp0_folder, 'results.csv')
+exp1_results = os.path.join(exp1_folder, 'results.csv')
+
+if not os.path.exists(exp0_results):
+    raise RuntimeError('Results for exp0 are missing.')
     
-with open(combo_models_path, 'rb') as f:
-    com_models = pickle.load(f)
+if not os.path.exists(exp1_results):
+    short_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition_short'))
+    short_results = exp1_results = os.path.join(short_folder, 'results.csv')
     
-sep_results = pd.read_csv('../../outputs/exp0_individual_atn_models_global_cognition/results.csv')
-com_results = pd.read_csv('../../outputs/exp2_combo_atn_models_global_cognition/results.csv')
+    if os.path.exists(short_results):
+        warnings.warn('The full results are missing for exp1 (SVMs), but the short results are present.  Using the latter!',
+                      RuntimeWarning)
+        exp1_results = short_results
+    else:
+        raise RuntimeError('Results for exp1 are missing.')
+        
+exp0 = pd.read_csv(exp0_results)
+exp1 = pd.read_csv(exp1_results)
 
 # ---- select all tau models
 
-pvc_model_names = []
-nopvc_model_names = []
+pvc_model_names = list(exp0.loc[exp0['biomarker'] == 'taupvc', 'name'].unique())
+nopvc_model_names = list(exp0.loc[exp0['biomarker'] == 'tau', 'name'].unique())
 
-for k, v in sep_models.items():
-    m = v[0]
-    if m.atn == 'tau':
-        nopvc_model_names.append(k)
-    elif m.atn == 'taupvc':
-        pvc_model_names.append(k)
-    else:
-        pass
-    
+pvc_model_names += ['Tau SVM [PVC]']
+nopvc_model_names += ['Tau SVM']
+
 # ---- plot: for separate models
 
 from helpers import results_boxplot_pairwise
@@ -63,7 +66,8 @@ colors = {None: 'Gray',
           'taupvc': '#b48dc4'}
 vartypes = {'binary': "BIN",
             'categorical': "CAT",
-            'continuous': 'CONT'}
+            'continuous': 'CONT',
+            'SVM': 'SVM'}
 
 # order PVC and non PVC next to each other
 interleave = [val for pair in zip(nopvc_model_names, pvc_model_names) for val in pair]
@@ -72,8 +76,15 @@ interleave = ['Baseline'] + interleave
 # comparisons for PVC and non-PVC
 pairs = list(zip(nopvc_model_names, pvc_model_names))
 
-# construct plot data
-plot_data = sep_results.copy()
+# concatenate data
+exp0 = pd.read_csv(exp0_results)
+exp1 = pd.read_csv(exp1_results)
+exp1['variable_type'] = 'SVM'
+exp1['name'] = exp1['model'].copy()
+concat = pd.concat([exp0, exp1])
+concat = concat[concat['name'].isin(interleave)]
+
+plot_data = concat.copy()
 plot_data = plot_data.loc[plot_data['name'].isin(nopvc_model_names) | 
                           plot_data['name'].isin(pvc_model_names) |
                           plot_data['name'].eq('Baseline')]
@@ -113,5 +124,3 @@ ax.legend(handles = [
 # save
 plt.tight_layout()
 fig.savefig('../../outputs/additional_plots/tau_pvc_indvl_models.svg')
-
-# ---- plot: for combination models

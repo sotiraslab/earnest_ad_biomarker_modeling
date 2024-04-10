@@ -567,14 +567,21 @@ df$HasE4Binary <- ifelse(df$HasE4, 1, 0)
 
 bmk10 <- upennbiomk10 %>%
   select(RID, DRAWDATE, ABETA40, ABETA42, TAU, PTAU) %>%
-  rename(DateCSF=DRAWDATE) %>%
+  rename(DateCSF=DRAWDATE,
+         CSF_ABETA40=ABETA40,
+         CSF_ABETA42=ABETA42,
+         CSF_TAU=TAU,
+         CSF_PTAU=PTAU) %>%
   mutate(DateCSF=as_datetime(mdy(DateCSF)))
 
 bmk12 <- upennbiomk12_2020 %>%
   select(RID, EXAMDATE, AB40, ABETA, TAU, PTAU) %>%
   rename(DateCSF=EXAMDATE,
          ABETA40=AB40,
-         ABETA42=ABETA) %>%
+         CSF_ABETA40=AB40,
+         CSF_ABETA42=ABETA,
+         CSF_TAU=TAU,
+         CSF_PTAU=PTAU) %>%
   mutate(DateCSF = as_datetime(ymd(DateCSF)))
 
 new.csf <- rbind(bmk10, bmk12)
@@ -585,7 +592,8 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
   slice_min(abs(DiffTauCSF), with_ties = F) %>%
   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
   ungroup() %>%
-  filter(! is.na(PTAU))
+  mutate(CSF_AB42OVER40=CSF_ABETA42/CSF_ABETA40) %>%
+  filter(! is.na(CSF_PTAU))
 
 # === save ========
 

@@ -14,9 +14,7 @@ import pickle
 import time
 import warnings
 
-import numpy as np
 import pandas as pd
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -30,10 +28,12 @@ def experiment_test_all_atn_predictors(dataset, target,
                                        splits=10,
                                        repeats=10,
                                        seed=0,
-                                       savepath=None):
+                                       savepath=None,
+                                       savemodels=None):
     
     # hold results
     results = []
+    models = defaultdict(list)
     
     start_time = time.time()
     
@@ -81,7 +81,8 @@ def experiment_test_all_atn_predictors(dataset, target,
                                'fold': i,
                                'repeat': r,
                                **metrics}
-                        results.append(row)   
+                        results.append(row)
+                        models[model.nickname].append(model)
                         
             end = time.time()
             seconds = round(end - start, 2)
@@ -97,7 +98,14 @@ def experiment_test_all_atn_predictors(dataset, target,
         results_df.to_csv(savepath, index=False)
         print('Done!')
     
-    return results_df
+    if savemodels:
+        print('')
+        print(f'Saving models to "{savemodels}"...')
+        with open(savemodels, 'wb') as f:
+            pickle.dump(models, f)
+        print('Done!')
+    
+    return results_df, models
 
 def experiment_svm(dataset, target,
                    covariates=['Age', 'SexBinary', 'HasE4Binary'],

@@ -35,6 +35,7 @@ def main(rerun=False, replot=True):
         
     # check existing output
     results_path = os.path.join(output_folder, 'results.csv')
+    modelsave_path = os.path.join(output_folder, 'models.pickle')
     results_exist = os.path.exists(results_path)
         
     # run experiment
@@ -45,7 +46,8 @@ def main(rerun=False, replot=True):
                                                stratify='CDRBinned',
                                                repeats=10, splits=10,
                                                seed=0,
-                                               savepath=results_path)
+                                               savepath=results_path,
+                                               savemodels=modelsave_path)
         
     results = pd.read_csv(results_path)
         

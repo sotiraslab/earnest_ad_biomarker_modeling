@@ -46,8 +46,10 @@ def main(rerun=False, replot=True, short=False):
     target = 'PHC_EXF'
     covariates=['Age', 'SexBinary', 'HasE4Binary']
     stratify='CDRBinned'
-    search_C = [2 ** -7] if short else list(2. ** np.arange(-9, 1, 1))
-    search_kernel = ['linear']
+    search_C_linear = [2 ** -7] if short else list(2. ** np.arange(-10, 1, 1))
+    search_C_rbf = [2] if short else list(2. ** np.arange(-5, 17, 2))
+    search_gamma = [2 ** -11] if short else list(2. ** np.arange(-15, 5, 2))
+    search_kernel = ['linear', 'rbf']
     repeats=10
     outer_splits=10
     inner_splits=5
@@ -65,8 +67,10 @@ def main(rerun=False, replot=True, short=False):
                            inner_splits=inner_splits,
                            outer_seed=outer_seed,
                            inner_seed=inner_seed,
-                           search_C=search_C,
+                           search_C_linear=search_C_linear,
+                           search_C_rbf=search_C_rbf,
                            search_kernel=search_kernel,
+                           search_gamma=search_gamma,
                            savepath=results_path,
                            savemodels=models_path)
     results = pd.read_csv(results_path)

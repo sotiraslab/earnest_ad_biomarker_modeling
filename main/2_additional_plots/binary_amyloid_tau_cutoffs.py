@@ -82,6 +82,9 @@ mean = x.mean().round(3)
 ax.axvline(mean, color=color)
 draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})')
 draw_meanline(ax, 1.11, 0.6, color='k', text='Landau (1.11)')
+draw_meanline(ax, centiloid_to_suvr(15), 0.6, color='red', text='Centiloid>15')
+draw_meanline(ax, centiloid_to_suvr(20), 0.6, color='blue', text='Centiloid>20')
+draw_meanline(ax, centiloid_to_suvr(25), 0.6, color='green', text='Centiloid>25')
 ax.legend(fontsize=14,
           loc='upper left',
           bbox_to_anchor=(1, 1))

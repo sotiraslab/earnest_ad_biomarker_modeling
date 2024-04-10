@@ -67,6 +67,8 @@ except:
 fig, (amy_ax, tau_ax) = plt.subplots(nrows=2, sharex=True,
                                      figsize=(12, 6))
 plt.rcParams.update({'font.size': 20})
+amy_ax.set_title('Amyloid')
+tau_ax.set_title('Tau')
 
 # amyloid
 ax = amy_ax

@@ -226,11 +226,12 @@ def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
 
 # ---- Plot
 
-def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True,
+def results_boxplot(results, groupby, baseline='Baseline', save=None,
+                    stats_vs_baseline=False, stats_pairs=None,
                     nadeau_bengio=True, title=None, palette=None,
                     n_train=None, n_test=None, order=None,
                     pivot_index=['fold', 'repeat'], pivot_values='rmse',
-                    error_measure=True):
+                    error_measure=True, hatch=None):
 
     # data
     if order is None:
@@ -255,12 +256,20 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
     # colors
     if palette is None:
         palette = ['Gray'] * len(order)
+        
+    if hatch is None:
+        hatch = [False] * len(order)
     
     double_palette = np.repeat(palette, 2)
 
-    for patch, color in zip(bplot['boxes'], palette):
-        patch.set_facecolor(color)
-        patch.set_edgecolor(color)
+    for patch, color, h in zip(bplot['boxes'], palette, hatch):
+        if h:
+            patch.set_facecolor(color)
+            patch.set_edgecolor('white')
+            patch.set_hatch('//')
+        else:
+            patch.set_facecolor(color)
+            patch.set_edgecolor(color)
 
     for whiskers, color in zip(bplot['whiskers'], double_palette):
         whiskers.set_color(color)
@@ -285,22 +294,23 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
         ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
 
     # stats
-    stats_table = None
+    stats_tbl_bl = None
+    stats_tbl_pairs = None
     
-    if stats and baseline is None:
+    if stats_vs_baseline and baseline is None:
         raise ValueError('Must select baseline if requesting stats.')
     
-    if stats:
+    if stats_vs_baseline:
         idx = bool(nadeau_bengio)
-        stats_table = compute_stats_vs_baseline(results, baseline=baseline, n_train=n_train, n_test=n_test,
-                                                error_measure=error_measure)[idx]
+        stats_tbl_bl = compute_stats_vs_baseline(results, baseline=baseline, n_train=n_train, n_test=n_test,
+                                                 error_measure=error_measure)[idx]
 
         xmin, xmax = ax.get_xlim()
         xrng = xmax - xmin
 
-        for i in range(len(stats_table)):
+        for i in range(len(stats_tbl_bl)):
 
-            p = stats_table.iloc[i, :]['p-val-fdr']
+            p = stats_tbl_bl.iloc[i, :]['p-val-fdr']
             if p > 0.05:
                 continue
 
@@ -308,7 +318,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
             stars = '**' if p <= 0.01 else stars
             stars = '***' if p <= 0.001 else stars
 
-            model = stats_table.iloc[i, :][groupby]
+            model = stats_tbl_bl.iloc[i, :][groupby]
             rng = (boxplotdata[model].max() - boxplotdata[model].min())
             x =  boxplotdata[model].max() + 0.12 * rng
             y = len(order) - i - 2
@@ -317,113 +327,52 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
             while x >= xmax:
                 xmax = xmax + (0.05*xrng)
                 ax.set_xlim(xmin, xmax)
-            
-    # save
-    if save is not None:
-        plt.tight_layout()
-        fig.savefig(save, dpi=300)
-        
-    return ax.get_figure(), stats_table
-
-def results_boxplot_pairwise(results, groupby, baseline='Baseline',
-                             pairs=None, save=None,
-                             nadeau_bengio=True, title=None, palette=None,
-                             n_train=None, n_test=None, order=None,
-                             pivot_index=['fold', 'repeat'], pivot_values='rmse'):
-
-    # data
-    if order is None:
-        order = results[groupby].unique()
-    boxplotdata = results.pivot(index=pivot_index, columns=groupby, values=pivot_values)
-    boxplotdata = boxplotdata[order]
-
-    # base plot
-    try:
-        font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
-        plt.rcParams.update({
-            'font.family': font_prop.get_name()})
-    except:
-        pass
     
-    fig, ax = plt.subplots(figsize=(6, 8))
-    positions = list(range(len(order)))
-    positions.reverse()
-    bplot = ax.boxplot(boxplotdata, vert=False, patch_artist=True, positions=positions,
-                        sym='o', flierprops={'markerfacecolor':'gray', 'markeredgecolor':'gray'})
-
-    # colors
-    if palette is None:
-        palette = ['Gray'] * len(order)
-    
-    double_palette = np.repeat(palette, 2)
-
-    for patch, color in zip(bplot['boxes'], palette):
-        patch.set_facecolor(color)
-        patch.set_edgecolor(color)
-
-    for whiskers, color in zip(bplot['whiskers'], double_palette):
-        whiskers.set_color(color)
-
-    for cap, color in zip(bplot['caps'], double_palette):
-        cap.set_color(color)
-
-    for median in bplot['medians']:
-        median.set_color('white')
-
-    # labels
-    ax.set_yticklabels(order)
-    ax.set_xlabel('RMSE')
-    ax.grid(alpha=.4)
-
-    if title:
-        ax.set_title(title, loc='left')
-
-    # baseline
-    if baseline:
-        baseline_median = np.median(boxplotdata[baseline])
-        ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
-
-    # stats
-    stats_table = None
-
-    if pairs:
+    if stats_pairs:
         idx = bool(nadeau_bengio)
-        stats_table = compute_stats_pairwise(results, pairs=pairs, n_train=n_train, n_test=n_test, name_col='name')[idx]
-        
+        stats_tbl_pairs = compute_stats_pairwise(results,
+                                                 pairs=stats_pairs,
+                                                 n_train=n_train,
+                                                 n_test=n_test,
+                                                 name_col=groupby)[idx]
+       
         xmin, xmax = ax.get_xlim()
         xrng = xmax - xmin
-
-        for i in range(len(stats_table)):
-
-            p = stats_table.iloc[i, :]['p-val-fdr']
+    
+        for i in range(len(stats_tbl_pairs)):
+    
+            p = stats_tbl_pairs.iloc[i, :]['p-val-fdr']
             if p > 0.05:
                 continue
-
+    
             stars = '*'
             stars = '**' if p <= 0.01 else stars
             stars = '***' if p <= 0.001 else stars
-
-            nameA = stats_table.loc[i, 'a']
-            nameB = stats_table.loc[i, 'b']
+    
+            nameA = stats_tbl_pairs.loc[i, 'a']
+            nameB = stats_tbl_pairs.loc[i, 'b']
             mini =  min(boxplotdata[nameA].min(), boxplotdata[nameB].min())
             maxi = max(boxplotdata[nameA].max(), boxplotdata[nameB].max())
             yA = len(order) - list(order).index(nameA) - 1
             yB = len(order) - list(order).index(nameB) - 1
             rng = (maxi - mini)
-            xbar =  maxi + 0.12 * rng
+            xbar =  maxi + 0.15 * rng
             xtext = xbar + (xrng/15)
             ytext = (yA + yB)/2
-            
-            ax.plot([xbar, xbar], [yA, yB], color='#35abab')
+           
+            ax.plot([xbar, xbar], [yA, yB], color='k')
             ax.text(xtext, ytext, s=stars, rotation=90, ha='center', va='center',
-                    fontsize=20, fontweight='bold', color='#35abab')
+                    fontsize=20, fontweight='bold', color='k')
             while xtext >= xmax:
                 xmax = xmax + (0.05*xrng)
-                ax.set_xlim(xmin, xmax)
+                ax.set_xlim(xmin, xmax)       
+            
+    stats_dict = {'baseline': stats_tbl_bl,
+                  'pairs': stats_tbl_pairs}
             
     # save
     if save is not None:
         plt.tight_layout()
         fig.savefig(save, dpi=300)
         
-    return ax.get_figure(), stats_table
+    return ax.get_figure(), stats_dict

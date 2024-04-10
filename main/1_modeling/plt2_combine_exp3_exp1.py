@@ -63,7 +63,7 @@ def main():
     n_train = concat['ntrain'].values[0]
     n_test = concat['ntest'].values[0]
     fig, _ = results_boxplot(concat, groupby='model', baseline='All binary',
-                             stats=True, palette=palette,
+                             stats_vs_baseline=True, palette=palette,
                              n_train=n_train, n_test=n_test)
     
     plt.tight_layout()

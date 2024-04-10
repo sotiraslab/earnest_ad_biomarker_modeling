@@ -93,7 +93,7 @@ def main(rerun=False, plot=True):
             ['#99C494'])
         
         fig, _ = results_boxplot(data, groupby='model', baseline='Baseline',
-                                 stats=False, palette=palette,
+                                 palette=palette,
                                  save=plot_path)
     
 if __name__ == '__main__':

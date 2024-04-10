@@ -91,7 +91,7 @@ def main(rerun=False, replot=True, short=False):
         group = group.loc[order, :]
         
         fig, _ = results_boxplot(data, groupby='model', baseline=None,
-                                 stats=False, palette=group['color'],
+                                 palette=group['color'],
                                  save=plot_path)
 
     

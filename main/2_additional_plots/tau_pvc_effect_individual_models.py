@@ -58,7 +58,7 @@ nopvc_model_names += ['Tau SVM']
 
 # ---- plot: for separate models
 
-from helpers import results_boxplot_pairwise
+from helpers import results_boxplot
 
 # set styling
 colors = {None: 'Gray',
@@ -95,12 +95,12 @@ group['color'] = group['biomarker'].map(colors)
 group = group.reindex(interleave)
 
 # run!
-fig, sep_stats = results_boxplot_pairwise(plot_data, groupby='name', baseline='Baseline',
-                                          palette=group['color'],
-                                          order=group.index,
-                                          n_train=plot_data['ntrain'].values[-1],
-                                          n_test=plot_data['ntest'].values[-1],
-                                          pairs=pairs)
+fig, stats = results_boxplot(plot_data, groupby='name', baseline='Baseline',
+                             palette=group['color'],
+                             order=group.index,
+                             n_train=plot_data['ntrain'].values[-1],
+                             n_test=plot_data['ntest'].values[-1],
+                             stats_pairs=pairs)
 
 # add vartypes to side
 ax = fig.axes[0]

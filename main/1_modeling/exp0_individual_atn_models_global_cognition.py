@@ -72,7 +72,7 @@ def main(rerun=False, replot=True):
         group = group.loc[order, :]
         
         fig, _ = results_boxplot(data, groupby='name', baseline='Baseline',
-                                 stats=False, palette=group['color'])
+                                 palette=group['color'])
         ax = fig.axes[0]
         for i, var in enumerate(group['variable_type']):
             y = (len(group) - 1) - i
@@ -89,7 +89,7 @@ def main(rerun=False, replot=True):
         order = group['name']
         
         fig, _ = results_boxplot(data, groupby='name', baseline='Baseline',
-                                 stats=False, palette=group['color'], order=order)
+                                 palette=group['color'], order=order)
         ax = fig.axes[0]
         for i, var in enumerate(group['variable_type']):
             y = (len(group) - 1) - i

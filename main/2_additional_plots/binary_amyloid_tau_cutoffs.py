@@ -47,8 +47,8 @@ df['amyloid_cutoff_converted'] = np.where(df['amyloid_model'].str.contains('Cent
 
 # ----- plot
 
-def draw_meanline(ax, mean, y=.8, color='black', offset=0.01, text=None):
-    ax.axvline(mean, color=color, label=text)
+def draw_meanline(ax, mean, y=.8, color='black', offset=0.01, text=None, **kwargs):
+    ax.axvline(mean, color=color, label=text, **kwargs)
     # transform = ax.get_xaxis_transform()
     # ax.text(x=mean + .01,
     #         y=y,
@@ -65,7 +65,7 @@ except:
     pass
 
 fig, (amy_ax, tau_ax) = plt.subplots(nrows=2, sharex=True,
-                                     figsize=(12, 6))
+                                     figsize=(14, 6))
 plt.rcParams.update({'font.size': 20})
 amy_ax.set_title('Amyloid')
 tau_ax.set_title('Tau')
@@ -82,14 +82,18 @@ sns.kdeplot(x ,
 
 mean = x.mean().round(3)
 ax.axvline(mean, color=color)
-draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})')
+draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})', lw=4)
 draw_meanline(ax, 1.11, 0.6, color='k', text='Landau (1.11)')
+draw_meanline(ax, 1.24, 0.6, color='brown', text='Su (1.25)')
+draw_meanline(ax, 1.42, 0.6, color='orange', text='Jack RW')
+draw_meanline(ax, 1.30, 0.6, color='teal', text='Jack Spec.')
 draw_meanline(ax, centiloid_to_suvr(15), 0.6, color='red', text='Centiloid>15')
 draw_meanline(ax, centiloid_to_suvr(20), 0.6, color='blue', text='Centiloid>20')
 draw_meanline(ax, centiloid_to_suvr(25), 0.6, color='green', text='Centiloid>25')
 ax.legend(fontsize=14,
           loc='upper left',
-          bbox_to_anchor=(1, 1))
+          bbox_to_anchor=(1, 1),
+          ncol=2)
 
 #tau
 ax = tau_ax
@@ -103,7 +107,7 @@ sns.kdeplot(x ,
             color=color,
             fill=True)
 mean = x.mean().round(3)
-draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})')
+draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})', lw=4)
 draw_meanline(ax, 1.20, 0.8, color='#de1c1a', text='Jack Sens. (1.20)')
 draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack Spec. (1.21)')
 draw_meanline(ax, 1.23, 0.4, color='#fe7f06', text='Jack Acc-Young (1.23)')

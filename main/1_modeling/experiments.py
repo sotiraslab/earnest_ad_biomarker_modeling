@@ -80,6 +80,8 @@ def experiment_test_all_atn_predictors(dataset, target,
                                'name': model.nickname,
                                'fold': i,
                                'repeat': r,
+                               'ntrain': len(outer_train),
+                               'ntest': len(outer_test),
                                **metrics}
                         results.append(row)
                         models[model.nickname].append(model)

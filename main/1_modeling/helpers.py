@@ -108,16 +108,19 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data):
 
 # ---- stats
 
-def compute_stats(results, n_train, n_test, baseline = 'Baseline'):
+def compute_stats_vs_baseline(results, n_train, n_test, baseline = 'Baseline',
+                              error_measure=True):
     models = [m for m in results['model'].unique() if m != baseline]
 
     a = results.loc[results['model'] == baseline, 'rmse']
     t_df = []
     corrected_t_df = []
     for m in models:
+        alternative = 'greater' if error_measure else 'less'
+        side = 'right' if error_measure else 'left'
         b = results.loc[results['model'] == m, 'rmse']
-        t_df.append(ttest(a, b, alternative='greater', paired=True))
-        corrected_t_df.append(nadeau_bengio_test(a, b, n_train, n_test, side='right'))
+        t_df.append(ttest(a, b, alternative=alternative, paired=True))
+        corrected_t_df.append(nadeau_bengio_test(a, b, n_train, n_test, side=side))
 
     t_df = pd.concat(t_df)
     t_df['model'] = models
@@ -128,6 +131,32 @@ def compute_stats(results, n_train, n_test, baseline = 'Baseline'):
     corrected_t_df['p-val-fdr'] = multipletests(corrected_t_df['p'], method='fdr_bh')[1]
 
     return t_df, corrected_t_df
+
+def compute_stats_pairwise(results, pairs, n_train, n_test, value='rmse',
+                           name_col='model'):
+
+    t_df = []
+    corrected_t_df = []
+    a_list = [pair[0] for pair in pairs]
+    b_list = [pair[1] for pair in pairs]
+    for colA, colB in pairs:
+        a = results.loc[results[name_col] == colA, value]
+        b = results.loc[results[name_col] == colB, value]
+        t_df.append(ttest(a, b, alternative='two-sided', paired=True))
+        corrected_t_df.append(nadeau_bengio_test(a, b, n_train, n_test, side='both'))
+
+    t_df = pd.concat(t_df)
+    t_df['a'] = a_list
+    t_df['b'] = b_list
+    t_df['p-val-fdr'] = multipletests(t_df['p-val'], method='fdr_bh')[1]
+
+    corrected_t_df = pd.DataFrame(corrected_t_df)
+    corrected_t_df['a'] = a_list
+    corrected_t_df['b'] = b_list
+    corrected_t_df['p-val-fdr'] = multipletests(corrected_t_df['p'], method='fdr_bh')[1]
+
+    return t_df, corrected_t_df
+
 
 def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
     """
@@ -200,7 +229,8 @@ def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
 def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True,
                     nadeau_bengio=True, title=None, palette=None,
                     n_train=None, n_test=None, order=None,
-                    pivot_index=['fold', 'repeat'], pivot_values='rmse'):
+                    pivot_index=['fold', 'repeat'], pivot_values='rmse',
+                    error_measure=True):
 
     # data
     if order is None:
@@ -262,7 +292,8 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
     
     if stats:
         idx = bool(nadeau_bengio)
-        stats_table = compute_stats(results, baseline=baseline, n_train=n_train, n_test=n_test)[idx]
+        stats_table = compute_stats_vs_baseline(results, baseline=baseline, n_train=n_train, n_test=n_test,
+                                                error_measure=error_measure)[idx]
 
         xmin, xmax = ax.get_xlim()
         xrng = xmax - xmin
@@ -284,6 +315,109 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None, stats=True
             ax.text(x, y, s=stars, rotation=90, ha='center', va='center',
                     fontsize=20, fontweight='bold', color='darkorange')
             while x >= xmax:
+                xmax = xmax + (0.05*xrng)
+                ax.set_xlim(xmin, xmax)
+            
+    # save
+    if save is not None:
+        plt.tight_layout()
+        fig.savefig(save, dpi=300)
+        
+    return ax.get_figure(), stats_table
+
+def results_boxplot_pairwise(results, groupby, baseline='Baseline',
+                             pairs=None, save=None,
+                             nadeau_bengio=True, title=None, palette=None,
+                             n_train=None, n_test=None, order=None,
+                             pivot_index=['fold', 'repeat'], pivot_values='rmse'):
+
+    # data
+    if order is None:
+        order = results[groupby].unique()
+    boxplotdata = results.pivot(index=pivot_index, columns=groupby, values=pivot_values)
+    boxplotdata = boxplotdata[order]
+
+    # base plot
+    try:
+        font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
+        plt.rcParams.update({
+            'font.family': font_prop.get_name()})
+    except:
+        pass
+    
+    fig, ax = plt.subplots(figsize=(6, 8))
+    positions = list(range(len(order)))
+    positions.reverse()
+    bplot = ax.boxplot(boxplotdata, vert=False, patch_artist=True, positions=positions,
+                        sym='o', flierprops={'markerfacecolor':'gray', 'markeredgecolor':'gray'})
+
+    # colors
+    if palette is None:
+        palette = ['Gray'] * len(order)
+    
+    double_palette = np.repeat(palette, 2)
+
+    for patch, color in zip(bplot['boxes'], palette):
+        patch.set_facecolor(color)
+        patch.set_edgecolor(color)
+
+    for whiskers, color in zip(bplot['whiskers'], double_palette):
+        whiskers.set_color(color)
+
+    for cap, color in zip(bplot['caps'], double_palette):
+        cap.set_color(color)
+
+    for median in bplot['medians']:
+        median.set_color('white')
+
+    # labels
+    ax.set_yticklabels(order)
+    ax.set_xlabel('RMSE')
+    ax.grid(alpha=.4)
+
+    if title:
+        ax.set_title(title, loc='left')
+
+    # baseline
+    if baseline:
+        baseline_median = np.median(boxplotdata[baseline])
+        ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
+
+    # stats
+    stats_table = None
+
+    if pairs:
+        idx = bool(nadeau_bengio)
+        stats_table = compute_stats_pairwise(results, pairs=pairs, n_train=n_train, n_test=n_test, name_col='name')[idx]
+        
+        xmin, xmax = ax.get_xlim()
+        xrng = xmax - xmin
+
+        for i in range(len(stats_table)):
+
+            p = stats_table.iloc[i, :]['p-val-fdr']
+            if p > 0.05:
+                continue
+
+            stars = '*'
+            stars = '**' if p <= 0.01 else stars
+            stars = '***' if p <= 0.001 else stars
+
+            nameA = stats_table.loc[i, 'a']
+            nameB = stats_table.loc[i, 'b']
+            mini =  min(boxplotdata[nameA].min(), boxplotdata[nameB].min())
+            maxi = max(boxplotdata[nameA].max(), boxplotdata[nameB].max())
+            yA = len(order) - list(order).index(nameA) - 1
+            yB = len(order) - list(order).index(nameB) - 1
+            rng = (maxi - mini)
+            xbar =  maxi + 0.12 * rng
+            xtext = xbar + (xrng/15)
+            ytext = (yA + yB)/2
+            
+            ax.plot([xbar, xbar], [yA, yB], color='#35abab')
+            ax.text(xtext, ytext, s=stars, rotation=90, ha='center', va='center',
+                    fontsize=20, fontweight='bold', color='#35abab')
+            while xtext >= xmax:
                 xmax = xmax + (0.05*xrng)
                 ax.set_xlim(xmin, xmax)
             

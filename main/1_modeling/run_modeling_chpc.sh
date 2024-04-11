@@ -36,7 +36,7 @@ do
         --account='aristeidis_sotiras'
         --partition='tier2_cpu'
         --exclude=highmem01,highmem02
-        call_python.sh $script)
+        call_python.sh --rerun $script)
     echo "${COMMAND[@]}"
     "${COMMAND[@]}"
 

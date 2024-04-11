@@ -11,7 +11,7 @@ echo ""
 
 # upload
 # only the input data and processed tables are synced
-rsync -av inputs $LOGIN:${CHPC_PATH}
+# rsync -av inputs $LOGIN:${CHPC_PATH}
 rsync -av "outputs/maindata" "$LOGIN:${CHPC_PATH}/outputs"
 
 # download

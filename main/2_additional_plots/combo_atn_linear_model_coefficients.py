@@ -18,15 +18,15 @@ import pandas as pd
 
 # ---- load saved linear models
 
-filepath = '../../outputs/exp2_combo_atn_models_global_cognition/lm.pickle' 
+filepath = '../../outputs/exp2_combo_atn_models_global_cognition/lm.pickle'
 with open(filepath, 'rb') as f:
     linear_models = pickle.load(f)
-    
+
 all_binary = linear_models['All binary']
 all_continuous = linear_models['All continuous']
 
 # hard to work with the categorical, since the number
-# of coefficients is equal to the number of categories 
+# of coefficients is equal to the number of categories
 # all_categorical = linear_models['All categorical']
 
 # --- make dataframes with coefficients for each model
@@ -37,9 +37,9 @@ all_continuous = linear_models['All continuous']
 
 coef_order = ['amyloid', 'tau', 'neurodegeneration', 'age', 'sex', 'hasE4']
 
-binary_coefs = pd.DataFrame([np.abs(m.coef_) for m in all_binary], columns=coef_order)
-continuous_coefs = pd.DataFrame([np.abs(m.coef_) for m in all_continuous], columns=coef_order)
-    
+binary_coefs = pd.DataFrame([np.abs(m['lm'].coef_) for m in all_binary], columns=coef_order)
+continuous_coefs = pd.DataFrame([np.abs(m['lm'].coef_) for m in all_continuous], columns=coef_order)
+
 # set font
 font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
 plt.rcParams.update({
@@ -98,7 +98,7 @@ ax.legend()
 outfolder = '../../outputs/additional_plots'
 if not os.path.isdir(outfolder):
     os.mkdir(outfolder)
-    
+
 outfile = os.path.join(outfolder, 'combo_atn_models_linear_model_coefficients.svg')
 
 plt.tight_layout()

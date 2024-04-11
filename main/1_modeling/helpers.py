@@ -14,6 +14,7 @@ from pingouin import ttest
 from scipy.stats import t
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 
@@ -56,23 +57,23 @@ def get_training_x(data, covariates, models):
         return base_x
     else:
         return np.hstack([base_x, get_atn_covariates(models, data)])
-    
+
 def svm_best_param_lookup(results_table, svm_name, svm_params):
-    
+
     lookup = results_table.to_dict(orient='records')
     d = {}
-    
+
     for entry in lookup:
         if entry['name'] == svm_name:
             d = entry
             break
-        
+
     if not d:
         raise ValueError(f"Cannot find params for model '{svm_name}'")
-        
+
     params = {k: v for k, v in d.items() if k in svm_params}
     return params
-    
+
 def test_atn_linear_model(models, covariates, target, train_data, test_data):
 
     if not isinstance(models, list):
@@ -93,41 +94,45 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data):
     X_test = X_test[~omit, :]
     y_test = y_test[~omit]
 
-    scaler = StandardScaler()
-    X_train_scale = scaler.fit_transform(X_train)
-    X_test_scale = scaler.transform(X_test)
 
-    lm = LinearRegression()
-    lm.fit(X_train_scale, y_train)
 
-    y_pred = lm.predict(X_test_scale)
+    pipeline = Pipeline([('scaler', StandardScaler()),
+                         ('lm', LinearRegression())])
+
+
+    # X_train_scale = scaler.fit_transform(X_train)
+    # X_test_scale = scaler.transform(X_test)
+
+    pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_test)
+
     metrics = {'rmse': mean_squared_error(y_test, y_pred, squared=False),
                'r2': r2_score(y_test, y_pred)}
 
-    return metrics, lm
+    return metrics, pipeline
 
 # ---- stats
 
 def compute_stats_vs_baseline(results, n_train, n_test, baseline = 'Baseline',
-                              error_measure=True):
-    models = [m for m in results['model'].unique() if m != baseline]
+                              error_measure=True, name_col='model', value_col='rmse'):
+    models = [m for m in results[name_col].unique() if m != baseline]
 
-    a = results.loc[results['model'] == baseline, 'rmse']
+    a = results.loc[results[name_col] == baseline, value_col]
     t_df = []
     corrected_t_df = []
     for m in models:
         alternative = 'greater' if error_measure else 'less'
         side = 'right' if error_measure else 'left'
-        b = results.loc[results['model'] == m, 'rmse']
+        b = results.loc[results[name_col] == m, value_col]
         t_df.append(ttest(a, b, alternative=alternative, paired=True))
         corrected_t_df.append(nadeau_bengio_test(a, b, n_train, n_test, side=side))
 
     t_df = pd.concat(t_df)
-    t_df['model'] = models
+    t_df[name_col] = models
     t_df['p-val-fdr'] = multipletests(t_df['p-val'], method='fdr_bh')[1]
 
     corrected_t_df = pd.DataFrame(corrected_t_df)
-    corrected_t_df['model'] = models
+    corrected_t_df[name_col] = models
     corrected_t_df['p-val-fdr'] = multipletests(corrected_t_df['p'], method='fdr_bh')[1]
 
     return t_df, corrected_t_df
@@ -246,7 +251,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             'font.family': font_prop.get_name()})
     except:
         pass
-    
+
     fig, ax = plt.subplots(figsize=(6, 8))
     positions = list(range(len(order)))
     positions.reverse()
@@ -256,10 +261,10 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
     # colors
     if palette is None:
         palette = ['Gray'] * len(order)
-        
+
     if hatch is None:
         hatch = [False] * len(order)
-    
+
     double_palette = np.repeat(palette, 2)
 
     for patch, color, h in zip(bplot['boxes'], palette, hatch):
@@ -296,14 +301,15 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
     # stats
     stats_tbl_bl = None
     stats_tbl_pairs = None
-    
+
     if stats_vs_baseline and baseline is None:
         raise ValueError('Must select baseline if requesting stats.')
-    
+
     if stats_vs_baseline:
         idx = bool(nadeau_bengio)
         stats_tbl_bl = compute_stats_vs_baseline(results, baseline=baseline, n_train=n_train, n_test=n_test,
-                                                 error_measure=error_measure)[idx]
+                                                 error_measure=error_measure,
+                                                 name_col=groupby)[idx]
 
         xmin, xmax = ax.get_xlim()
         xrng = xmax - xmin
@@ -327,7 +333,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             while x >= xmax:
                 xmax = xmax + (0.05*xrng)
                 ax.set_xlim(xmin, xmax)
-    
+
     if stats_pairs:
         idx = bool(nadeau_bengio)
         stats_tbl_pairs = compute_stats_pairwise(results,
@@ -335,20 +341,20 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
                                                  n_train=n_train,
                                                  n_test=n_test,
                                                  name_col=groupby)[idx]
-       
+
         xmin, xmax = ax.get_xlim()
         xrng = xmax - xmin
-    
+
         for i in range(len(stats_tbl_pairs)):
-    
+
             p = stats_tbl_pairs.iloc[i, :]['p-val-fdr']
             if p > 0.05:
                 continue
-    
+
             stars = '*'
             stars = '**' if p <= 0.01 else stars
             stars = '***' if p <= 0.001 else stars
-    
+
             nameA = stats_tbl_pairs.loc[i, 'a']
             nameB = stats_tbl_pairs.loc[i, 'b']
             mini =  min(boxplotdata[nameA].min(), boxplotdata[nameB].min())
@@ -359,20 +365,20 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             xbar =  maxi + 0.15 * rng
             xtext = xbar + (xrng/15)
             ytext = (yA + yB)/2
-           
+
             ax.plot([xbar, xbar], [yA, yB], color='k')
             ax.text(xtext, ytext, s=stars, rotation=90, ha='center', va='center',
                     fontsize=20, fontweight='bold', color='k')
             while xtext >= xmax:
                 xmax = xmax + (0.05*xrng)
-                ax.set_xlim(xmin, xmax)       
-            
+                ax.set_xlim(xmin, xmax)
+
     stats_dict = {'baseline': stats_tbl_bl,
                   'pairs': stats_tbl_pairs}
-            
+
     # save
     if save is not None:
         plt.tight_layout()
         fig.savefig(save, dpi=300)
-        
+
     return ax.get_figure(), stats_dict

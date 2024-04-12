@@ -14,6 +14,9 @@ from common import parse, setup_output
 
 def main(short=False):
     
+    # NOTE: Short has no effect
+    # only included for consistency with other experiment scripts
+    
     output_folder = setup_output(__file__)
         
     # parameters

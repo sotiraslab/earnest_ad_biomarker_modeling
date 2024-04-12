@@ -19,7 +19,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import mean_squared_error, r2_score
 
 from atn_predictor_classes import MultivariateSVR
-from atn_predictor_instances import ATN_PREDICTORS
+from atn_predictor_instances import ATN_PREDICTORS, ATN_PREDICTORS_PLUS_CSF
 from helpers import test_atn_linear_model, svm_best_param_lookup, get_combo_atn_model
 
 def experiment_test_all_atn_predictors(dataset, target,
@@ -29,13 +29,16 @@ def experiment_test_all_atn_predictors(dataset, target,
                                        repeats=10,
                                        seed=0,
                                        savepath=None,
-                                       savemodels=None):
+                                       savemodels=None,
+                                       with_csf=False):
     
     # hold results
     results = []
     models = defaultdict(list)
     
     start_time = time.time()
+    
+    predictor_dict = ATN_PREDICTORS_PLUS_CSF if with_csf else ATN_PREDICTORS
     
     # repeats of cross validation
     for r in range(repeats):
@@ -67,7 +70,7 @@ def experiment_test_all_atn_predictors(dataset, target,
             results.append(row)
             
             # test ATN models
-            for biomarker, variable_dict in ATN_PREDICTORS.items():
+            for biomarker, variable_dict in predictor_dict.items():
                 for variable_type, model_list in variable_dict.items():
                     for model in model_list:
                         metrics, _ = test_atn_linear_model(models=model,

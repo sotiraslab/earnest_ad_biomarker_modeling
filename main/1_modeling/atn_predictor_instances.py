@@ -150,6 +150,46 @@ TAUPVC_CONTINUOUS = [
     Continuous('BRAAK56_TAUPVC', nickname='Braak56 [PVC]', atn='taupvc')
     ]
 
+# ---- CSF ----
+
+CSF_AMYLOID_BINARY = [
+    BinaryGMM('CSF_ABETA40', nickname='Aβ40 (GMM)', atn='csf_amyloid'),
+    BinaryGMM('CSF_ABETA42', nickname='Aβ42 (GMM)', atn='csf_amyloid'),
+    BinaryGMM('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40 (GMM)', atn='csf_amyloid'),
+    ]
+
+CSF_AMYLOID_CATEGORICAL = [
+    GMMWithIndeterminateZone('CSF_ABETA40', nickname='Aβ40 (UZ)', atn='csf_amyloid'),
+    GMMWithIndeterminateZone('CSF_ABETA42', nickname='Aβ42 (UZ)', atn='csf_amyloid'),
+    GMMWithIndeterminateZone('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40 (UZ)', atn='csf_amyloid'),
+    Quantiles('CSF_ABETA40', nickname='Aβ40 (Quantiles)', atn='csf_amyloid'),
+    Quantiles('CSF_ABETA42', nickname='Aβ42 (Quantiles)', atn='csf_amyloid'),
+    Quantiles('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40 (Quantiles)', atn='csf_amyloid'),
+    ]
+
+CSF_AMYLOID_CONTINUOUS = [
+    Continuous('CSF_ABETA40', nickname='Aβ40', atn='csf_amyloid'),
+    Continuous('CSF_ABETA42', nickname='Aβ42', atn='csf_amyloid'),
+    Continuous('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40', atn='csf_amyloid'),
+    ]
+
+CSF_TAU_BINARY = [
+    BinaryGMM('CSF_TAU', nickname='tTau (GMM)', atn='csf_tau'),
+    BinaryGMM('CSF_PTAU', nickname='pTau181 (GMM)', atn='csf_tau'),
+    ]
+
+CSF_TAU_CATEGORICAL = [
+    GMMWithIndeterminateZone('CSF_TAU', nickname='tTau (UZ)', atn='csf_tau'),
+    GMMWithIndeterminateZone('CSF_PTAU', nickname='pTau181 (UZ)', atn='csf_tau'),
+    Quantiles('CSF_TAU', nickname='tTau (Quantiles', atn='csf_tau'),
+    Quantiles('CSF_PTAU', nickname='pTau181 (Quantiles)', atn='csf_tau'),
+    ]
+
+CSF_TAU_CONTINUOUS = [
+    Continuous('CSF_TAU', nickname='tTau', atn='csf_tau'),
+    Continuous('CSF_PTAU', nickname='pTau181', atn='csf_tau'),
+    ]
+
 # ---- Big dictionary -----
 
 ATN_PREDICTORS = {
@@ -175,6 +215,22 @@ ATN_PREDICTORS = {
         }, 
     }
 
+CSF_ATN_PREDICTORS = {
+    'csf_amyloid': {
+        'binary': CSF_AMYLOID_BINARY,
+        'categorical': CSF_AMYLOID_CATEGORICAL,
+        'continuous': CSF_AMYLOID_CONTINUOUS
+        },
+    'csf_tau': {
+        'binary': CSF_TAU_BINARY,
+        'categorical': CSF_TAU_CATEGORICAL,
+        'continuous': CSF_TAU_CONTINUOUS
+        },
+    }
+
+ATN_PREDICTORS_PLUS_CSF = ATN_PREDICTORS.copy()
+ATN_PREDICTORS_PLUS_CSF.update(CSF_ATN_PREDICTORS)
+
 ATN_PREDICTORS_FLAT = [*AMYLOID_BINARY,
                        *AMYLOID_CATEGORICAL,
                        *AMYLOID_CONTINUOUS,
@@ -188,6 +244,14 @@ ATN_PREDICTORS_FLAT = [*AMYLOID_BINARY,
                        *TAUPVC_CATEGORICAL,
                        *TAUPVC_CONTINUOUS]
 
+CSF_ATN_PREDICTORS_FLAT = [
+    *CSF_AMYLOID_BINARY,
+    *CSF_AMYLOID_CATEGORICAL,
+    *CSF_AMYLOID_CONTINUOUS,
+    *CSF_TAU_BINARY,
+    *CSF_TAU_CATEGORICAL,
+    *CSF_TAU_CONTINUOUS,]
+
 # Accessor functions -------
 
 def get_models_by_nickname(nicknames):
@@ -197,7 +261,7 @@ def get_models_by_nickname(nicknames):
 
 # Check for duplicate names -------
 
-nicknames = [m.nickname for m in ATN_PREDICTORS_FLAT]
+nicknames = [m.nickname for m in ATN_PREDICTORS_FLAT] + [m.nickname for m in CSF_ATN_PREDICTORS_FLAT]
 nicknames_set = set(nicknames)
 assert len(nicknames) == len(nicknames_set), 'Resolve duplicated nicknames for ATN predictors!'
     

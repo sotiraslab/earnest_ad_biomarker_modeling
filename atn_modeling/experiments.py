@@ -384,7 +384,7 @@ def experiment_combo_atn_vs_baseline(dataset, target,
                 }
     
             print()
-            print('[{str(dt.datetime.now())}] *OUTER TRAINING*')
+            print(f'[{str(dt.datetime.now())}] *OUTER TRAINING*')
     
             for name, model in FINAL_ATN_MODELS.items():
                 print(f' - {name} ({[m.nickname for m in model]})')
@@ -527,7 +527,7 @@ def experiment_combo_atn_vs_binary(dataset, target,
             }
     
             print()
-            print('[{str(dt.datetime.now())}] *OUTER TRAINING*')
+            print(f'[{str(dt.datetime.now())}] *OUTER TRAINING*')
     
             for name, model in FINAL_ATN_MODELS.items():
                 print(f' - {name} ({[m.nickname for m in model]})')

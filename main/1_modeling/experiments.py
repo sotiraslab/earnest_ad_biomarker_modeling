@@ -122,7 +122,8 @@ def experiment_svm(dataset, target,
                    outer_seed=0,
                    inner_seed=100,
                    savepath=None,
-                   savemodels=None):
+                   savemodels=None,
+                   testing_filter=None):
     
     # setup columns for SVM
     amy_columns = list(dataset.columns[dataset.columns.str.startswith('AV45') & ~dataset.columns.str.contains('TOT')])
@@ -196,7 +197,10 @@ def experiment_svm(dataset, target,
             print('-' * len(msg))
             
             outer_train = dataset.iloc[outer_train_index, :]
-            outer_test = dataset.iloc[outer_test_index, :]       
+            outer_test = dataset.iloc[outer_test_index, :]
+            
+            if testing_filter is not None:
+                outer_test = testing_filter(outer_test)
             
             # inner CV loop
             inner_cv_svm_results = []
@@ -206,6 +210,9 @@ def experiment_svm(dataset, target,
     
                 inner_train = outer_train.iloc[inner_train_index, :]
                 inner_test = outer_train.iloc[inner_test_index, :]
+                
+                if testing_filter is not None:
+                    inner_test = testing_filter(inner_test)
                 
                 # testing many SVM models
                 
@@ -288,7 +295,8 @@ def experiment_combo_atn_vs_baseline(dataset, target,
                                      inner_seed=100,
                                      savepath=None,
                                      savemodels=None,
-                                     savelms=None):
+                                     savelms=None,
+                                     testing_filter=None):
     
     results = []
     models = defaultdict(list)
@@ -309,6 +317,9 @@ def experiment_combo_atn_vs_baseline(dataset, target,
     
             outer_train = dataset.iloc[outer_train_index, :]
             outer_test = dataset.iloc[outer_test_index, :]   
+            
+            if testing_filter is not None:
+                outer_test = testing_filter(outer_test)
     
             inner_cv_lm_results = []
     
@@ -319,6 +330,9 @@ def experiment_combo_atn_vs_baseline(dataset, target,
     
                 inner_train = outer_train.iloc[inner_train_index, :]
                 inner_test = outer_train.iloc[inner_test_index, :]
+                
+                if testing_filter is not None:
+                    inner_test = testing_filter(inner_test)
     
                 # testing many ATN models
                 for biomarker, variable_dict in ATN_PREDICTORS.items():
@@ -425,7 +439,8 @@ def experiment_combo_atn_vs_binary(dataset, target,
                                    inner_seed=100,
                                    savepath=None,
                                    savemodels=None,
-                                   savelms=None):
+                                   savelms=None,
+                                   testing_filter=None):
     
     results = []
     models = defaultdict(list)
@@ -445,7 +460,10 @@ def experiment_combo_atn_vs_binary(dataset, target,
             print('-' * len(msg))
     
             outer_train = dataset.iloc[outer_train_index, :]
-            outer_test = dataset.iloc[outer_test_index, :]   
+            outer_test = dataset.iloc[outer_test_index, :]
+            
+            if testing_filter is not None:
+                outer_test = testing_filter(outer_test)
     
             inner_cv_lm_results = []
     
@@ -456,6 +474,9 @@ def experiment_combo_atn_vs_binary(dataset, target,
     
                 inner_train = outer_train.iloc[inner_train_index, :]
                 inner_test = outer_train.iloc[inner_test_index, :]
+                
+                if testing_filter is not None:
+                    inner_test = testing_filter(inner_test)
     
                 # testing many ATN models
                 for biomarker, variable_dict in ATN_PREDICTORS.items():

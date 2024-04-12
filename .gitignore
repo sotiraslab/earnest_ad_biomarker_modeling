@@ -6,6 +6,10 @@
 # DS_Store
 .DS_Store
 
+# outputs
+main/datasets/*
+!main/datasets/README.md
+
 # inputs
 main/inputs/*
 !main/inputs/README.md

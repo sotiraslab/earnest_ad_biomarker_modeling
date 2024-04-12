@@ -3,10 +3,7 @@ sh <- suppressPackageStartupMessages
 
 sh(library(this.path))
 
-DEFAULT.DIRECTORY <- normalizePath(file.path(this.dir(), '..', 'inputs'))
-
-load.adni.table <- function(table, directory = NULL) {
-  if (is.null(directory)) directory <- DEFAULT.DIRECTORY
+load.adni.table <- function(table, directory) {
   table <- tolower(table)
   files <- list.files(directory)
   matches <- files[grepl(table, files, ignore.case = T, perl = T)]

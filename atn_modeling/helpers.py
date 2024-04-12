@@ -18,7 +18,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 
-from atn_predictor_instances import get_models_by_nickname
+from atn_modeling.atn_predictor_instances import get_models_by_nickname
 
 # ---- modeling helpers
 

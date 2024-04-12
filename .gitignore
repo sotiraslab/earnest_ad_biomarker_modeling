@@ -7,12 +7,12 @@
 .DS_Store
 
 # inputs
-inputs/*
-!inputs/README.md
+main/inputs/*
+!main/inputs/README.md
 
 # outputs
-outputs/*
-!outputs/*/README.md
+main/outputs/*
+!main/outputs/*/README.md
 
 # main
 main/**/*.csv

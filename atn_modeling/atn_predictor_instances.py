@@ -6,13 +6,13 @@ Created on Tue May 30 10:08:53 2023
 @author: earnestt1234
 """
 
-from atn_predictor_classes import (BinaryGMM,
-                                   BinaryManual,
-                                   BinaryZScore,
-                                   CategoricalStager,
-                                   GMMWithIndeterminateZone,
-                                   Continuous,
-                                   Quantiles)
+from atn_modeling.atn_predictor_classes import (BinaryGMM,
+                                                BinaryManual,
+                                                BinaryZScore,
+                                                CategoricalStager,
+                                                GMMWithIndeterminateZone,
+                                                Continuous,
+                                                Quantiles)
 
 collij_regions = [
     "AV45_CTX_TOT_POSTERIORCINGULATE_SUVR",

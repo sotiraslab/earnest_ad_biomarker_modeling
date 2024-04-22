@@ -73,7 +73,7 @@ do
         --account='aristeidis_sotiras'
         --partition='tier2_cpu'
         --exclude=highmem01,highmem02
-        call_python.sh --rerun $script $SHORT)
+        call_python.sh $SHORT $script)
     echo "${COMMAND[@]}"
 
     if [[ $DRYUN == '0' ]]

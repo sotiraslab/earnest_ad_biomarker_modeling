@@ -12,8 +12,9 @@ echo ""
 # upload
 # only the input data and processed tables are synced
 # rsync -av inputs $LOGIN:${CHPC_PATH}
-rsync -av "outputs/maindata" "$LOGIN:${CHPC_PATH}/outputs"
+rsync -av "main/inputs/*" "$LOGIN:${CHPC_PATH}/main/inputs"
+rsync -av "main/datasets/*" "$LOGIN:${CHPC_PATH}/main/datasets"
 
 # download
 # outputs are downloaded
-rsync -av "$LOGIN:${CHPC_PATH}/outputs" '.'
+rsync -av "$LOGIN:${CHPC_PATH}/main/outputs" 'main'

@@ -19,7 +19,7 @@ do
 	case $arg in
 	h)	usage
 		exit 0;;
-	S)	SHORT=' --short';;
+	S)	SHORT='--short';;
 	?)	echo ""
 		echo "Unknown arguments passed; exiting."
 		echo ""

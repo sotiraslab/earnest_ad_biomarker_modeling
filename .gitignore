@@ -16,7 +16,11 @@ main/inputs/*
 
 # outputs
 main/outputs/*
-!main/outputs/*/README.md
+!main/outputs/README.md
+
+# figures
+main/figures/*
+!main/figures/README.md
 
 # main
 main/**/*.csv

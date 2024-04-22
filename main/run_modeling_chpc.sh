@@ -54,7 +54,7 @@ SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
 # silently load python on CHPC
 module load python
 source ~/.bashrc
-. ~/miniconda/bin/activate
+source ~/miniconda/bin/activate
 conda activate atn_cognition
 
 for script in "${SCRIPTS[@]}"

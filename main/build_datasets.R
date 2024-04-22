@@ -601,5 +601,5 @@ df.long <- df %>%
   filter(! is.na(DeltaADSP))
 
 write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
-write.csv(df, file.path(outfolder, 'maindata_long.csv'), quote = F, na = '', row.names = F)
+write.csv(df.long, file.path(outfolder, 'maindata_long.csv'), quote = F, na = '', row.names = F)
 write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)

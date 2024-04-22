@@ -3,7 +3,7 @@
 # Define help text for the script.
 usage() {
 	echo ""
-	echo "Usage:	run_modeling_chpc.sh -S"
+	echo "Usage:	run_modeling_chpc.sh [-S -E]"
 	echo ""
 	echo "Description:"
 	echo "    Run all cross-validated modeling experiments by submitting SLURM jobs."

@@ -9,17 +9,20 @@ usage() {
 	echo "    Run all cross-validated modeling experiments by submitting SLURM jobs."
 	echo "Arguments:"
     echo "    -S Short.  Limits hyperparameter tuning for all SVM experiments.  No difference for linear models."
-	echo ""
+	echo "    -D Dryrun.  Commands are printed, but jobs are not submitted"
+    echo ""
 	}
 
 # read arguments
 SHORT=''
-while getopts hi:o: arg
+DRYRUN='0'
+while getopts hSD arg
 do
 	case $arg in
 	h)	usage
 		exit 0;;
 	S)	SHORT='--short';;
+    D)  DRYRUN=='1';;
 	?)	echo ""
 		echo "Unknown arguments passed; exiting."
 		echo ""
@@ -72,6 +75,10 @@ do
         --exclude=highmem01,highmem02
         call_python.sh --rerun $script $SHORT)
     echo "${COMMAND[@]}"
-    "${COMMAND[@]}"
+
+    if [[ $DRYUN == '0' ]]
+    then
+        "${COMMAND[@]}"
+    fi
 
 done

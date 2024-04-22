@@ -54,14 +54,18 @@ SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
 # silently load python on CHPC
 module load python
 source ~/.bashrc
-source ~/miniconda/bin/activate
-conda activate atn_cognition
+source ~/miniconda/bin/activate atn_cognition
 
 for script in "${SCRIPTS[@]}"
 do
     name=$(basename $script .py)
-    mkdir -p "../../outputs/logs"
-    log="../../outputs/logs/${name}_short.log"
+    mkdir -p "logs"
+    log="logs/${name}.log"
+    
+    if [[ $SHORT == '--short' ]]
+    then
+        log="logs/${name}_short.log"
+    fi
 
     COMMAND=(sbatch
         -J $name
@@ -73,10 +77,10 @@ do
         --account='aristeidis_sotiras'
         --partition='tier2_cpu'
         --exclude=highmem01,highmem02
-        call_python.sh $SHORT $script)
+        call_python.sh $script $SHORT)
     echo "${COMMAND[@]}"
 
-    if [[ $DRYUN == '0' ]]
+    if [[ $DRYRUN == '0' ]]
     then
         "${COMMAND[@]}"
     fi

@@ -236,21 +236,21 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
                     nadeau_bengio=True, title=None, palette=None,
                     n_train=None, n_test=None, order=None,
                     pivot_index=['fold', 'repeat'], pivot_values='rmse',
-                    error_measure=True, hatch=None):
+                    error_measure=True, hatch=None, font_file=None):
 
     # data
     if order is None:
         order = results[groupby].unique()
     boxplotdata = results.pivot(index=pivot_index, columns=groupby, values=pivot_values)
     boxplotdata = boxplotdata[order]
+    
+    # font
 
     # base plot
-    try:
-        font_prop = fm.FontProperties(fname='../../fonts/arial.ttf')
+    if font_file:
+        font_prop = fm.FontProperties(fname=font_file)
         plt.rcParams.update({
             'font.family': font_prop.get_name()})
-    except:
-        pass
 
     fig, ax = plt.subplots(figsize=(6, 8))
     positions = list(range(len(order)))

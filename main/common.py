@@ -35,7 +35,7 @@ def load_results(experiment, result, check_short=True):
         else:
             raise RuntimeError(f'"{result}" for "{experiment}" are missing.')
 
-    ext = os.path.splitext(path)[1].lower()
+    ext = os.path.splitext(path)[1].lower().strip('.')
     if ext == 'pickle':
         with open(path, 'rb') as f:
             output = pickle.load(f)

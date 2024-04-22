@@ -7,51 +7,27 @@ Created on Wed Mar 13 09:54:56 2024
 """
 
 import os
-import warnings
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from helpers import results_boxplot
+from common import load_results
+from atn_modeling.helpers import results_boxplot
 
-this_dir = os.path.dirname(os.path.abspath(__file__))
-exp0_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp0_individual_atn_models_global_cognition'))
-exp1_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition'))
-
-exp0_results = os.path.join(exp0_folder, 'results.csv')
-exp1_results = os.path.join(exp1_folder, 'results.csv')
-
-if not os.path.exists(exp0_results):
-    raise RuntimeError('Results for exp0 are missing.')
-    
-if not os.path.exists(exp1_results):
-    short_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', 'exp1_svms_global_cognition_short'))
-    short_results = exp1_results = os.path.join(short_folder, 'results.csv')
-    
-    if os.path.exists(short_results):
-        warnings.warn('The full results are missing for exp1 (SVMs), but the short results are present.  Using the latter!',
-                      RuntimeWarning)
-        exp1_results = short_results
-    else:
-        raise RuntimeError('Results for exp1 are missing.')
+# load results
+exp0 = load_results('exp0_individual_atn_models_global_cognition', 'results.csv')
+exp1 = load_results('exp1_svms_global_cognition', 'results.csv')
     
 # concatenate data
-exp0 = pd.read_csv(exp0_results)
-exp1 = pd.read_csv(exp1_results)
 exp1['variable_type'] = 'SVM'
 exp1['name'] = exp1['model'].copy()
 concat = pd.concat([exp0, exp1])
 concat = concat[concat['biomarker'].isin([None, 'amyloid', 'tau', 'neurodegeneration']) | concat['name'].eq('Baseline')]
-    
-# output
-experiment_name = os.path.splitext(os.path.basename(__file__))[0]
-output_folder = os.path.abspath(os.path.join(this_dir, '..', '..', 'outputs', experiment_name))
-if not os.path.isdir(output_folder):
-    os.mkdir(output_folder)
 
-# general resources
-plot_path = os.path.join(output_folder, 'boxplot.svg')
+# plotting parameters
+plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '.svg')
+
 colors = {'amyloid': '#882255',
           'tau': '#117733',
           'neurodegeneration': '#332288',
@@ -76,7 +52,7 @@ group = group.sort_values('rmse', ascending=False)
 order = group['name']
 
 fig, _ = results_boxplot(data, groupby='name', baseline='Baseline',
-                         palette=group['color'], order=order)
+                         palette=group['color'], order=order, font_file='arial.ttf')
 ax = fig.axes[0]
 for i, var in enumerate(group['variable_type']):
     y = (len(group) - 1) - i
@@ -98,5 +74,6 @@ ax.legend(handles = [
     ncol=3,
     frameon=False)
 
+# save
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)

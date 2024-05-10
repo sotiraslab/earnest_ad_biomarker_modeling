@@ -18,12 +18,12 @@ collij_regions = [
     "AV45_CTX_TOT_POSTERIORCINGULATE_SUVR",
     "AV45_CTX_TOT_ISTHMUSCINGULATE_SUVR",
     "CollijAnteriorCingulate",
-    
+
     "AV45_CTX_TOT_LATERALORBITOFRONTAL_SUVR",
     "AV45_CTX_TOT_PARACENTRAL_SUVR",
     "AV45_CTX_TOT_PRECUNEUS_SUVR",
     "AV45_CTX_TOT_MEDIALORBITOFRONTAL_SUVR",
-    
+
     "AV45_CTX_TOT_INSULA_SUVR",
     "AV45_CTX_TOT_FUSIFORM_SUVR",
     "AV45_CTX_TOT_PRECENTRAL_SUVR",
@@ -36,7 +36,7 @@ collij_regions = [
     "AV45_CTX_TOT_INFERIORPARIETAL_SUVR",
     "AV45_CTX_TOT_CUNEUS_SUVR",
     "CollijMiddleFrontal",
-    
+
     "AV45_CTX_TOT_LATERALOCCIPITAL_SUVR",
     "AV45_CTX_TOT_SUPERIORPARIETAL_SUVR",
     "AV45_CTX_TOT_MIDDLETEMPORAL_SUVR",
@@ -155,22 +155,22 @@ TAUPVC_CONTINUOUS = [
 CSF_AMYLOID_BINARY = [
     BinaryGMM('CSF_ABETA40', nickname='Aβ40 (GMM)', atn='csf_amyloid'),
     BinaryGMM('CSF_ABETA42', nickname='Aβ42 (GMM)', atn='csf_amyloid'),
-    BinaryGMM('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40 (GMM)', atn='csf_amyloid'),
+    BinaryGMM('CSF_AB42OVER40', nickname='Aβ42/Aβ40 (GMM)', atn='csf_amyloid'),
     ]
 
 CSF_AMYLOID_CATEGORICAL = [
     GMMWithIndeterminateZone('CSF_ABETA40', nickname='Aβ40 (UZ)', atn='csf_amyloid'),
     GMMWithIndeterminateZone('CSF_ABETA42', nickname='Aβ42 (UZ)', atn='csf_amyloid'),
-    GMMWithIndeterminateZone('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40 (UZ)', atn='csf_amyloid'),
+    GMMWithIndeterminateZone('CSF_AB42OVER40', nickname='Aβ42/Aβ40 (UZ)', atn='csf_amyloid'),
     Quantiles('CSF_ABETA40', nickname='Aβ40 (Quantiles)', atn='csf_amyloid'),
     Quantiles('CSF_ABETA42', nickname='Aβ42 (Quantiles)', atn='csf_amyloid'),
-    Quantiles('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40 (Quantiles)', atn='csf_amyloid'),
+    Quantiles('CSF_AB42OVER40', nickname='Aβ42/Aβ40 (Quantiles)', atn='csf_amyloid'),
     ]
 
 CSF_AMYLOID_CONTINUOUS = [
     Continuous('CSF_ABETA40', nickname='Aβ40', atn='csf_amyloid'),
     Continuous('CSF_ABETA42', nickname='Aβ42', atn='csf_amyloid'),
-    Continuous('CSF_ABETA42OVER40', nickname='Aβ42/Aβ40', atn='csf_amyloid'),
+    Continuous('CSF_AB42OVER40', nickname='Aβ42/Aβ40', atn='csf_amyloid'),
     ]
 
 CSF_TAU_BINARY = [
@@ -202,7 +202,7 @@ ATN_PREDICTORS = {
         'binary': TAU_BINARY,
         'categorical': TAU_CATEGORICAL,
         'continuous': TAU_CONTINUOUS
-        }, 
+        },
     'neurodegeneration': {
         'binary': GM_BINARY,
         'categorical': GM_CATEGORICAL,
@@ -212,7 +212,7 @@ ATN_PREDICTORS = {
         'binary': TAUPVC_BINARY,
         'categorical': TAUPVC_CATEGORICAL,
         'continuous': TAUPVC_CONTINUOUS
-        }, 
+        },
     }
 
 CSF_ATN_PREDICTORS = {
@@ -264,4 +264,3 @@ def get_models_by_nickname(nicknames):
 nicknames = [m.nickname for m in ATN_PREDICTORS_FLAT] + [m.nickname for m in CSF_ATN_PREDICTORS_FLAT]
 nicknames_set = set(nicknames)
 assert len(nicknames) == len(nicknames_set), 'Resolve duplicated nicknames for ATN predictors!'
-    

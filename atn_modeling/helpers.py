@@ -10,7 +10,7 @@ Created on Fri Jun 23 11:34:10 2023
 # sklearn stuff later caused massive slow down
 # unable to find good documentation
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import root_mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -110,7 +110,7 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data):
     pipeline.fit(X_train, y_train)
     y_pred = pipeline.predict(X_test)
 
-    metrics = {'rmse': mean_squared_error(y_test, y_pred, squared=False),
+    metrics = {'rmse': root_mean_squared_error(y_test, y_pred),
                'r2': r2_score(y_test, y_pred)}
 
     return metrics, pipeline

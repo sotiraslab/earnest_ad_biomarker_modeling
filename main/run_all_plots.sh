@@ -10,6 +10,8 @@ SCRIPTS=('plt0_boxplot_all_individual_predictors_global_cog.py'
          'plt8_feature_selection_piecharts.py'
          'plt9_taupvc_individual_models.py'
          'plt10_taupvc_combination_models.py'
+         'plt12_boxplot_all_individual_predictors_with_csf.py'
+         'plt13_boxplot_combination_models_with_csf.py'
 )
 
 echo ""

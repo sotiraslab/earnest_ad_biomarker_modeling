@@ -49,6 +49,8 @@ SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
          'exp9a_preclinical_combo_atn_models.py'
          'exp9b_preclinical_combo_atn_models_vs_binary.py'
          'exp9c_preclinical_svms.py'
+         'exp10a_test_all_predictors_with_csf.py'
+         'exp10b_test_all_predictors_with_csf_vs_baseline.py'
 )
 
 # silently load python on CHPC

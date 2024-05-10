@@ -29,3 +29,28 @@ do
     echo "* Done!"
     echo "=================================================="
 done
+
+# run Haufe viz scripts separately, as they involve R
+script='plt11a_extract_haufe_weights.py'
+COMMAND=(python ${script})
+echo ""
+echo "==================================================" 
+echo "* Beginning: ${script}"
+echo "* Command: ${COMMAND[@]}"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+"${COMMAND[@]}"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "* Done!"
+echo "=================================================="
+
+script='plt11b_plot_haufe_weights.R'
+COMMAND=(Rscript ${script})
+echo ""
+echo "==================================================" 
+echo "* Beginning: ${script}"
+echo "* Command: ${COMMAND[@]}"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+"${COMMAND[@]}"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "* Done!"
+echo "=================================================="

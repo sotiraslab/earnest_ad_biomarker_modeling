@@ -574,3 +574,135 @@ def experiment_combo_atn_vs_binary(dataset, target,
         print('Done!')
 
     return results_df, models, lms
+
+def experiment_combo_atn_vs_baseline_CSF(dataset, target,
+                                         covariates=['Age', 'SexBinary', 'HasE4Binary'],
+                                         stratify='CDRBinned',
+                                         repeats=10,
+                                         outer_splits=10,
+                                         inner_splits=5,
+                                         outer_seed=0,
+                                         inner_seed=100,
+                                         savepath=None,
+                                         savemodels=None,
+                                         savelms=None,
+                                         testing_filter=None):
+
+    results = []
+    models = defaultdict(list)
+    lms = defaultdict(list)
+
+    # repeats of nested CV
+    for r in range(repeats):
+
+        outer_cv = StratifiedKFold(n_splits=outer_splits, random_state=outer_seed + r, shuffle=True)
+        inner_cv = StratifiedKFold(n_splits=inner_splits, random_state=inner_seed + r, shuffle=True)
+
+        # outer CV loop
+        for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(dataset, dataset[stratify])):
+            msg = f"[{str(dt.datetime.now())}] REPEAT: {r}, OUTER FOLD: {i}"
+            print()
+            print(msg)
+            print('-' * len(msg))
+
+            outer_train = dataset.iloc[outer_train_index, :]
+            outer_test = dataset.iloc[outer_test_index, :]
+
+            if testing_filter is not None:
+                outer_test = testing_filter(outer_test)
+
+            inner_cv_lm_results = []
+
+            # inner CV loop
+            for j, (inner_train_index, inner_test_index) in enumerate(inner_cv.split(outer_train, outer_train[stratify])):
+
+                print(f'[{str(dt.datetime.now())}] *INNER TRAINING FOLD {j}*')
+
+                inner_train = outer_train.iloc[inner_train_index, :]
+                inner_test = outer_train.iloc[inner_test_index, :]
+
+                if testing_filter is not None:
+                    inner_test = testing_filter(inner_test)
+
+                # testing many ATN models
+                for biomarker, variable_dict in ATN_PREDICTORS_PLUS_CSF.items():
+                    for variable_type, model_list in variable_dict.items():
+                        for model in model_list:
+                            metrics, _ = test_atn_linear_model(models=model,
+                                                               covariates=covariates,
+                                                               target=target,
+                                                               train_data=inner_train,
+                                                               test_data=inner_test)
+                            row = {'biomarker': biomarker,
+                                   'variable_type': variable_type,
+                                   'name': model.nickname,
+                                   'fold': i,
+                                   'repeat': r,
+                                   **metrics}
+                            inner_cv_lm_results.append(row)
+
+            # select best ATN model
+            inner_cv_lm_results = pd.DataFrame(inner_cv_lm_results)
+            lm_model_averages = inner_cv_lm_results.groupby(['biomarker', 'variable_type', 'name'])['rmse'].agg(mean='mean', std='std').reset_index()
+            best_by_measure = lm_model_averages.groupby(['biomarker', 'variable_type'])['mean'].idxmin()
+            lm_selected_models = lm_model_averages.iloc[best_by_measure]
+
+            # develop combinations
+            FINAL_ATN_MODELS = {
+                'Baseline': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, None, None, None),
+                'All binary [Imaging]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, 'binary', 'binary', 'binary'),
+                'All binary [CSF]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, 'binary', 'binary', 'binary', csf=True),
+                'All categorical [Imaging]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, 'categorical', 'categorical', 'categorical'),
+                'All categorical [CSF]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, 'categorical', 'categorical', 'categorical', csf=True),
+                'All continuous [Imaging]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, 'continuous', 'continuous', 'continuous'),
+                'All continuous [CSF]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS_PLUS_CSF, 'continuous', 'continuous', 'continuous', csf=True),
+                }
+
+            print()
+            print(f'[{str(dt.datetime.now())}] *OUTER TRAINING*')
+
+            for name, model in FINAL_ATN_MODELS.items():
+                print(f' - {name} ({[m.nickname for m in model]})')
+
+                # testing on ADNI
+                metrics, lm = test_atn_linear_model(models=model,
+                                                    covariates=covariates,
+                                                    target=target,
+                                                    train_data=outer_train,
+                                                    test_data=outer_test)
+                row = {'model': name,
+                       'fold': i,
+                       'repeat': r,
+                       'ntrain': len(outer_train),
+                       'ntest': len(outer_test),
+                       **metrics}
+                results.append(row)
+
+                # save model
+                models[name].append(deepcopy(model))
+                lms[name].append(deepcopy(lm))
+
+
+    results_df = pd.DataFrame(results)
+
+    if savepath:
+        print('')
+        print(f'Saving results to "{savepath}"...')
+        results_df.to_csv(savepath, index=False)
+        print('Done!')
+
+    if savemodels:
+        print('')
+        print(f'Saving models to "{savemodels}"...')
+        with open(savemodels, 'wb') as f:
+            pickle.dump(models, f)
+        print('Done!')
+
+    if savelms:
+        print('')
+        print(f'Saving linear models to "{savelms}"...')
+        with open(savelms, 'wb') as f:
+            pickle.dump(lms, f)
+        print('Done!')
+
+    return results_df, models, lms

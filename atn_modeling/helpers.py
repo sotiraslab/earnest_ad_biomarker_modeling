@@ -38,6 +38,7 @@ def get_combo_atn_model(selected_models, atn_predictors_dict,
                         amyloid=None, tau=None,
                         neurodegeneration=None,
                         taupvc=False,
+                        csf=False,
                         biomarker_col='biomarker',
                         vartype_col='variable_type',
                         name_col='name'):
@@ -45,11 +46,15 @@ def get_combo_atn_model(selected_models, atn_predictors_dict,
     df = selected_models
 
     variable_types = [amyloid, tau, neurodegeneration]
-    biomarkers = ['amyloid', 'taupvc' if taupvc else 'tau', 'neurodegeneration']
+    if csf:
+        biomarkers = ['csf_amyloid', 'csf_tau', 'csf_neurodegeneration']
+    else:
+        biomarkers = ['amyloid', 'taupvc' if taupvc else 'tau', 'neurodegeneration']
     output = []
 
     for variable_type, biomarker in zip(variable_types, biomarkers ):
-        if variable_type is None: continue;
+        if variable_type is None:
+            continue
         key = df.loc[(df[biomarker_col] == biomarker) & (df[vartype_col] == variable_type)][name_col].iloc[0]
         output += get_models_by_nickname(key)
 

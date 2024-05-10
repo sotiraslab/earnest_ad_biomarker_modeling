@@ -174,20 +174,29 @@ CSF_AMYLOID_CONTINUOUS = [
     ]
 
 CSF_TAU_BINARY = [
-    BinaryGMM('CSF_TAU', nickname='tTau (GMM)', atn='csf_tau'),
     BinaryGMM('CSF_PTAU', nickname='pTau181 (GMM)', atn='csf_tau'),
     ]
 
 CSF_TAU_CATEGORICAL = [
-    GMMWithIndeterminateZone('CSF_TAU', nickname='tTau (UZ)', atn='csf_tau'),
     GMMWithIndeterminateZone('CSF_PTAU', nickname='pTau181 (UZ)', atn='csf_tau'),
-    Quantiles('CSF_TAU', nickname='tTau (Quantiles', atn='csf_tau'),
     Quantiles('CSF_PTAU', nickname='pTau181 (Quantiles)', atn='csf_tau'),
     ]
 
 CSF_TAU_CONTINUOUS = [
-    Continuous('CSF_TAU', nickname='tTau', atn='csf_tau'),
     Continuous('CSF_PTAU', nickname='pTau181', atn='csf_tau'),
+    ]
+
+CSF_NEURODEGENERATION_BINARY = [
+    BinaryGMM('CSF_TAU', nickname='tTau (GMM)', atn='csf_neurodegeneration'),
+    ]
+
+CSF_NEURODEGENERATION_CATEGORICAL = [
+    GMMWithIndeterminateZone('CSF_TAU', nickname='tTau (UZ)', atn='csf_neurodegeneration'),
+    Quantiles('CSF_TAU', nickname='tTau (Quantiles)', atn='csf_neurodegeneration'),
+    ]
+
+CSF_NEURODEGENERATION_CONTINUOUS = [
+    Continuous('CSF_TAU', nickname='tTau', atn='csf_neurodegeneration')
     ]
 
 # ---- Big dictionary -----
@@ -226,6 +235,11 @@ CSF_ATN_PREDICTORS = {
         'categorical': CSF_TAU_CATEGORICAL,
         'continuous': CSF_TAU_CONTINUOUS
         },
+    'csf_neurodegeneration': {
+        'binary': CSF_NEURODEGENERATION_BINARY,
+        'categorical': CSF_NEURODEGENERATION_CATEGORICAL,
+        'continuous': CSF_NEURODEGENERATION_CONTINUOUS
+        },
     }
 
 ATN_PREDICTORS_PLUS_CSF = ATN_PREDICTORS.copy()
@@ -250,17 +264,22 @@ CSF_ATN_PREDICTORS_FLAT = [
     *CSF_AMYLOID_CONTINUOUS,
     *CSF_TAU_BINARY,
     *CSF_TAU_CATEGORICAL,
-    *CSF_TAU_CONTINUOUS,]
+    *CSF_TAU_CONTINUOUS,
+    *CSF_NEURODEGENERATION_BINARY,
+    *CSF_NEURODEGENERATION_CATEGORICAL,
+    *CSF_NEURODEGENERATION_CONTINUOUS,]
+
+ALL_PREDICTORS_FLAT = ATN_PREDICTORS_FLAT + CSF_ATN_PREDICTORS_FLAT
 
 # Accessor functions -------
 
 def get_models_by_nickname(nicknames):
     if isinstance(nicknames, str):
         nicknames = [nicknames]
-    return [m for m in ATN_PREDICTORS_FLAT if m.nickname in nicknames]
+    return [m for m in ALL_PREDICTORS_FLAT if m.nickname in nicknames]
 
 # Check for duplicate names -------
 
-nicknames = [m.nickname for m in ATN_PREDICTORS_FLAT] + [m.nickname for m in CSF_ATN_PREDICTORS_FLAT]
+nicknames = [m.nickname for m in ALL_PREDICTORS_FLAT]
 nicknames_set = set(nicknames)
 assert len(nicknames) == len(nicknames_set), 'Resolve duplicated nicknames for ATN predictors!'

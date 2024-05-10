@@ -6,16 +6,20 @@ Created on Fri Jun 23 11:34:10 2023
 @author: tom.earnest
 """
 
+# was running into weird issue where importing
+# sklearn stuff later caused massive slow down
+# unable to find good documentation
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
 import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pingouin import ttest
 from scipy.stats import t
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multitest import multipletests
 
 from atn_modeling.atn_predictor_instances import get_models_by_nickname
@@ -243,7 +247,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
         order = results[groupby].unique()
     boxplotdata = results.pivot(index=pivot_index, columns=groupby, values=pivot_values)
     boxplotdata = boxplotdata[order]
-    
+
     # font
 
     # base plot

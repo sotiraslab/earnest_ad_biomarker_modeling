@@ -21,7 +21,7 @@ from sklearn.svm import SVR, LinearSVR
 # Base Class -----
 
 class ATNPredictor:
-    
+
     def __init__(self, atn=None, variable_type=None, nickname=None):
         self.atn = atn
         self.variable_type = variable_type
@@ -42,7 +42,7 @@ class ATNPredictor:
         s = f"{classname}({kv})"
 
         return s
-    
+
     @property
     def name(self):
         return self.nickname if self.nickname else repr(self)
@@ -84,7 +84,7 @@ class BinaryGMM(ATNPredictor):
         self.cutoff = None
 
     def fit(self, data):
-        self.gmm = GaussianMixture(n_components=2)
+        self.gmm = GaussianMixture(n_components=2, random_state=42)
         self.gmm.fit(data[self.y_col].to_numpy()[:, np.newaxis])
 
         means = self.gmm.means_
@@ -167,13 +167,13 @@ class Quantiles(ATNPredictor):
 
     def covariates(self, data):
         digitized = np.digitize(data[self.y_col], self.quantiles)
-        
+
         # this step is needed!
         # Else if you get a sample with one level missing
         # it will be omitted in the get_dummies
         # resulting in a DF with less than expcted columns
         digitized_cat = pd.Categorical(digitized, categories=[0, 1, 2, 3])
-        
+
         return pd.get_dummies(digitized_cat).to_numpy().astype(float)
 
 class CategoricalStager(ATNPredictor):
@@ -214,7 +214,7 @@ class CategoricalStager(ATNPredictor):
         stages = assign_frequency_stage(binary, groupings=self.groupings,
                                         p=self.p, atypical=self.non_stageable)
         return pd.get_dummies(stages).to_numpy().astype(float)
-    
+
 class GMMWithIndeterminateZone(ATNPredictor):
 
     def __init__(self, y_col, margin=.1, greater=True, atn=None, nickname=None):
@@ -228,7 +228,7 @@ class GMMWithIndeterminateZone(ATNPredictor):
         self.cutoff = None
 
     def fit(self, data):
-        self.gmm = GaussianMixture(n_components=2)
+        self.gmm = GaussianMixture(n_components=2, random_state=42)
         self.gmm.fit(data[self.y_col].to_numpy()[:, np.newaxis])
 
         means = self.gmm.means_
@@ -247,17 +247,17 @@ class GMMWithIndeterminateZone(ATNPredictor):
         y = data[self.y_col]
         if self.margin == 0:
             return np.where(self.operator(y, self.cutoff), 1., 0.)[:, np.newaxis]
-        
+
         dim = 1 if self.greater else 0
         probs = self.gmm.predict_proba(y.values.reshape(-1, 1))[:, dim]
         digitized = np.digitize(probs, [0.5 - self.margin, 0.5 + self.margin])
-        
+
         # this step is needed!
         # Else if you get a sample with one level missing
         # it will be omitted in the get_dummies
         # resulting in a DF with less than expcted columns
         digitized_cat = pd.Categorical(digitized, categories=[0, 1, 2])
-        
+
         return pd.get_dummies(digitized_cat).to_numpy().astype(float)
 
 # Continuous predictors ----
@@ -287,9 +287,9 @@ class MultivariateSVR:
             del kwargs['kernel']
             if 'gamma' in kwargs:
                 del kwargs['gamma']
-            SVM = LinearSVR(max_iter=int(1e5), **kwargs)
+            SVM = LinearSVR(max_iter=int(1e5), random_state=42, **kwargs)
         else:
-            SVM = SVR(**kwargs)
+            SVM = SVR(random_state=42, **kwargs)
         self.kwargs = kwargs
 
         self.pipeline = Pipeline([('scaler', StandardScaler()),

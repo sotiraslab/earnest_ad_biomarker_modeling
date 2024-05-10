@@ -14,14 +14,14 @@ from setuptools import setup
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
-    
+
 requirements = [
     'matplotlib',
     'numpy',
     'pandas',
     'pingouin',
     'scipy',
-    'scikit-learn',
+    'scikit-learn>=1.4',
     'statsmodels'
     ]
 

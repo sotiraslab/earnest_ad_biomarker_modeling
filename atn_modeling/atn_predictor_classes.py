@@ -289,7 +289,7 @@ class MultivariateSVR:
                 del kwargs['gamma']
             SVM = LinearSVR(max_iter=int(1e5), random_state=42, **kwargs)
         else:
-            SVM = SVR(random_state=42, **kwargs)
+            SVM = SVR(**kwargs)
         self.kwargs = kwargs
 
         self.pipeline = Pipeline([('scaler', StandardScaler()),

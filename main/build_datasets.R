@@ -247,6 +247,12 @@ coefs <- coef(m)$RID %>%
 
 df <- left_join(df, coefs, by='RID')
 
+# scale up deltaADSP for training purposes
+# found to be getting wonky SVM results without this step
+# factor of 10 puts it on similar scale as cross-sectional value
+df <- df %>%
+  mutate(DeltaADSP = DeltaADSP * 10)
+
 # === variables for selecting ROIs ======
 
 SUBCORTICAL = c('amygdala',

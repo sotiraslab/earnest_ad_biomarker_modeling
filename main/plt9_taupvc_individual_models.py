@@ -90,6 +90,32 @@ ax.legend(handles = [
     ncol=2,
     frameon=False)
 
+# APPLYING A RANGE LIMIT ON THE GRAPH
+
+# For this seed, there is one iteration (repeat 8, fold 7)
+# where the accuracy for MTT (UZ) [PVC] is >0.89,
+# much worse than the rest.  It messes up the range of the graph.
+
+# This bit adds a manual xlim, and filters that point.
+# It should report if a point is actually removed.
+
+# Note that this doesn't affect the box plot computation,
+# nor the statistics.
+
+# Make a note of this in the figure caption if included in published content.
+limit = plot_data['rmse'].mean() + (plot_data['rmse'].std() * 4)
+omit_mask = plot_data['rmse'] >= limit
+omitted = omit_mask.sum()
+omitted_models = list(plot_data.loc[omit_mask, 'name'].unique())
+if omitted:
+    print('!!! !!! !!!')
+    print('NOTE: points omitted from figure for visualization purposes.')
+    print(f'  - number omitted: {omitted}')
+    print(f'  - models affected: {omitted_models}')
+    print('!!! !!! !!!')
+
+ax.set_xlim(None, limit)
+
 # save
 plt.tight_layout()
 fig.savefig('figures/taupvc_individual_models.svg')

@@ -546,6 +546,8 @@ def experiment_combo_atn_vs_binary(dataset, target,
                        **metrics}
                 results.append(row)
 
+                print(f'   - RMSE: {metrics["rmse"]}')
+
                 # save model
                 models[name].append(deepcopy(model))
                 lms[name].append(deepcopy(lm))

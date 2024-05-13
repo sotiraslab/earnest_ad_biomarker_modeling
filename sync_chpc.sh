@@ -18,3 +18,4 @@ rsync -av "main/datasets/" "$LOGIN:${CHPC_PATH}/main/datasets"
 # download
 # outputs are downloaded
 rsync -av "$LOGIN:${CHPC_PATH}/main/outputs" 'main'
+rsync -av "$LOGIN:${CHPC_PATH}/main/logs" 'main'

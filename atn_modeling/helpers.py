@@ -254,13 +254,13 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
     boxplotdata = boxplotdata[order]
 
     # font
-
-    # base plot
     if font_file:
         font_prop = fm.FontProperties(fname=font_file)
-        plt.rcParams.update({
-            'font.family': font_prop.get_name()})
+        plt.rcParams.update({'font.family': font_prop.get_name()})
+    else:
+        plt.rcParams.update({'font.family': 'arial'})
 
+    # base plot
     fig, ax = plt.subplots(figsize=(6, 8))
     positions = list(range(len(order)))
     positions.reverse()

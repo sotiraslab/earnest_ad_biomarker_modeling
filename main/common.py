@@ -23,9 +23,7 @@ def get_outputs_path():
 def set_font_properties(arial_font=None):
 
     if arial_font is None:
-        plt.rcParams.update({
-            'font.size': 14,
-            'font.family': 'arial'})
+        plt.rcParams.update({'font.family': 'arial'})
     else:
         try:
             font_prop = fm.FontProperties(fname=arial_font)
@@ -33,8 +31,7 @@ def set_font_properties(arial_font=None):
                 'font.family': font_prop.get_name()})
         except:
             pass
-        plt.rcParams.update({
-            'font.size': 14})
+    plt.rcParams.update({'font.size': 14})
 
 def load_results(experiment, result, check_short=True):
     outputs_dir = get_outputs_path()

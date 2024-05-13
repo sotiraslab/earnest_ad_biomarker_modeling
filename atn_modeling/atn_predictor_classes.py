@@ -287,7 +287,7 @@ class MultivariateSVR:
             del kwargs['kernel']
             if 'gamma' in kwargs:
                 del kwargs['gamma']
-            SVM = LinearSVR(max_iter=int(1e5), random_state=42, **kwargs)
+            SVM = LinearSVR(max_iter=int(1e5), random_state=42, dual='auto', **kwargs)
         else:
             SVM = SVR(**kwargs)
         self.kwargs = kwargs

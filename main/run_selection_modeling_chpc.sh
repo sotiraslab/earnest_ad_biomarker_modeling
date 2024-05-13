@@ -3,11 +3,12 @@
 # Define help text for the script.
 usage() {
 	echo ""
-	echo "Usage:	run_modeling_chpc.sh [-S -D]"
+	echo "Usage:	run_modeling_chpc.sh -i "script.py" [-i "another_script.py"][-S -D]"
 	echo ""
 	echo "Description:"
-	echo "    Run all cross-validated modeling experiments by submitting SLURM jobs."
+	echo "    Run a manually input selection of cross-validated modeling experiments by submitting SLURM jobs."
 	echo "Arguments:"
+    echo "    -i Input.  A single script to run.  Multiple can be entered as separate argments."
     echo "    -S Short.  Limits hyperparameter tuning for all SVM experiments.  No difference for linear models."
 	echo "    -D Dryrun.  Commands are printed, but jobs are not submitted"
     echo ""
@@ -16,13 +17,15 @@ usage() {
 # read arguments
 SHORT=''
 DRYRUN='0'
-while getopts hSD arg
+SCRIPTS=()
+while getopts hSDi: arg
 do
 	case $arg in
 	h)	usage
 		exit 0;;
 	S)	SHORT='--short';;
     D)  DRYRUN='1';;
+    i)  SCRIPTS+=("$OPTARG");;
 	?)	echo ""
 		echo "Unknown arguments passed; exiting."
 		echo ""
@@ -31,27 +34,25 @@ do
 	esac
 done
 
+# check something provide
+if [ ${#SCRIPTS[@]} -eq 0 ]
+then
+    echo ""
+    echo "ERROR: No scripts provided!  Exiting"
+    usage
+    exit 1
+fi
+
 # list scripts to run
-SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
-         'exp1_svms_global_cognition.py'
-         'exp2_combo_atn_models_global_cognition.py'
-         'exp3_combo_atn_models_global_cognition_vs_binary.py'
-         'exp4a_combo_atn_models_memory_vs_binary.py'
-         'exp4b_svms_memory.py'
-         'exp5a_combo_atn_models_executive_functioning_vs_binary.py'
-         'exp5b_svms_executive_functioning.py'
-         'exp6a_combo_atn_models_language_vs_binary.py'
-         'exp6b_svms_language.py'
-         'exp7a_combo_atn_models_visuospatial_vs_binary.py'
-         'exp7b_svms_visuospatial.py'
-         'exp8a_combo_atn_models_longitudinal_cognition_vs_binary.py'
-         'exp8b_svms_longitudinal_cognition.py'
-         'exp9a_preclinical_combo_atn_models.py'
-         'exp9b_preclinical_combo_atn_models_vs_binary.py'
-         'exp9c_preclinical_svms.py'
-         'exp10a_test_all_predictors_with_csf.py'
-         'exp10b_test_all_predictors_with_csf_vs_baseline.py'
-)
+echo ""
+echo "You have entered the following scripts to run:"
+echo ""
+for val in "${SCRIPTS[@]}"; do
+    echo " - $val"
+done
+
+echo ""
+read -p "Continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 # silently load python on CHPC
 module load python

@@ -56,6 +56,9 @@ group.loc[group['name'].eq('Baseline'), 'sorter'] += 100
 group = group.sort_values('sorter', ascending=False)
 order = group['name']
 
+# make text a little smaller for this plot
+plt.rcParams.update({'font.size': 9})
+
 fig, _ = results_boxplot(data, groupby='name', baseline='Baseline',
                          palette=group['color'], order=order, font_file='arial.ttf',
                          hatch=group['csf'])

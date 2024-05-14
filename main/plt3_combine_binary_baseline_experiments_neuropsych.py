@@ -32,7 +32,7 @@ def locate_outfolder(experiment):
         return os.path.join(output_dir, search2[0])
     else:
         raise ValueError(f'Cannot find any results for "{experiment}".')
-        
+
 experiment_keys = [
     'memory',
     'executive_functioning',
@@ -41,6 +41,8 @@ experiment_keys = [
     'longitudinal_cognition'
     ]
 
+
+stats_dict = {}
 for key in experiment_keys:
     try:
         lm_directory = locate_outfolder(f'{key}_vs_binary')
@@ -48,13 +50,13 @@ for key in experiment_keys:
     except ValueError:
         print(f'NO RESULTS FOUND FOR KEY: {key}')
         continue
-    
+
     # concatenate data
     results_lm = pd.read_csv(os.path.join(lm_directory, 'results.csv'))
     results_svm = pd.read_csv(os.path.join(svm_directory, 'results.csv'))
     concat = pd.concat([results_lm, results_svm])
     concat = concat.loc[~concat['model'].str.contains('PVC')]
-    
+
     # output
     plot_path = os.path.join('figures', f'plt3_boxplot_vs_binary_{key}.svg')
 
@@ -70,9 +72,10 @@ for key in experiment_keys:
     # plot
     n_train = concat['ntrain'].values[0]
     n_test = concat['ntest'].values[0]
-    fig, _ = results_boxplot(concat, groupby='model', baseline='All binary',
-                              stats_vs_baseline=True, palette=palette,
-                              n_train=n_train, n_test=n_test)
+    fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
+                                 stats_vs_baseline=True, palette=palette,
+                                 n_train=n_train, n_test=n_test)
+    stats_dict[key] = stats['baseline']
     plt.title(key)
 
     plt.tight_layout()

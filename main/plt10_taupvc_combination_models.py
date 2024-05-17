@@ -38,17 +38,16 @@ keep = ['Baseline',
         'ATN SVM [PVC]']
 concat = concat.loc[concat['model'].isin(keep)]
 
-
 # general resources
 palette = (['gray'] +
     ['#FFDDAA'] * 2 +
     ['#F7A934'] * 2+
-    ['#E59C9C'] * 2 +
-    ['#ba635d'] * 2+
-    ['#AAC3E9'] * 2 +
-    ['#7DA1D8'] * 2+
-    ['#B3E2AD'] * 2 +
-    ['#99C494'] * 2)
+    ['#E899EE'] * 2 +
+    ['#B74CBF'] * 2+
+    ['#F29D9D'] * 2 +
+    ['#FC4646'] * 2+
+    ['#A5DBF2'] * 2 +
+    ['#08A3E5'] * 2)
 hatch = [False] + [False, True] * 8
 pairs = list(zip(keep[1::2], keep[2::2]))
 

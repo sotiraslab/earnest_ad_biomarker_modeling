@@ -29,7 +29,7 @@ amyloid_cmap = LinearSegmentedColormap.from_list('Amyloid', colors=['#f7ebf1', '
 model_types = ['Binary A', 'Categorical A', 'Continuous A',
                 'Binary T', 'Categorical T', 'Continuous T',
                 'Binary N', 'Categorical N', 'Continuous N']
-cmaps = [amyloid_cmap] * 3 + ['Blues'] * 3 + ['Greens'] * 3
+cmaps = [amyloid_cmap] * 3 + ['Greens'] * 3 + ['Blues'] * 3
 
 # ---- function for converting "model_types" entry to something in ATN_PREDICTORS_DICT
 

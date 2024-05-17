@@ -80,7 +80,7 @@ sns.kdeplot(x ,
 
 mean = x.mean().round(3)
 ax.axvline(mean, color=color)
-draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})', lw=4)
+draw_meanline(ax, mean, 0.8, color=color, text=f'Cross-validated ({mean})', lw=4)
 draw_meanline(ax, 1.11, 0.6, color='k', text='Landau (1.11)')
 draw_meanline(ax, 1.24, 0.6, color='brown', text='Su (1.25)')
 draw_meanline(ax, 1.42, 0.6, color='orange', text='Jack RW')
@@ -105,7 +105,7 @@ sns.kdeplot(x ,
             color=color,
             fill=True)
 mean = x.mean().round(3)
-draw_meanline(ax, mean, 0.8, color=color, text=f'Modeled ({mean})', lw=4)
+draw_meanline(ax, mean, 0.8, color=color, text=f'Cross-validated ({mean})', lw=4)
 draw_meanline(ax, 1.20, 0.8, color='#de1c1a', text='Jack Sens. (1.20)')
 draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack Spec. (1.21)')
 draw_meanline(ax, 1.23, 0.4, color='#fe7f06', text='Jack Acc-Young (1.23)')

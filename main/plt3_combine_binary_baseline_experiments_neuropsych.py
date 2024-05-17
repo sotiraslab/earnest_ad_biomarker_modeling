@@ -62,12 +62,12 @@ for key in experiment_keys:
 
     # general resources
     palette = (['gray'] +
-        ['#E59C9C'] * 3 +
-        ['#ba635d'] +
-        ['#AAC3E9'] * 3 +
-        ['#7DA1D8'] +
-        ['#B3E2AD'] * 3 +
-        ['#99C494'])
+        ['#E899EE'] * 3 +
+        ['#B74CBF'] +
+        ['#F29D9D'] * 3 +
+        ['#FC4646'] +
+        ['#A5DBF2'] * 3 +
+        ['#08A3E5'])
 
     # plot
     n_train = concat['ntrain'].values[0]

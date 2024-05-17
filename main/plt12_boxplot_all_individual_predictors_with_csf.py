@@ -37,10 +37,10 @@ vartypes = {'binary': "BIN",
             'categorical': "CAT",
             'continuous': 'CONT',
             'SVM': 'SVM'}
-varcolors = {'binary': "#011f4b",
-            'categorical': "#03396c",
-            'continuous': '#005b96',
-            'SVM': '#6497b1'}
+varcolors = {'binary': "#F7A934",
+            'categorical': "#B74CBF",
+            'continuous': '#FC4646',
+            'SVM': '#08A3E5'}
 
 # group by model and plot
 data = concat.copy()

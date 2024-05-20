@@ -34,7 +34,9 @@ all_continuous = linear_models['All continuous']
 # sklearn doesn't save the feature names for coefficients
 # this could be explictly saved in the exp2
 
-coef_order = ['amyloid', 'tau', 'neurodegeneration', 'age', 'sex', 'hasE4']
+# see atn_modeling.helpers.get_training_x
+
+coef_order = ['age', 'sex', 'hasE4', 'amyloid', 'tau', 'neurodegeneration']
 
 binary_coefs = pd.DataFrame([np.abs(m['lm'].coef_) for m in all_binary], columns=coef_order)
 continuous_coefs = pd.DataFrame([np.abs(m['lm'].coef_) for m in all_continuous], columns=coef_order)
@@ -88,7 +90,7 @@ ax.plot([x.min(), x.max()], [y.mean(), y.mean()], color='black', lw=3)
 ax.set_xticks([1, 5])
 ax.set_xticklabels(['Binary', 'Continuous'])
 ax.set_ylabel('Coefficients')
-ax.legend()
+ax.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, frameon=False)
 
 outfile = os.path.join('figures/combo_atn_models_linear_model_coefficients.svg')
 

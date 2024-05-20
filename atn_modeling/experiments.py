@@ -299,7 +299,8 @@ def experiment_combo_atn_vs_baseline(dataset, target,
                                      savepath=None,
                                      savemodels=None,
                                      savelms=None,
-                                     testing_filter=None):
+                                     testing_filter=None,
+                                     coefficient_analysis=False):
 
     results = []
     models = defaultdict(list)
@@ -361,27 +362,35 @@ def experiment_combo_atn_vs_baseline(dataset, target,
             lm_selected_models = lm_model_averages.iloc[best_by_measure]
 
             # develop combinations
-            FINAL_ATN_MODELS = {
-                'Baseline': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, None),
-                'Binary A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', None, None),
-                'Binary T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'binary', None),
-                'Binary T [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'binary', None, taupvc=True),
-                'Binary N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'binary'),
-                'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary'),
-                'All binary [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary', taupvc=True),
-                'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', None, None),
-                'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'categorical', None),
-                'Categorical T [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'categorical', None, taupvc=True),
-                'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'categorical'),
-                'All categorical': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical'),
-                'All categorical [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical', taupvc=True),
-                'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', None, None),
-                'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'continuous', None),
-                'Continuous T [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'continuous', None, taupvc=True),
-                'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'continuous'),
-                'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
-                'All continuous [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous', taupvc=True),
-                }
+            if coefficient_analysis:
+                FINAL_ATN_MODELS = {
+                    'Baseline': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, None),
+                    'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary'),
+                    'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
+                    }
+
+            else:
+                FINAL_ATN_MODELS = {
+                    'Baseline': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, None),
+                    'Binary A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', None, None),
+                    'Binary T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'binary', None),
+                    'Binary T [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'binary', None, taupvc=True),
+                    'Binary N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'binary'),
+                    'All binary': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary'),
+                    'All binary [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'binary', 'binary', 'binary', taupvc=True),
+                    'Categorical A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', None, None),
+                    'Categorical T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'categorical', None),
+                    'Categorical T [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'categorical', None, taupvc=True),
+                    'Categorical N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'categorical'),
+                    'All categorical': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical'),
+                    'All categorical [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'categorical', 'categorical', 'categorical', taupvc=True),
+                    'Continuous A': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', None, None),
+                    'Continuous T': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'continuous', None),
+                    'Continuous T [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, 'continuous', None, taupvc=True),
+                    'Continuous N': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, None, None, 'continuous'),
+                    'All continuous': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous'),
+                    'All continuous [PVC]': get_combo_atn_model(lm_selected_models, ATN_PREDICTORS, 'continuous', 'continuous', 'continuous', taupvc=True),
+                    }
 
             print()
             print(f'[{str(dt.datetime.now())}] *OUTER TRAINING*')
@@ -394,7 +403,8 @@ def experiment_combo_atn_vs_baseline(dataset, target,
                                                     covariates=covariates,
                                                     target=target,
                                                     train_data=outer_train,
-                                                    test_data=outer_test)
+                                                    test_data=outer_test,
+                                                    scale=coefficient_analysis)
                 row = {'model': name,
                        'fold': i,
                        'repeat': r,

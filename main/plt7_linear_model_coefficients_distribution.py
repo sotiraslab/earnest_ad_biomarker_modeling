@@ -19,7 +19,7 @@ from common import load_results, set_font_properties
 
 # ---- load saved linear models
 
-linear_models = load_results('exp2_combo_atn_models_global_cognition', 'lm.pickle')
+linear_models = load_results('exp2a_combo_atn_models_global_cognition_scaled_coefficients', 'lm.pickle')
 
 all_binary = linear_models['All binary']
 all_continuous = linear_models['All continuous']

@@ -83,7 +83,8 @@ def svm_best_param_lookup(results_table, svm_name, svm_params):
     params = {k: v for k, v in d.items() if k in svm_params}
     return params
 
-def test_atn_linear_model(models, covariates, target, train_data, test_data):
+def test_atn_linear_model(models, covariates, target, train_data, test_data,
+                          scale=False):
 
     if not isinstance(models, list):
         models = [models]
@@ -92,6 +93,7 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data):
         m.fit(train_data)
 
     X_train = get_training_x(train_data, covariates, models)
+    
     y_train = train_data[target].to_numpy()
     omit = np.any(np.isnan(X_train), axis=1)
     X_train = X_train[~omit, :]
@@ -103,17 +105,14 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data):
     X_test = X_test[~omit, :]
     y_test = y_test[~omit]
 
+    if scale:
+        pipeline = Pipeline([('scaler', StandardScaler()),
+                             ('lm', LinearRegression())])
+    else:
+        pipeline = Pipeline([('lm', LinearRegression())])
 
-
-    pipeline = Pipeline([('scaler', StandardScaler()),
-                         ('lm', LinearRegression())])
-
-
-    # X_train_scale = scaler.fit_transform(X_train)
-    # X_test_scale = scaler.transform(X_test)
-
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
+    pipeline.fit(X_train.copy(), y_train.copy())
+    y_pred = pipeline.predict(X_test.copy())
 
     metrics = {'rmse': root_mean_squared_error(y_test, y_pred),
                'r2': r2_score(y_test, y_pred)}

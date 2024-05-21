@@ -7,38 +7,23 @@ Created on Wed Mar 13 09:54:56 2024
 """
 
 import os
-import warnings
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from atn_modeling.helpers import results_boxplot
+from common import locate_outfolder
 
 output_dir = 'outputs'
 
 # more helper functions
-def contains_results(experiment):
-    return os.path.exists(os.path.join(output_dir, experiment, 'results.csv'))
 
-def locate_outfolder(experiment):
-    outputs = os.listdir(output_dir)
-    long_outputs = [s for s in outputs if '_short' not in s]
-    search1 = [s for s in long_outputs if experiment in s and contains_results(s)]
-    search2 = [s for s in outputs if experiment in s and contains_results(s)]
-    if search1:
-        return os.path.join(output_dir, search1[0])
-    elif search2:
-        warnings.warn(f'Only found short results for "{experiment}".  Using those...')
-        return os.path.join(output_dir, search2[0])
-    else:
-        raise ValueError(f'Cannot find any results for "{experiment}".')
 
 experiment_keys = [
     'memory',
     'executive_functioning',
     'language',
-    'visuospatial',
-    'longitudinal_cognition'
+    'visuospatial'
     ]
 
 
@@ -61,13 +46,15 @@ for key in experiment_keys:
     plot_path = os.path.join('figures', f'plt3_boxplot_vs_binary_{key}.svg')
 
     # general resources
-    palette = (['gray'] +
+    palette = (
+        ['#F7A934'] +
         ['#E899EE'] * 3 +
         ['#B74CBF'] +
         ['#F29D9D'] * 3 +
         ['#FC4646'] +
         ['#A5DBF2'] * 3 +
-        ['#08A3E5'])
+        ['#08A3E5']
+        )
 
     # plot
     n_train = concat['ntrain'].values[0]

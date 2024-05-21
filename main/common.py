@@ -15,23 +15,13 @@ import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import pandas as pd
 
+def contains_results(experiment):
+    return os.path.exists(os.path.join(get_outputs_path(), experiment, 'results.csv'))
+
 def get_outputs_path():
     this_dir = os.path.dirname(os.path.abspath(__file__))
     outputs_dir = os.path.join(this_dir, 'outputs')
     return outputs_dir
-
-def set_font_properties(arial_font=None):
-
-    if arial_font is None:
-        plt.rcParams.update({'font.family': 'arial'})
-    else:
-        try:
-            font_prop = fm.FontProperties(fname=arial_font)
-            plt.rcParams.update({
-                'font.family': font_prop.get_name()})
-        except:
-            pass
-    plt.rcParams.update({'font.size': 14})
 
 def load_results(experiment, result, check_short=True):
     outputs_dir = get_outputs_path()
@@ -61,10 +51,36 @@ def load_results(experiment, result, check_short=True):
 
     return output
 
+def locate_outfolder(experiment):
+    outputs = os.listdir(get_outputs_path())
+    long_outputs = [s for s in outputs if '_short' not in s]
+    search1 = [s for s in long_outputs if experiment in s and contains_results(s)]
+    search2 = [s for s in outputs if experiment in s and contains_results(s)]
+    if search1:
+        return os.path.join(get_outputs_path(), search1[0])
+    elif search2:
+        warnings.warn(f'Only found short results for "{experiment}".  Using those...')
+        return os.path.join(get_outputs_path(), search2[0])
+    else:
+        raise ValueError(f'Cannot find any results for "{experiment}".')
+
 def parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--short', action='store_true')
     return parser.parse_args()
+
+def set_font_properties(arial_font=None):
+
+    if arial_font is None:
+        plt.rcParams.update({'font.family': 'arial'})
+    else:
+        try:
+            font_prop = fm.FontProperties(fname=arial_font)
+            plt.rcParams.update({
+                'font.family': font_prop.get_name()})
+        except:
+            pass
+    plt.rcParams.update({'font.size': 14})
 
 def setup_output(call_file, short=False):
     outputs_dir = get_outputs_path()

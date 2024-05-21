@@ -23,7 +23,7 @@ concat = concat.loc[~concat['model'].str.contains('PVC')]
 plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '.svg')
 
 # general resources
-palette = (['gray'] +
+palette = (['#F7A934'] +
     ['#E899EE'] * 3 +
     ['#B74CBF'] +
     ['#F29D9D'] * 3 +

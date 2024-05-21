@@ -14,13 +14,13 @@ from common import load_results
 from atn_modeling.helpers import results_boxplot
 
 # load data
-exp9a = load_results('exp9a_preclinical_combo_atn_models', 'results.csv')
-exp9c = load_results('exp9c_preclinical_svms', 'results.csv')
+exp8c = load_results('exp8c_combo_atn_models_longitudinal_cognition_vs_covariates', 'results.csv')
+exp8b = load_results('exp8b_svms_longitudinal_cognition', 'results.csv')
 
 # concatenate
-concat = pd.concat([exp9a, exp9c])
+concat = pd.concat([exp8c, exp8b])
 concat = concat.loc[~concat['model'].str.contains('PVC')]
-
+    
 # output
 plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '.svg')
 
@@ -42,5 +42,7 @@ fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',
                          stats_vs_baseline=True, palette=palette,
                          n_train=n_train, n_test=n_test, font_file='arial.ttf')
 
+plt.title('Prediction of Cognitive Change')
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)
+    

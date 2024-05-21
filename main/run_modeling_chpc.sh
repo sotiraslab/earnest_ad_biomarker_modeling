@@ -35,6 +35,7 @@ done
 SCRIPTS=('exp0_individual_atn_models_global_cognition.py'
          'exp1_svms_global_cognition.py'
          'exp2_combo_atn_models_global_cognition.py'
+         'exp2a_combo_atn_models_global_cognition_scaled_coefficients.py'
          'exp3_combo_atn_models_global_cognition_vs_binary.py'
          'exp4a_combo_atn_models_memory_vs_binary.py'
          'exp4b_svms_memory.py'

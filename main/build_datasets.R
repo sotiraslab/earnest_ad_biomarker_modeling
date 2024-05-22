@@ -7,6 +7,7 @@ sh(library(ggplot2))
 sh(library(lme4))
 sh(library(lubridate))
 sh(library(stringr))
+sh(library(tableone))
 sh(library(this.path))
 sh(library(tidyverse))
 
@@ -600,6 +601,15 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
   ungroup() %>%
   mutate(CSF_AB42OVER40=CSF_ABETA42/CSF_ABETA40) %>%
   filter(! is.na(CSF_PTAU))
+
+# === Table 1 =======
+
+vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+
+tbl1 <- CreateTableOne(vars=vars,
+                       strata='CDRBinned',
+                       data=df)
+print(tbl1, showAllLevels=T)
 
 # === save ========
 

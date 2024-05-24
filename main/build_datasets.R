@@ -619,3 +619,19 @@ tbl1 <- CreateTableOne(vars=vars,
                        strata='CDRBinned',
                        data=df)
 print(tbl1, showAllLevels=T)
+
+# === Table 1: longitudinal =======
+
+tbl1.long <- CreateTableOne(vars=vars,
+                       strata='CDRBinned',
+                       data=df.long)
+print(tbl1.long showAllLevels=T)
+
+# === Table 1: CSF =======
+
+vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+
+tbl1.csf <- CreateTableOne(vars=vars,
+                       strata='CDRBinned',
+                       data=df.csf)
+print(tbl1.csf, showAllLevels=T)

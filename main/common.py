@@ -15,6 +15,36 @@ import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import pandas as pd
 
+def atn_subscripts(a='bin', t='bin', n='bin', upper=True):
+    
+    def proc(x, upper=upper):
+        if isinstance(x, int):
+            val = {0: None, 1: 'bin', 2: 'cat', 3: 'con'}[x]
+        else:
+            val = x
+            
+        val = val.upper() if val is not None and upper else val
+        return val
+        
+    a = proc(a)
+    t = proc(t)
+    n = proc(n)
+    
+    alab = 'A$_{\\rm %s}$' % a if a is not None else ' - '
+    tlab = 'T$_{\\rm %s}$' % t if t is not None else ' - '
+    nlab = 'N$_{\\rm %s}$' % n if n is not None else ' - '
+    included = [a is not None, t is not None, n is not None]
+    print(a, t ,n)
+    print(included)
+    
+    if sum(included) == 1:
+        print('asd')
+        idx = included.index(True)
+        full = [alab, tlab, nlab][idx]
+    else:
+        full = alab + '/' + tlab + '/' + nlab
+    return full
+
 def contains_results(experiment):
     return os.path.exists(os.path.join(get_outputs_path(), experiment, 'results.csv'))
 
@@ -81,7 +111,50 @@ def set_font_properties(arial_font=None):
         except:
             pass
     plt.rcParams.update({'font.size': 14})
+    
+def set_labels_baseline_exp(fig):
+    ax = fig.axes[0]
+    f = atn_subscripts
+    labs = [
+        'Baseline',
+        f(1, 0, 0),
+        f(0, 1, 0),
+        f(0, 0, 1),
+        f(1, 1, 1),
+        f(2, 0, 0),
+        f(0, 2, 0),
+        f(0, 0, 2),
+        f(2, 2, 2),
+        f(3, 0, 0),
+        f(0, 3, 0),
+        f(0, 0, 3),
+        f(3, 3, 3),
+        'A SVM',
+        'T SVM',
+        'N SVM',
+        'ATN SVM']
+    ax.set_yticklabels(labs)
+    
 
+def set_labels_binary_exp(fig):
+    ax = fig.axes[0]
+    f = atn_subscripts
+    labs = [
+        f(1, 1, 1),
+        f(2, 1, 1),
+        f(1, 2, 1),
+        f(1, 1, 2),
+        f(2, 2, 2),
+        f(3, 1, 1),
+        f(1, 3, 1),
+        f(1, 1, 3),
+        f(3, 3, 3),
+        'A SVM',
+        'T SVM',
+        'N SVM',
+        'ATN SVM']
+    ax.set_yticklabels(labs)
+    
 def setup_output(call_file, short=False):
     outputs_dir = get_outputs_path()
     foldername = os.path.splitext(os.path.basename(call_file))[0]

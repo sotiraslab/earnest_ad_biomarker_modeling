@@ -34,7 +34,7 @@ colors = {'amyloid': '#882255',
           None: 'Gray'}
 vartypes = {'binary': "BIN",
             'categorical': "CAT",
-            'continuous': 'CONT',
+            'continuous': 'CON',
             'SVM': 'SVM'}
 varcolors = {'binary': "#F7A934",
             'categorical': "#B74CBF",

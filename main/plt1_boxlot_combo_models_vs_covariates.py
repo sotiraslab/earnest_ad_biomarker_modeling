@@ -10,7 +10,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from common import load_results
+from common import load_results, set_labels_baseline_exp
 from atn_modeling.helpers import results_boxplot
 
 # load data
@@ -41,6 +41,7 @@ n_test = concat['ntest'].values[0]
 fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',
                          stats_vs_baseline=True, palette=palette,
                          n_train=n_train, n_test=n_test, font_file='arial.ttf')
+set_labels_baseline_exp(fig)
 
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)

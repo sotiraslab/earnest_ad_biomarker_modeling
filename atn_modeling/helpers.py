@@ -255,9 +255,16 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
     # font
     if font_file:
         font_prop = fm.FontProperties(fname=font_file)
-        plt.rcParams.update({'font.family': font_prop.get_name()})
+        val = font_prop.get_name()
     else:
-        plt.rcParams.update({'font.family': 'arial'})
+        val = 'Arial'
+    plt.rcParams.update({'font.family': val,
+                         'mathtext.fontset': 'custom',
+                         'mathtext.rm': val,
+                         'mathtext.it': f'{val}:italic',
+                         'mathtext.bf': f'{val}:bold',
+                         'mathtext.cal': val
+                         })
 
     # base plot
     fig, ax = plt.subplots(figsize=(6, 8))

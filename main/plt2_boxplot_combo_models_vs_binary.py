@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from atn_modeling.helpers import results_boxplot
-from common import load_results
+from common import load_results, set_labels_binary_exp
     
 # concatenate data
 exp3 = load_results('exp3_combo_atn_models_global_cognition_vs_binary', 'results.csv')
@@ -37,6 +37,7 @@ n_test = concat['ntest'].values[0]
 fig, _ = results_boxplot(concat, groupby='model', baseline='All binary',
                          stats_vs_baseline=True, palette=palette,
                          n_train=n_train, n_test=n_test, font_file='arial.ttf')
+set_labels_binary_exp(fig)
 
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)

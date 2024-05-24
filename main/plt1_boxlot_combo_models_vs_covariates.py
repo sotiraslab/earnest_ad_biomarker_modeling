@@ -36,6 +36,7 @@ palette = (['gray'] +
     ['#08A3E5'])
 
 # plot
+# plt.rcParams['font.size'] = 10
 n_train = concat['ntrain'].values[0]
 n_test = concat['ntest'].values[0]
 fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',

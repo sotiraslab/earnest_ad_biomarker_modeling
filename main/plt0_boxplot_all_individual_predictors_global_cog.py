@@ -26,8 +26,6 @@ concat = pd.concat([exp0, exp1])
 concat = concat[concat['biomarker'].isin([None, 'amyloid', 'tau', 'neurodegeneration']) | concat['name'].eq('Baseline')]
 
 # plotting parameters
-plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '.svg')
-
 colors = {'amyloid': '#882255',
           'tau': '#117733',
           'neurodegeneration': '#332288',
@@ -51,7 +49,14 @@ group = group.loc[order, :]
 group = group.sort_values('rmse', ascending=False)
 order = group['name']
 
-fig, _ = results_boxplot(data, groupby='name', baseline='Baseline',
+####################
+# without stats
+####################
+
+plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '.svg')
+
+# plot
+fig, stats = results_boxplot(data, groupby='name', baseline='Baseline',
                          palette=group['color'], order=order, font_file='arial.ttf')
 ax = fig.axes[0]
 for i, var in enumerate(group['variable_type']):
@@ -77,3 +82,42 @@ ax.legend(handles = [
 # save
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)
+
+####################
+# with stats
+####################
+
+plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '_stats' + '.svg')
+
+# plot
+n_train = concat['ntrain'].dropna()[0]
+n_test = concat['ntest'].dropna()[0]
+fig, stats = results_boxplot(data, groupby='name', baseline='Baseline',
+                         palette=group['color'], order=order, font_file='arial.ttf',
+                         stats_vs_baseline=True, n_train=n_train,
+                         n_test=n_test)
+ax = fig.axes[0]
+for i, var in enumerate(group['variable_type']):
+    y = (len(group) - 1) - i
+    if var is None:
+        continue
+    label = vartypes[var]
+    color = varcolors[var]
+    ax.text(1.05, y, label, ha='left', va='center',
+            transform=ax.get_yaxis_transform(), color=color)
+    
+# manually make legend
+ax.legend(handles = [
+    mpatches.Patch(color=colors['amyloid'], label='Amyloid'),
+    mpatches.Patch(color=colors['tau'], label='Tau'),
+    mpatches.Patch(color=colors['neurodegeneration'], label='Neurodegeneration'),
+    ],
+    loc='lower right',
+    bbox_to_anchor=(1, 1),
+    ncol=3,
+    frameon=False)
+
+# save
+plt.tight_layout()
+fig.savefig(plot_path, dpi=300)
+

@@ -235,7 +235,14 @@ def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
     elif side == 'both':
         p = 2 * (1 - t.cdf(abs(tstat), dof))
 
-    return {'t': tstat, 'p': p, 'dof': dof}
+    return {'mean_a': np.mean(a),
+            'sd_a': np.std(a),
+            'mean_b': np.mean(b),
+            'sd_b': np.std(b),
+            'mean_diff': numerator,
+            't': tstat,
+            'p': p,
+            'dof': dof}
 
 # ---- Plot
 
@@ -342,7 +349,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             model = stats_tbl_bl.iloc[i, :][groupby]
             rng = (boxplotdata[model].max() - boxplotdata[model].min())
             x =  boxplotdata[model].max() + 0.12 * rng
-            y = len(order) - i - 2
+            y = len(order) - list(order).index(model) - 1
             ax.text(x, y, s=stars, rotation=90, ha='center', va='center',
                     fontsize=20, fontweight='bold', color='darkorange')
             while x >= xmax:

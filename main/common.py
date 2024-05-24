@@ -34,11 +34,8 @@ def atn_subscripts(a='bin', t='bin', n='bin', upper=True):
     tlab = 'T$_{\\rm %s}$' % t if t is not None else ' - '
     nlab = 'N$_{\\rm %s}$' % n if n is not None else ' - '
     included = [a is not None, t is not None, n is not None]
-    print(a, t ,n)
-    print(included)
     
     if sum(included) == 1:
-        print('asd')
         idx = included.index(True)
         full = [alab, tlab, nlab][idx]
     else:

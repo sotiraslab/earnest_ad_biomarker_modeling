@@ -1,7 +1,7 @@
 
 # $CHPC is an enivornment variable with login address
 LOGIN=$CHPC2
-CHPC_PATH='/mnt/beegfs/scratch/tom.earnest/atn_cognition'
+CHPC_PATH='/home/tom.earnest/projects/atn_cognition'
 
 # reminder
 echo ""

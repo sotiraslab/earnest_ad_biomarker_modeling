@@ -48,53 +48,59 @@ mean.weights <- colMeans(abs(df))
 maxi <- max(mean.weights)
 mini <- 0
 
+# colormap
+cm = 'viridis' 
+
 # amyloid
 plot.cortex(values = mean.weights[amy.cols],
             regions = region.labels,
             vmin = mini,
             vmax = maxi,
-            name = 'Amyloid')
-ggsave(file.path(OUTPUT, 'combined_haufe_weights_amyloid.svg'), width = 6, height = 1.8, units='in')
+            cm = cm)
+ggsave(file.path(OUTPUT, 'combined_haufe_weights_amyloid.svg'), width = 6.5, height = 1.2, units='in')
 
 plot.subcortex(values = mean.weights[amy.cols],
                regions = region.labels,
                vmin = mini,
                vmax = maxi,
-               name = '',
-               legend=F)
-ggsave(file.path(OUTPUT, 'combined_haufe_weights_amyloid_subcortical.svg'), width = 3, height = 1.8, units='in')
+               legend=F,
+               cm = cm)
+ggsave(file.path(OUTPUT, 'combined_haufe_weights_amyloid_subcortical.svg'), width = 3, height = 1.2, units='in')
 
 # tau
 plot.cortex(values = mean.weights[tau.cols],
             regions = region.labels,
             vmin = mini,
             vmax = maxi,
-            name = 'Tau')
-ggsave(file.path(OUTPUT, 'combined_haufe_weights_tau.svg'), width = 6, height = 1.8, units='in')
+            cm = cm)
+ggsave(file.path(OUTPUT, 'combined_haufe_weights_tau.svg'), width = 6.5, height = 1.2, units='in')
 
 plot.subcortex(values = mean.weights[tau.cols],
                regions = region.labels,
                vmin = mini,
                vmax = maxi,
-               name = '',
-               legend=F)
-ggsave(file.path(OUTPUT, 'combined_haufe_weights_tau_subcortical.svg'), width = 3, height = 1.8, units='in')
+               cm = cm)
+ggsave(file.path(OUTPUT, 'combined_haufe_weights_tau_subcortical.svg'), width = 3, height = 1.2, units='in')
+
 
 # GM
 plot.cortex(values = mean.weights[gm.cols],
             regions = region.labels,
             vmin = mini,
             vmax = maxi,
-            name = 'Neurodegeneration')
-ggsave(file.path(OUTPUT, 'combined_haufe_weights_gm.svg'), width = 6, height = 1.8, units='in')
+            cm = cm)
+ggsave(file.path(OUTPUT, 'combined_haufe_weights_gm.svg'), width = 6.5, height = 1.2, units='in')
 
 plot.subcortex(values = mean.weights[gm.cols],
                regions = region.labels,
                vmin = mini,
                vmax = maxi,
-               name = '',
-               legend=F)
+               cm = cm)
 ggsave(file.path(OUTPUT, 'combined_haufe_weights_gm_subcortical.svg'), width = 3, height = 1.8, units='in')
+
+# colorbar
+plot.colorbar(mini, maxi, cm = cm, text.size = 20, 
+              savepath = file.path(OUTPUT, 'combined_haufe_weights_colorbar.svg'))
 
 # --- Figures from unimodal SVM -------
 
@@ -119,20 +125,21 @@ plot.unimodal <- function(biomarker) {
   
   plot.cortex(values = mean.weights,
               regions = region.labels,
-              name = biomarker,
               vmin = mini,
-              vmax = maxi)
+              vmax = maxi,
+              cm = cm,
+              legend = T)
   filename <- sprintf('unimodal_haufe_weights_%s.svg', biomarker)
-  ggsave(file.path(OUTPUT, filename), width = 6, height = 1.8, units='in')
+  ggsave(file.path(OUTPUT, filename), width = 6.5, height = 1.8, units='in')
   
   plot.subcortex(values = mean.weights,
                  regions = region.labels,
-                 name = '',
                  legend=F,
                  vmin = mini,
-                 vmax = maxi)
+                 vmax = maxi,
+                 cm = cm)
   filename <- sprintf('unimodal_haufe_weights_%s_subcortical.svg', biomarker)
-  ggsave(file.path(OUTPUT, filename), width = 6, height = 1.8, units='in')
+  ggsave(file.path(OUTPUT, filename), width = 3, height = 1.8, units='in')
 }
 
 plot.unimodal('amyloid')

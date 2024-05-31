@@ -89,9 +89,10 @@ draw_meanline(ax, centiloid_to_suvr(15), 0.6, color='red', text='Centiloid>15')
 draw_meanline(ax, centiloid_to_suvr(20), 0.6, color='blue', text='Centiloid>20')
 draw_meanline(ax, centiloid_to_suvr(25), 0.6, color='green', text='Centiloid>25')
 ax.legend(fontsize=14,
-          loc='upper left',
-          bbox_to_anchor=(1, 1),
-          ncol=2)
+          loc='center left',
+          bbox_to_anchor=(1, 0.5),
+          ncol=1, 
+          frameon=False)
 
 #tau
 ax = tau_ax
@@ -111,8 +112,10 @@ draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack Spec. (1.21)')
 draw_meanline(ax, 1.23, 0.4, color='#fe7f06', text='Jack Acc-Young (1.23)')
 draw_meanline(ax, 1.33, 0.2, color='#6b409f', text='Jack Acc-Matched. (1.33)')
 ax.legend(fontsize=14,
-          loc='upper left',
-          bbox_to_anchor=(1, 1))
+          loc='center left',
+          bbox_to_anchor=(1, 0.5),
+          ncol=1, 
+          frameon=False)
 
 # formatting
 tau_ax.set_xlabel('Cutoff (SUVR)')

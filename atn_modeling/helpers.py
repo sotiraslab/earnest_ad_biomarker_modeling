@@ -248,6 +248,7 @@ def nadeau_bengio_test(a, b, n_train, n_test, alpha=0.05, side='both'):
 
 def results_boxplot(results, groupby, baseline='Baseline', save=None,
                     stats_vs_baseline=False, stats_pairs=None,
+                    stats_pairs_positions=None,
                     nadeau_bengio=True, title=None, palette=None,
                     n_train=None, n_test=None, order=None,
                     pivot_index=['fold', 'repeat'], pivot_values='rmse',
@@ -351,7 +352,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             x =  boxplotdata[model].max() + 0.12 * rng
             y = len(order) - list(order).index(model) - 1
             ax.text(x, y, s=stars, rotation=90, ha='center', va='center',
-                    fontsize=20, fontweight='bold', color='darkorange')
+                    fontsize=16, fontweight='bold', color='darkorange')
             while x >= xmax:
                 xmax = xmax + (0.05*xrng)
                 ax.set_xlim(xmin, xmax)
@@ -384,13 +385,17 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             yA = len(order) - list(order).index(nameA) - 1
             yB = len(order) - list(order).index(nameB) - 1
             rng = (maxi - mini)
-            xbar =  maxi + 0.15 * rng
-            xtext = xbar + (xrng/15)
+            xbar =  (maxi + 0.15 * rng) if stats_pairs_positions is None else stats_pairs_positions[i]
+            xtext = xbar + (xrng/20)
             ytext = (yA + yB)/2
 
-            ax.plot([xbar, xbar], [yA, yB], color='k')
+            tip = xrng/100
+            clr = 'dimgray'
+            ax.plot([xbar, xbar], [yA, yB], color=clr)
+            ax.plot([xbar-tip, xbar], [yA, yA], color=clr)
+            ax.plot([xbar-tip, xbar], [yB, yB], color=clr)
             ax.text(xtext, ytext, s=stars, rotation=90, ha='center', va='center',
-                    fontsize=20, fontweight='bold', color='k')
+                    fontsize=16, fontweight='bold', color=clr)
             while xtext >= xmax:
                 xmax = xmax + (0.05*xrng)
                 ax.set_xlim(xmin, xmax)

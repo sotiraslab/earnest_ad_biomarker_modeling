@@ -53,7 +53,7 @@ def jitter(ys, xcenter, spread):
     xs += xcenter
     return xs
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(5, 6.5))
 alpha = .7
 
 y = binary_coefs['amyloid']
@@ -68,7 +68,7 @@ ax.plot([x.min(), x.max()], [y.mean(), y.mean()], color='black', lw=3)
 
 y = binary_coefs['neurodegeneration']
 x = jitter(y, 2, .75)
-ax.scatter(x, y, marker='o', color='#332288', label='Neurodegeneration', alpha=alpha, zorder=2, edgecolor='none')
+ax.scatter(x, y, marker='o', color='#332288', label='Neurodeg.', alpha=alpha, zorder=2, edgecolor='none')
 ax.plot([x.min(), x.max()], [y.mean(), y.mean()], color='black', lw=3)
 
 y = continuous_coefs['amyloid']
@@ -90,7 +90,8 @@ ax.plot([x.min(), x.max()], [y.mean(), y.mean()], color='black', lw=3)
 ax.set_xticks([1, 5])
 ax.set_xticklabels(['Binary', 'Continuous'])
 ax.set_ylabel('Coefficients')
-ax.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=3, frameon=False)
+# ax.legend(loc='lower right', bbox_to_anchor=(1, 1), ncol=1, frameon=False)
+ax.legend()
 
 outfile = os.path.join('figures/combo_atn_models_linear_model_coefficients.svg')
 

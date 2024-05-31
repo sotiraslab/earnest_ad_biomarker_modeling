@@ -11,7 +11,7 @@ import pandas as pd
 
 from atn_modeling import atn_predictor_classes
 from atn_modeling.helpers import results_boxplot
-from common import load_results
+from common import load_results, set_labels_combo_vs_csf
 
 # load results
 exp1 = load_results('exp1_svms_global_cognition', 'results.csv')
@@ -21,7 +21,6 @@ exp10b = load_results('exp10b_test_all_predictors_with_csf_vs_baseline', 'result
 concat = pd.concat([exp10b, exp1])
 concat = concat.loc[concat['model'].str.contains('Imaging') |
                     concat['model'].str.contains('CSF') |
-                    concat['model'].eq('ATN SVM') |
                     concat['model'].eq('Baseline')]
 
 
@@ -43,6 +42,7 @@ fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',
                           stats_vs_baseline=True, n_train=n_train, n_test=n_test,
                           font_file='arial.ttf', palette=palette, hatch=hatch,
                           stats_pairs=pairs)
+set_labels_combo_vs_csf(fig)
 
 plt.tight_layout()
 fig.savefig('figures/combo_models_vs_basline_with_csf.svg', dpi=300)

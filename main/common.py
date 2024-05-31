@@ -19,7 +19,7 @@ def atn_subscripts(a='bin', t='bin', n='bin', upper=True):
     
     def proc(x, upper=upper):
         if isinstance(x, int):
-            val = {0: None, 1: 'bin', 2: 'cat', 3: 'con'}[x]
+            val = {0: None, 1: 'bin', 2: 'cat', 3: 'con', 4: 'svm'}[x]
         else:
             val = x
             
@@ -126,13 +126,12 @@ def set_labels_baseline_exp(fig):
         f(0, 3, 0),
         f(0, 0, 3),
         f(3, 3, 3),
-        'A SVM',
-        'T SVM',
-        'N SVM',
-        'ATN SVM']
+        f(4, 0, 0),
+        f(0, 4, 0),
+        f(0, 0, 4),
+        f(4, 4, 4),]
     ax.set_yticklabels(labs)
     
-
 def set_labels_binary_exp(fig):
     ax = fig.axes[0]
     f = atn_subscripts
@@ -146,10 +145,23 @@ def set_labels_binary_exp(fig):
         f(1, 3, 1),
         f(1, 1, 3),
         f(3, 3, 3),
-        'A SVM',
-        'T SVM',
-        'N SVM',
-        'ATN SVM']
+        f(4, 0, 0),
+        f(0, 4, 0),
+        f(0, 0, 4),
+        f(4, 4, 4),]
+    ax.set_yticklabels(labs)
+    
+def set_labels_combo_vs_csf(fig):
+    ax = fig.axes[0]
+    f = atn_subscripts
+    labs = [
+        'Baseline',
+        f(1, 1, 1) + ' [Imaging]',
+        f(1, 1, 1) + ' [CSF]',
+        f(2, 2, 2) + ' [Imaging]',
+        f(2, 2, 2) + ' [CSF]',
+        f(3, 3, 3) + ' [Imaging]',
+        f(3, 3, 3) + ' [CSF]']
     ax.set_yticklabels(labs)
     
 def setup_output(call_file, short=False):

@@ -35,9 +35,9 @@ palette = (['#F7A934'] +
 # plt.rcParams['font.size'] = 10
 n_train = concat['ntrain'].values[0]
 n_test = concat['ntest'].values[0]
-fig, _ = results_boxplot(concat, groupby='model', baseline='All binary',
-                         stats_vs_baseline=True, palette=palette,
-                         n_train=n_train, n_test=n_test, font_file='arial.ttf')
+fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
+                             stats_vs_baseline=True, palette=palette,
+                             n_train=n_train, n_test=n_test, font_file='arial.ttf')
 set_labels_binary_exp(fig)
 
 plt.tight_layout()

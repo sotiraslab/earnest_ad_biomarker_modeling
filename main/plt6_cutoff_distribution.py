@@ -81,17 +81,17 @@ sns.kdeplot(x ,
 mean = x.mean().round(3)
 ax.axvline(mean, color=color)
 draw_meanline(ax, mean, 0.8, color=color, text=f'Cross-validated ({mean})', lw=4)
-draw_meanline(ax, 1.11, 0.6, color='k', text='Landau (1.11)')
-draw_meanline(ax, 1.24, 0.6, color='brown', text='Su (1.25)')
-draw_meanline(ax, 1.42, 0.6, color='orange', text='Jack RW')
-draw_meanline(ax, 1.30, 0.6, color='teal', text='Jack Spec.')
+draw_meanline(ax, 1.11, 0.6, color='k', text='Landau et al.')
+draw_meanline(ax, 1.24, 0.6, color='brown', text='Su et al.')
+draw_meanline(ax, 1.42, 0.6, color='orange', text='Jack et al. (RW)')
+draw_meanline(ax, 1.30, 0.6, color='teal', text='Jack et al. (Spec)')
 draw_meanline(ax, centiloid_to_suvr(15), 0.6, color='red', text='Centiloid>15')
 draw_meanline(ax, centiloid_to_suvr(20), 0.6, color='blue', text='Centiloid>20')
 draw_meanline(ax, centiloid_to_suvr(25), 0.6, color='green', text='Centiloid>25')
 ax.legend(fontsize=14,
           loc='center left',
           bbox_to_anchor=(1, 0.5),
-          ncol=1, 
+          ncol=1,
           frameon=False)
 
 #tau
@@ -107,14 +107,14 @@ sns.kdeplot(x ,
             fill=True)
 mean = x.mean().round(3)
 draw_meanline(ax, mean, 0.8, color=color, text=f'Cross-validated ({mean})', lw=4)
-draw_meanline(ax, 1.20, 0.8, color='#de1c1a', text='Jack Sens. (1.20)')
-draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack Spec. (1.21)')
-draw_meanline(ax, 1.23, 0.4, color='#fe7f06', text='Jack Acc-Young (1.23)')
-draw_meanline(ax, 1.33, 0.2, color='#6b409f', text='Jack Acc-Matched. (1.33)')
+draw_meanline(ax, 1.20, 0.8, color='#de1c1a', text='Jack et al. (Sens)')
+draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack et al. (Spec))')
+draw_meanline(ax, 1.23, 0.4, color='#fe7f06', text='Jack et al. (Acc-Young)')
+draw_meanline(ax, 1.33, 0.2, color='#6b409f', text='Jack (Acc-Matched)')
 ax.legend(fontsize=14,
           loc='center left',
           bbox_to_anchor=(1, 0.5),
-          ncol=1, 
+          ncol=1,
           frameon=False)
 
 # formatting

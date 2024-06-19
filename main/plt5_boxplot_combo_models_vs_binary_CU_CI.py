@@ -40,9 +40,9 @@ palette = (['#F7A934'] +
 plot_path = os.path.join('figures', 'boxplot_combo_models_vs_binary_CU.svg')
 n_train = concat_CU['ntrain'].values[0]
 n_test = concat_CU['ntest'].values[0]
-fig, _ = results_boxplot(concat_CU, groupby='model', baseline='All binary',
-                         stats_vs_baseline=True, palette=palette,
-                         n_train=n_train, n_test=n_test, font_file='arial.ttf')
+fig, stats_CU = results_boxplot(concat_CU, groupby='model', baseline='All binary',
+                                stats_vs_baseline=True, palette=palette,
+                                n_train=n_train, n_test=n_test, font_file='arial.ttf')
 set_labels_binary_exp(fig)
 
 plt.title('Clinically Unimpaired')
@@ -53,9 +53,9 @@ fig.savefig(plot_path, dpi=300)
 plot_path = os.path.join('figures', 'boxplot_combo_models_vs_binary_CI.svg')
 n_train = concat_CI['ntrain'].values[0]
 n_test = concat_CI['ntest'].values[0]
-fig, _ = results_boxplot(concat_CI, groupby='model', baseline='All binary',
-                         stats_vs_baseline=True, palette=palette,
-                         n_train=n_train, n_test=n_test, font_file='arial.ttf')
+fig, stats_CI = results_boxplot(concat_CI, groupby='model', baseline='All binary',
+                                stats_vs_baseline=True, palette=palette,
+                                n_train=n_train, n_test=n_test, font_file='arial.ttf')
 set_labels_binary_exp(fig)
 
 plt.title('Clinically Impaired')

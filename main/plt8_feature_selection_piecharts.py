@@ -53,7 +53,6 @@ for model_type in model_types:
     df = df.reindex(get_all_tested_model_names(model_type)).fillna(0).sort_values(0, ascending=False)
     df.index = df.index.str.replace('Amyloid ', '')
     plot_dataframes.append(df)
-    break
 
 # ---- plot
 

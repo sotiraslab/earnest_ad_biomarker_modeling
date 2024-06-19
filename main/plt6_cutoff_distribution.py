@@ -62,9 +62,10 @@ try:
 except:
     pass
 
+plt.rcParams.update({'font.size': 20})
+
 fig, (amy_ax, tau_ax) = plt.subplots(nrows=2, sharex=True,
                                       figsize=(14, 6))
-plt.rcParams.update({'font.size': 20})
 amy_ax.set_title('Amyloid')
 tau_ax.set_title('Tau')
 
@@ -108,7 +109,7 @@ sns.kdeplot(x ,
 mean = x.mean().round(3)
 draw_meanline(ax, mean, 0.8, color=color, text=f'Cross-validated ({mean})', lw=4)
 draw_meanline(ax, 1.20, 0.8, color='#de1c1a', text='Jack et al. (Sens)')
-draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack et al. (Spec))')
+draw_meanline(ax, 1.21, 0.6, color='#329f2b', text='Jack et al. (Spec)')
 draw_meanline(ax, 1.23, 0.4, color='#fe7f06', text='Jack et al. (Acc-Young)')
 draw_meanline(ax, 1.33, 0.2, color='#6b409f', text='Jack (Acc-Matched)')
 ax.legend(fontsize=14,

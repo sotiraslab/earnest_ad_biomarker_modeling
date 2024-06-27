@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from atn_modeling.helpers import results_boxplot
-from common import load_results
+from common import load_results, set_labels_binary_exp
     
 # concatenate data
 exp_lm = load_results('exp8a_combo_atn_models_longitudinal_cognition_vs_binary', 'results.csv')
@@ -34,9 +34,10 @@ palette = (['gray'] +
 # plot
 n_train = concat['ntrain'].values[0]
 n_test = concat['ntest'].values[0]
-fig, _ = results_boxplot(concat, groupby='model', baseline='All binary',
-                         stats_vs_baseline=True, palette=palette,
-                         n_train=n_train, n_test=n_test, font_file='arial.ttf')
+fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
+                             stats_vs_baseline=True, palette=palette,
+                             n_train=n_train, n_test=n_test, font_file='arial.ttf')
+set_labels_binary_exp(fig)
 
 plt.title('Prediction of Cognitive Change')
 plt.tight_layout()

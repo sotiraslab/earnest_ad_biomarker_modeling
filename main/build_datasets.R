@@ -625,7 +625,7 @@ print(tbl1, showAllLevels=T)
 tbl1.long <- CreateTableOne(vars=vars,
                        strata='CDRBinned',
                        data=df.long)
-print(tbl1.long showAllLevels=T)
+print(tbl1.long, showAllLevels=T)
 
 # === Table 1: CSF =======
 

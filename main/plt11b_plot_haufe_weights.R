@@ -123,12 +123,13 @@ plot.unimodal <- function(biomarker) {
   mini <- 0
   maxi <- max(mean.weights)
   
-  plot.cortex(values = mean.weights,
-              regions = region.labels,
-              vmin = mini,
-              vmax = maxi,
-              cm = cm,
-              legend = T)
+  p <- plot.cortex(values = mean.weights,
+                   regions = region.labels,
+                   vmin = mini,
+                   vmax = maxi,
+                   cm = cm,
+                   legend = T) +
+    theme(legend.title = element_blank())
   filename <- sprintf('unimodal_haufe_weights_%s.svg', biomarker)
   ggsave(file.path(OUTPUT, filename), width = 6.5, height = 1.8, units='in')
   

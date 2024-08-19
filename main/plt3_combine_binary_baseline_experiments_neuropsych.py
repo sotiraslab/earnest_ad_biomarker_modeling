@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from atn_modeling.helpers import results_boxplot
-from common import locate_outfolder
+from common import locate_outfolder, set_labels_binary_exp
 
 output_dir = 'outputs'
 
@@ -62,6 +62,7 @@ for key in experiment_keys:
     fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
                                  stats_vs_baseline=True, palette=palette,
                                  n_train=n_train, n_test=n_test)
+    set_labels_binary_exp(fig)
     stats_dict[key] = stats['baseline']
     plt.title(key)
 

@@ -10,7 +10,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from common import load_results
+from common import load_results, set_labels_baseline_exp
 from atn_modeling.helpers import results_boxplot
 
 # load data
@@ -40,9 +40,10 @@ palette = (['gray'] +
 plot_path = os.path.join('figures', 'boxplot_combo_models_vs_covariates_CU.svg')
 n_train = concat_CU['ntrain'].values[0]
 n_test = concat_CU['ntest'].values[0]
-fig, _ = results_boxplot(concat_CU, groupby='model', baseline='Baseline',
-                         stats_vs_baseline=True, palette=palette,
-                         n_train=n_train, n_test=n_test, font_file='arial.ttf')
+fig, stats_CU = results_boxplot(concat_CU, groupby='model', baseline='Baseline',
+                                stats_vs_baseline=True, palette=palette,
+                                n_train=n_train, n_test=n_test, font_file='arial.ttf')
+set_labels_baseline_exp(fig)
 
 plt.title('Clinically Unimpaired')
 plt.tight_layout()
@@ -52,9 +53,10 @@ fig.savefig(plot_path, dpi=300)
 plot_path = os.path.join('figures', 'boxplot_combo_models_vs_covariates_CI.svg')
 n_train = concat_CI['ntrain'].values[0]
 n_test = concat_CI['ntest'].values[0]
-fig, _ = results_boxplot(concat_CI, groupby='model', baseline='Baseline',
-                         stats_vs_baseline=True, palette=palette,
-                         n_train=n_train, n_test=n_test, font_file='arial.ttf')
+fig, stats_CI = results_boxplot(concat_CI, groupby='model', baseline='Baseline',
+                                stats_vs_baseline=True, palette=palette,
+                                n_train=n_train, n_test=n_test, font_file='arial.ttf')
+set_labels_baseline_exp(fig)
 
 plt.title('Clinically Impaired')
 plt.tight_layout()

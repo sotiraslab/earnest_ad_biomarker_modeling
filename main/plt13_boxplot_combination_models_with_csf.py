@@ -27,9 +27,8 @@ concat = concat.loc[concat['model'].str.contains('Imaging') |
 # general resources
 palette = (['gray'] +
     ['#F7A934'] * 2+
-    ['#ba635d'] * 2+
-    ['#7DA1D8'] * 2+
-    ['#99C494'])
+    ['#B74CBF'] * 2+
+    ['#FC4646'] * 2)
 hatch = [False] + [False, True] * 3 + [False]
 pairs = [('All binary [Imaging]', 'All binary [CSF]'),
          ('All categorical [Imaging]', 'All categorical [CSF]'),
@@ -38,10 +37,10 @@ pairs = [('All binary [Imaging]', 'All binary [CSF]'),
 # plot
 n_train = concat['ntrain'].values[0]
 n_test = concat['ntest'].values[0]
-fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',
-                          stats_vs_baseline=True, n_train=n_train, n_test=n_test,
-                          font_file='arial.ttf', palette=palette, hatch=hatch,
-                          stats_pairs=pairs)
+fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
+                             stats_vs_baseline=True, n_train=n_train, n_test=n_test,
+                             font_file='arial.ttf', palette=palette, hatch=hatch,
+                             stats_pairs=pairs)
 set_labels_combo_vs_csf(fig)
 
 plt.tight_layout()

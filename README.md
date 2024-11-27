@@ -13,10 +13,10 @@ This section will document how this repository is organized and how to use the c
 
 You must be approved to access ADNI data ([see here](https://adni.loni.usc.edu/data-samples/adni-data/)).  From the [ADNI data repository website](https://ida.loni.usc.edu/login.jsp), you need to download the following tables:
 
-	- UC Berkeley amyloid 6mm analysis (`UCBERKELEY_TAU_6MM_[date].csv`)
-	- UC Berkeley tau 6mm analysis (`UCBERKELEY_TAU_6MM_[date].csv`)
-	- UC Berkeley tau 6mm analysis with partial volume correction(`UCBERKELEY_TAUPVC_6MM_[date].csv`)
-	- ADSP Phenotype Harmonization Scores (`ADSP_PHC_COGN_[date].csv`)
+- UC Berkeley amyloid 6mm analysis (`UCBERKELEY_TAU_6MM_[date].csv`)
+- UC Berkeley tau 6mm analysis (`UCBERKELEY_TAU_6MM_[date].csv`)
+- UC Berkeley tau 6mm analysis with partial volume correction(`UCBERKELEY_TAUPVC_6MM_[date].csv`)
+- ADSP Phenotype Harmonization Scores (`ADSP_PHC_COGN_[date].csv`)
 
 **All these should be placed in `earnest_ad_biomarker_modeling/main/inputs`.**  They will only be searched for in this folder.
 

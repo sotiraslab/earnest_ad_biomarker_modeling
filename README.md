@@ -3,7 +3,7 @@ This repository contain's code for research from the [Sotiras Lab](https://www.m
 
 ## Citation
 
-Please check back for up to date information, as the manuscript is being submitted to journals for publication.  It will soon be available as a preprint on medRxiv.
+This work is currently shared in the following preprint: **Comprehensive evaluation of AT(N) imaging biomarkers for predicting cognition** ([http://dx.doi.org/10.1101/2024.11.25.24317943](http://dx.doi.org/10.1101/2024.11.25.24317943)).
 
 ## User Guide
 

@@ -288,6 +288,189 @@ def experiment_svm(dataset, target,
 
     return results_df, models
 
+def experiment_svm_aaic2025(dataset, target,
+                            covariates=['Age', 'SexBinary', 'HasE4Binary'],
+                            stratify='CDRBinned',
+                            search_C_linear=None,
+                            search_C_rbf=None,
+                            search_kernel=None,
+                            search_gamma=None,
+                            repeats=10,
+                            outer_splits=10,
+                            inner_splits=5,
+                            outer_seed=0,
+                            inner_seed=100,
+                            savepath=None,
+                            savemodels=None,
+                            testing_filter=None):
+
+    # setup columns for SVM
+    amy_columns = list(dataset.columns[dataset.columns.str.startswith('AV45') & ~dataset.columns.str.contains('TOT')])
+    tau_columns = list(dataset.columns[dataset.columns.str.startswith('FTP_') & ~dataset.columns.str.contains('TOT')])
+    gm_columns = list(dataset.columns[dataset.columns.str.endswith('VOLUME') & ~ dataset.columns.str.contains('BRAAK|META')])
+    roi_columns = amy_columns + tau_columns + gm_columns
+
+    amy_columns += covariates
+    tau_columns += covariates
+    gm_columns += covariates
+    roi_columns += covariates
+
+    assert len(set([len(x) for x in [amy_columns, tau_columns, gm_columns]])) == 1, 'Different # of columns for SVM'
+
+    SVM_MODELS = {
+        'Baseline': covariates,
+        'Amyloid biomarker': ['AmyloidComposite'] + covariates,
+        'Tau biomarker': ['META_TEMPORAL_TAU'] + covariates,
+        'GM biomarker': ['META_TEMPORAL_VOL'] + covariates,
+        'ATN biomarker':  ['AmyloidComposite', 'META_TEMPORAL_TAU', 'META_TEMPORAL_VOL'] + covariates,
+        'Amyloid ROI': amy_columns,
+        'Tau ROI': tau_columns,
+        'GM ROI': gm_columns,
+        'ATN ROI': roi_columns
+        }
+
+    BIOMARKERS = {
+        'Baseline': 'baseline',
+        'Amyloid biomarker': 'amyloid',
+        'Tau biomarker': 'tau',
+        'GM biomarker': 'neurodegeneration',
+        'ATN biomarker':  'multimodal',
+        'Amyloid ROI': 'amyloid',
+        'Tau ROI': 'tau',
+        'GM ROI': 'neurodegeneration',
+        'ATN ROI': 'multimodal',
+    }
+
+    if search_C_linear is None:
+        search_C_linear = [2 ** -7]
+
+    if search_C_rbf is None:
+        search_C_rbf = [2 ** -7]
+
+    if search_gamma is None:
+        search_gamma = [2 ** -7]
+
+    searched_svm_paramters = ['C', 'gamma', 'kernel']
+
+    SVM_SEARCH = []
+    if 'linear' in search_kernel:
+        linear_params = {'C': search_C_linear, 'gamma': [None], 'kernel': ['linear']}
+        linear_combos =  list(it.product(*linear_params.values()))
+        linear_search = [dict(zip(linear_params.keys(), v)) for v in linear_combos]
+        SVM_SEARCH += linear_search
+    if 'rbf' in search_kernel:
+        rbf_params = {'C': search_C_rbf, 'gamma': search_gamma, 'kernel': ['rbf']}
+        rbf_combos =  list(it.product(*rbf_params.values()))
+        rbf_search = [dict(zip(rbf_params.keys(), v)) for v in rbf_combos]
+        SVM_SEARCH += rbf_search
+
+    # this happens a lot with the linear SVM for certain values of C
+    # some models are converging, however
+    warnings.filterwarnings('ignore', message='Liblinear failed to converge')
+
+    # repeats of cross validation
+    results = []
+    models = defaultdict(list)
+    for r in range(repeats):
+        outer_cv = StratifiedKFold(n_splits=outer_splits, random_state=outer_seed + r, shuffle=True)
+        inner_cv = StratifiedKFold(n_splits=inner_splits, random_state=inner_seed + r, shuffle=True)
+
+        # outer CV loop
+        for i, (outer_train_index, outer_test_index) in enumerate(outer_cv.split(dataset, dataset[stratify])):
+            msg = f"[{str(dt.datetime.now())}] REPEAT: {r}, OUTER FOLD: {i}"
+            print()
+            print(msg)
+            print('-' * len(msg))
+
+            outer_train = dataset.iloc[outer_train_index, :]
+            outer_test = dataset.iloc[outer_test_index, :]
+
+            if testing_filter is not None:
+                outer_test = testing_filter(outer_test)
+
+            # inner CV loop
+            inner_cv_svm_results = []
+            for j, (inner_train_index, inner_test_index) in enumerate(inner_cv.split(outer_train, outer_train[stratify])):
+
+                print(f'[{str(dt.datetime.now())}] *INNER TRAINING FOLD {j}*')
+
+                inner_train = outer_train.iloc[inner_train_index, :]
+                inner_test = outer_train.iloc[inner_test_index, :]
+
+                if testing_filter is not None:
+                    inner_test = testing_filter(inner_test)
+
+                # testing many SVM models
+
+                for svm_name, svm_features in SVM_MODELS.items():
+                    for c, params in enumerate(SVM_SEARCH):
+                        # uncomment to print every model trained
+                        # much more verbose!
+                        # print(f' - {svm_name} ({params})')
+                        model = MultivariateSVR(svm_features, target, **params)
+                        model.fit(inner_train)
+                        preds = model.predict(inner_test)
+                        row = {'name': svm_name,
+                               **params,
+                               'repeat': r,
+                               'fold': j,
+                               'rmse': root_mean_squared_error(inner_test[target], preds),
+                               'r2': r2_score(inner_test[target], preds)}
+                        inner_cv_svm_results.append(row)
+
+            # select best SVM model
+            inner_cv_svm_results = pd.DataFrame(inner_cv_svm_results)
+            svm_model_averages = inner_cv_svm_results.groupby(['name'] + searched_svm_paramters)['rmse'].agg(mean="mean", std="std").reset_index()
+            best_by_params = svm_model_averages.groupby('name')['mean'].idxmin()
+            svm_selected_models = svm_model_averages.iloc[best_by_params]
+
+            print()
+            print(' SELECTED MODELS*')
+            print(svm_selected_models)
+
+            print()
+            print(f'[{str(dt.datetime.now())}] *OUTER TRAINING*')
+            for svm_name, svm_features in SVM_MODELS.items():
+                best_params = svm_best_param_lookup(svm_selected_models, svm_name, searched_svm_paramters)
+                model = MultivariateSVR(svm_features, target, **best_params)
+                model.fit(outer_train)
+
+                print(f' - {svm_name} ({best_params}) [{str(dt.datetime.now())}]')
+
+                # test on ADNI
+                preds = model.predict(outer_test)
+                row = {'model': svm_name,
+                       **best_params,
+                       'biomarker': BIOMARKERS[svm_name],
+                       'fold': i,
+                       'repeat': r,
+                       'ntrain': len(outer_train),
+                       'ntest': len(outer_test),
+                       'rmse': root_mean_squared_error(outer_test[target], preds),
+                       'r2': r2_score(outer_test[target], preds)}
+                results.append(row)
+                print(f'   RMSE={row["rmse"]}')
+
+                # save model
+                models[svm_name].append(deepcopy(model))
+
+    results_df = pd.DataFrame(results)
+
+    if savepath:
+        print('')
+        print(f'Saving results to "{savepath}"...')
+        results_df.to_csv(savepath, index=False)
+        print('Done!')
+
+    if savemodels:
+        print('')
+        print(f'Saving models to "{savemodels}"...')
+        with open(savemodels, 'wb') as f:
+            pickle.dump(models, f)
+        print('Done!')
+
+    return results_df, models
+
 def experiment_combo_atn_vs_baseline(dataset, target,
                                      covariates=['Age', 'SexBinary', 'HasE4Binary'],
                                      stratify='CDRBinned',

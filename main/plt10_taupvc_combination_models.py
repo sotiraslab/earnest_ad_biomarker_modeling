@@ -11,7 +11,7 @@ import pandas as pd
 
 from atn_modeling import atn_predictor_classes
 from atn_modeling.helpers import results_boxplot
-from common import load_results
+from common import load_results, set_labels_pvc_combo
 
 # load results
 exp1 = load_results('exp1_svms_global_cognition', 'results.csv')
@@ -57,6 +57,7 @@ n_test = concat['ntest'].values[0]
 fig, _ = results_boxplot(concat, groupby='model', baseline='Baseline',
                          stats_vs_baseline=True, palette=palette, hatch=hatch,
                          n_train=n_train, n_test=n_test, stats_pairs=pairs)
+set_labels_pvc_combo(fig)
 
 plt.tight_layout()
 fig.savefig('figures/taupvc_combination_models.svg', dpi=300)

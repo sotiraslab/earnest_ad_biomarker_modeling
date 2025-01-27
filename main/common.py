@@ -164,6 +164,29 @@ def set_labels_combo_vs_csf(fig):
         f(3, 3, 3) + ' [CSF]']
     ax.set_yticklabels(labs)
     
+def set_labels_pvc_combo(fig):
+    ax = fig.axes[0]
+    f = atn_subscripts
+    labs = [
+        'Baseline',
+        f(0, 1, 0),
+        f(0, 1, 0) + ' [ PVC]',
+        f(1, 1, 1),
+        f(1, 1, 1) + ' [ PVC]',
+        f(0, 2, 0),
+        f(0, 2, 0) + ' [ PVC]',
+        f(1, 2, 1),
+        f(1, 2, 1) + ' [ PVC]',
+        f(0, 3, 0),
+        f(0, 3, 0) + ' [ PVC]',
+        f(1, 3, 1),
+        f(1, 3, 1) + ' [ PVC]',
+        f(0, 4, 0),
+        f(0, 4, 0) + ' [ PVC]',
+        f(4, 4, 4),
+        f(4, 4, 4) + ' [ PVC]']
+    ax.set_yticklabels(labs)
+    
 def setup_output(call_file, short=False):
     outputs_dir = get_outputs_path()
     foldername = os.path.splitext(os.path.basename(call_file))[0]

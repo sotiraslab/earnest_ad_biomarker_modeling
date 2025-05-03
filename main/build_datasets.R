@@ -713,36 +713,25 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
   mutate(CSF_AB42OVER40=CSF_ABETA42/CSF_ABETA40) %>%
   filter(! is.na(CSF_PTAU))
 
-# # === save ========
-# 
-# df.long <- df %>%
-#   filter(! is.na(DeltaADSP))
-# 
-# write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
-# write.csv(df.long, file.path(outfolder, 'maindata_long.csv'), quote = F, na = '', row.names = F)
-# write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)
-# 
-# # === Table 1 =======
-# 
-# vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
-# 
-# tbl1 <- CreateTableOne(vars=vars,
-#                        strata='CDRBinned',
-#                        data=df)
-# print(tbl1, showAllLevels=T)
-# 
-# # === Table 1: longitudinal =======
-# 
-# tbl1.long <- CreateTableOne(vars=vars,
-#                        strata='CDRBinned',
-#                        data=df.long)
-# print(tbl1.long, showAllLevels=T)
-# 
-# # === Table 1: CSF =======
-# 
-# vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
-# 
-# tbl1.csf <- CreateTableOne(vars=vars,
-#                        strata='CDRBinned',
-#                        data=df.csf)
-# print(tbl1.csf, showAllLevels=T)
+# === save ========
+
+write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
+write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)
+
+# === Table 1 =======
+
+vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+
+tbl1 <- CreateTableOne(vars=vars,
+                       strata='CDRBinned',
+                       data=df)
+print(tbl1, showAllLevels=T)
+
+# === Table 1: CSF =======
+
+vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+
+tbl1.csf <- CreateTableOne(vars=vars,
+                       strata='CDRBinned',
+                       data=df.csf)
+print(tbl1.csf, showAllLevels=T)

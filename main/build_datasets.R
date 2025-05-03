@@ -194,14 +194,31 @@ df.icv$ICV <- ifelse(df.icv$Sex == 'Female' & is.na(df.icv$ICV), female.icv, df.
 
 df <- df.icv
 
-# === Add cognitive measures =========
+# === Add MMSE =====
+
+mm <- mmse %>%
+  mutate(DateMMSE = as_datetime(ymd(USERDATE))) %>%
+  select(RID, DateMMSE, MMSCORE_EDC) %>%
+  rename(MMSE=MMSCORE_EDC)
+
+mmse.long <- left_join(df, mm, by='RID') %>%
+  mutate(DiffImagingMMSE = as.numeric(difftime(MeanImagingDate, DateMMSE, units='days')))
+
+df.mmse <- mmse.long %>%
+  group_by(RID) %>%
+  slice_min(order_by=abs(DiffImagingMMSE), with_ties = F) %>%
+  ungroup() %>%
+  filter(abs(DiffImagingMMSE) < THRESHOLD.COGNITIVE.DAYS)
+
+df <- df.mmse
+
+# === Add PHC =========
 
 adsp <- load.adni.table('ADSP_PHC', 'inputs')
 
 adsp <- adsp %>%
   mutate(DateADSP = as_datetime(ymd(EXAMDATE))) %>%
   select(RID, DateADSP, PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP)
-adsp$PHC_GLOBAL <- rowMeans(adsp[, c('PHC_MEM', 'PHC_EXF', 'PHC_LAN', 'PHC_VSP')])
 
 #save for calculating longitudinal change
 df.adsp.long <- left_join(df, adsp, by='RID') %>%
@@ -215,44 +232,138 @@ df.adsp <- df.adsp.long %>%
 
 df <- df.adsp
 
-# === Compute longitudinal change in PHC =======
+# === Add ADNI-composites =========
 
-joiner <- df.adsp.long %>%
-  select(RID, DateADSP, PHC_GLOBAL, PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP) %>%
-  filter(! is.na(PHC_GLOBAL))
+psych <- uwnpsychsum %>%
+  mutate(DateUWPSYCH = as_datetime(ymd(EXAMDATE))) %>%
+  select(RID, DateUWPSYCH, ADNI_MEM, ADNI_EF, ADNI_LAN, ADNI_VS)
 
-long.data <- df %>%
-  select(RID, DateADSP, Age, CDRBinned) %>%
-  rename(DateADSP.BL=DateADSP) %>%
-  left_join(joiner, by='RID') %>%
+#save for calculating longitudinal change
+psych.long <- left_join(df, psych, by='RID') %>%
+  mutate(DiffImagingUWPSYCH = as.numeric(difftime(MeanImagingDate, DateUWPSYCH, units = 'days')))
+
+df.psych <- psych.long %>%
   group_by(RID) %>%
-  mutate(DeltaADSPDate = as.numeric(difftime(DateADSP, DateADSP.BL, units='days')) / 365.25,
-         Long.Age = Age + DeltaADSPDate) %>% 
-  filter(DateADSP >= DateADSP.BL) %>%
-  filter(n() >= 2) %>%
-  ungroup()
+  slice_min(order_by=abs(DiffImagingUWPSYCH), with_ties = F) %>%
+  ungroup() %>%
+  filter(abs(DiffImagingUWPSYCH) < THRESHOLD.COGNITIVE.DAYS)
 
-# longitudinal modelling
-m <- lmer(PHC_GLOBAL ~ DeltaADSPDate + (1+DeltaADSPDate|RID), data=long.data)
-long.data$PHC_GLOBAL.LMER.Predict <- predict(m, long.data)
+df <- df.psych
 
-ggplot(long.data, aes(x=Long.Age, y=PHC_GLOBAL)) +
-  geom_point(aes(color=CDRBinned), alpha = .7) + 
-  geom_line(aes(y=PHC_GLOBAL.LMER.Predict, group=RID, color=CDRBinned), alpha= .7)
+# === Helper for computing longitudinal change =======
 
-coefs <- coef(m)$RID %>%
-  select(DeltaADSPDate) %>%
-  dplyr::rename(DeltaADSP=DeltaADSPDate) %>%
-  rownames_to_column(var="RID") %>%
-  mutate(RID=as.numeric(RID))
+calc.longitudinal.change <- function(baseline, longitudinal,
+                                     variable, date.column,
+                                     id.column='RID', age.column='Age',
+                                     plot.by='CDRBinned') {
 
-df <- left_join(df, coefs, by='RID')
+  joiner <- longitudinal %>%
+    select(!!id.column, !!date.column, !!variable, !!plot.by) %>%
+    rename(ID=!!id.column, DATE=!!date.column, VAR=!!variable)
+  
+  long.data <- baseline %>%
+    select(!!id.column, !!date.column, !!age.column, !!plot.by) %>%
+    rename(ID=!!id.column, DATE.BL=!!date.column, AGE=!!age.column, PLOTBY=!!plot.by) %>%
+    left_join(joiner, by='ID') %>%
+    group_by(ID) %>%
+    mutate(DELTA = as.numeric(difftime(DATE, DATE.BL, units='days')) / 365.25,
+           LONG.AGE = AGE + DELTA) %>%
+    filter(DATE >= DATE.BL) %>%
+    filter(n() >= 2) %>%
+    drop_na(VAR) %>%
+    ungroup()
+  
+  # longitudinal modelling
+  m <- lmer(VAR ~ DELTA + (1+DELTA|ID), data=long.data)
+  long.data$VAR.PREDICT <- predict(m, long.data)
+  
+  p <- ggplot(long.data, aes(x=LONG.AGE, y=VAR)) +
+    geom_point(aes(color=PLOTBY), alpha = .7) +
+    geom_line(aes(y=VAR.PREDICT, group=ID, color=PLOTBY), alpha= .7) +
+    ggtitle(variable)
+  
+  print(p)
+  
+  final.name <- paste('Delta.', variable, sep='')
+  
+  coefs <- coef(m)$ID %>%
+    select(DELTA) %>%
+    rownames_to_column(var='ID') %>%
+    mutate(ID = as.numeric(ID))
+  colnames(coefs) <- c(id.column, final.name)
+  
+  result <- left_join(baseline, coefs, by=id.column)
+  
+  return (result)
+}
 
-# scale up deltaADSP for training purposes
-# found to be getting wonky SVM results without this step
-# factor of 10 puts it on similar scale as cross-sectional value
-df <- df %>%
-  mutate(DeltaADSP = DeltaADSP * 10)
+# === Compute longitudinal changes =====
+
+# MMSE
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = mmse.long,
+  variable = 'MMSE',
+  date.column = 'DateMMSE'
+)
+
+# ADSP
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = df.adsp.long,
+  variable = 'PHC_MEM',
+  date.column = 'DateADSP'
+)
+
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = df.adsp.long,
+  variable = 'PHC_EXF',
+  date.column = 'DateADSP'
+)
+
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = df.adsp.long,
+  variable = 'PHC_LAN',
+  date.column = 'DateADSP'
+)
+
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = df.adsp.long,
+  variable = 'PHC_VSP',
+  date.column = 'DateADSP'
+)
+
+# UW Psych composites
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = psych.long,
+  variable = 'ADNI_MEM',
+  date.column = 'DateUWPSYCH'
+)
+
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = psych.long,
+  variable = 'ADNI_EF',
+  date.column = 'DateUWPSYCH'
+)
+
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = psych.long,
+  variable = 'ADNI_LAN',
+  date.column = 'DateUWPSYCH'
+)
+
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = psych.long,
+  variable = 'ADNI_VS',
+  date.column = 'DateUWPSYCH'
+)
 
 # === variables for selecting ROIs ======
 
@@ -351,7 +462,7 @@ bilateral.pet.rois <- function(df, tracer) {
   if (! tracer %in% c('tau', 'amyloid', 'pvc')) {
     stop('`tracer` must be "tau" or "amyloid"')
   }
-  
+
   if (tracer == 'tau') {
     startpat <- 'FTP'
   } else  if (tracer == 'amyloid') {
@@ -359,7 +470,7 @@ bilateral.pet.rois <- function(df, tracer) {
   } else if (tracer == 'pvc') {
     startpat <- 'FTPPVC'
   }
-  
+
   all.cols <- colnames(df)
   pet.lh.cols <- all.cols[str_detect(all.cols, sprintf('%s_CTX_LH_|%s_LEFT_', startpat, startpat))]
   pet.rh.cols <- all.cols[str_detect(all.cols, sprintf('%s_CTX_RH_|%s_RIGHT_', startpat, startpat))]
@@ -375,7 +486,7 @@ bilateral.pet.rois <- function(df, tracer) {
   weighted.pet <- (lh.weight * pet.lh) + (rh.weight * pet.rh)
   colnames(weighted.pet) <- colnames(pet.lh)
   colnames(weighted.pet) <- str_replace(colnames(weighted.pet), 'LH_|LEFT_', 'TOT_')
-  
+
   return (weighted.pet)
 }
 
@@ -436,22 +547,22 @@ df$MattssonLateSUVR <- rowMeans(MattssonLate.df)
 # === Add Collij 2020 merged regions =======
 
 volume.weighted.mean <- function(pet.data, vol.data, search.columns) {
-  
+
   pattern <- paste(search.columns, collapse='|')
   pet.cols <- colnames(pet.data)[str_detect(colnames(pet.data), pattern)]
   vol.cols <- colnames(vol.data)[str_detect(colnames(vol.data), pattern)]
-  
+
   ncols <- length(pet.cols)
   print(sprintf('%s column(s) selected for averaging:', ncols))
   print(pet.cols)
-  
+
   pet <- pet.data[, pet.cols]
   vol <- vol.data[, vol.cols]
-  
+
   volumes.norm <- vol / rowSums(vol)
   pet.norm <- pet * volumes.norm
   result <- rowSums(pet.norm)
-  
+
   return(result)
 }
 
@@ -540,7 +651,7 @@ df$BRAAK56_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, c(braak5.regs, braa
 # === remove NAs =========
 
 all.cols <- colnames(df)
-na.cols <- c('Age', 'Sex', 'PHC_GLOBAL', 'HasE4', 'CDRBinned')
+na.cols <- c('Age', 'Sex', 'Delta.MMSE', 'Delta.PHC_MEM', 'HasE4', 'CDRBinned')
 roi.cols <- all.cols[str_detect(all.cols, '_SUVR|_VOLUME')]
 
 df.withna <- df
@@ -562,7 +673,7 @@ df$HasE4Binary <- ifelse(df$HasE4, 1, 0)
 #   mutate(RID = as.numeric(RID),
 #          DateCSF = as_datetime(mdy(DRAWDTE))) %>%
 #   select(RID, DateCSF, ABETA, TAU, PTAU)
-# 
+#
 # df <- left_join(df, old.csf, by='RID') %>%
 #   mutate(DiffTauCSF = as.numeric(difftime(DateTau, DateCSF, units='days')) / 365.25) %>%
 #   group_by(TauID) %>%
@@ -570,7 +681,7 @@ df$HasE4Binary <- ifelse(df$HasE4, 1, 0)
 #   filter(abs(DiffTauAmyloid) < THRESHOLD.IMAGING.DAYS) %>%
 #   ungroup() %>%
 #   select(TauID, DateTau, ABETA, TAU, PTAU)
-# ---> 
+# --->
 
 bmk10 <- upennbiomk10 %>%
   select(RID, DRAWDATE, ABETA40, ABETA42, TAU, PTAU) %>%
@@ -602,36 +713,36 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
   mutate(CSF_AB42OVER40=CSF_ABETA42/CSF_ABETA40) %>%
   filter(! is.na(CSF_PTAU))
 
-# === save ========
-
-df.long <- df %>%
-  filter(! is.na(DeltaADSP))
-
-write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
-write.csv(df.long, file.path(outfolder, 'maindata_long.csv'), quote = F, na = '', row.names = F)
-write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)
-
-# === Table 1 =======
-
-vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
-
-tbl1 <- CreateTableOne(vars=vars,
-                       strata='CDRBinned',
-                       data=df)
-print(tbl1, showAllLevels=T)
-
-# === Table 1: longitudinal =======
-
-tbl1.long <- CreateTableOne(vars=vars,
-                       strata='CDRBinned',
-                       data=df.long)
-print(tbl1.long, showAllLevels=T)
-
-# === Table 1: CSF =======
-
-vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
-
-tbl1.csf <- CreateTableOne(vars=vars,
-                       strata='CDRBinned',
-                       data=df.csf)
-print(tbl1.csf, showAllLevels=T)
+# # === save ========
+# 
+# df.long <- df %>%
+#   filter(! is.na(DeltaADSP))
+# 
+# write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
+# write.csv(df.long, file.path(outfolder, 'maindata_long.csv'), quote = F, na = '', row.names = F)
+# write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)
+# 
+# # === Table 1 =======
+# 
+# vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+# 
+# tbl1 <- CreateTableOne(vars=vars,
+#                        strata='CDRBinned',
+#                        data=df)
+# print(tbl1, showAllLevels=T)
+# 
+# # === Table 1: longitudinal =======
+# 
+# tbl1.long <- CreateTableOne(vars=vars,
+#                        strata='CDRBinned',
+#                        data=df.long)
+# print(tbl1.long, showAllLevels=T)
+# 
+# # === Table 1: CSF =======
+# 
+# vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+# 
+# tbl1.csf <- CreateTableOne(vars=vars,
+#                        strata='CDRBinned',
+#                        data=df.csf)
+# print(tbl1.csf, showAllLevels=T)

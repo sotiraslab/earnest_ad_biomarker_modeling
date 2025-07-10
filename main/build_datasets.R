@@ -284,7 +284,7 @@ calc.longitudinal.change <- function(baseline, longitudinal,
   
   print(p)
   
-  final.name <- paste('Delta.', variable, sep='')
+  final.name <- paste('Delta', variable, sep='')
   
   coefs <- coef(m)$ID %>%
     select(DELTA) %>%
@@ -651,7 +651,7 @@ df$BRAAK56_TAUPVC <- volume.weighted.mean(df.taupvc, df.vol, c(braak5.regs, braa
 # === remove NAs =========
 
 all.cols <- colnames(df)
-na.cols <- c('Age', 'Sex', 'Delta.MMSE', 'Delta.PHC_MEM', 'HasE4', 'CDRBinned')
+na.cols <- c('Age', 'Sex', 'DeltaMMSE', 'DeltaPHC_MEM', 'HasE4', 'CDRBinned')
 roi.cols <- all.cols[str_detect(all.cols, '_SUVR|_VOLUME')]
 
 df.withna <- df

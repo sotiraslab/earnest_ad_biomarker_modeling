@@ -3,6 +3,7 @@
 sh <- suppressPackageStartupMessages
 
 sh(library(ADNIMERGE))
+sh(library(factoextra))
 sh(library(ggplot2))
 sh(library(lme4))
 sh(library(lubridate))
@@ -658,6 +659,30 @@ df.withna <- df
 df <- df %>%
   drop_na(all_of(na.cols), all_of(roi.cols))
 
+# === PCA on PHC ======
+
+# train PCA on the baseline data
+pca.data <- df %>%
+  select(PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP)
+pca <- prcomp(pca.data, center = T, scale = T)
+
+# get PC1 loading for baseline data
+predicts.bl <- as.data.frame(predict(pca, pca.data))
+df$PHC_PC1 <- predicts.bl$PC1
+
+# get PC1 loadings for longitudinal data
+predicts.long <- as.data.frame(predict(pca, df.adsp.long))
+df.adsp.long$PHC_PC1 <- predicts.long$PC1
+
+# model longitudinal change in PC1
+# ADSP
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = df.adsp.long,
+  variable = 'PHC_PC1',
+  date.column = 'DateADSP'
+)
+
 # === ML-friendly variables =======
 
 df$SexBinary <- ifelse(df$Sex == 'Male', 1, 0)
@@ -720,7 +745,7 @@ write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', 
 
 # === Table 1 =======
 
-vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'MMSE', 'DeltaMMSE')
 
 tbl1 <- CreateTableOne(vars=vars,
                        strata='CDRBinned',
@@ -729,7 +754,7 @@ print(tbl1, showAllLevels=T)
 
 # === Table 1: CSF =======
 
-vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'PHC_GLOBAL')
+vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'MMSE', 'DeltaMMSE')
 
 tbl1.csf <- CreateTableOne(vars=vars,
                        strata='CDRBinned',

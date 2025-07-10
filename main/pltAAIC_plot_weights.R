@@ -1,43 +1,42 @@
 
-library(anticlust)
-library(argparse)
-library(this.path)
+# --- Imports -----
+sh <- suppressPackageStartupMessages
 
-# Inputs
-inpath <- '/Users/earnestt1234/Desktop/training.csv'
-outpath <- '/Users/earnestt1234/Desktop/splits.csv'
-K <- 2
-N <- 15
-id.columns <- c('Subject', 'Session')
-continuous.columns <- c('Age', 'SummarySUVRAmyloid', 'SummarySUVRTau')
-categorical.columns <- c('Dataset', 'CDRBinned')
-verbose <- TRUE
-seed <- 42
+sh(library(stringr))
+sh(library(svglite))
+sh(library(this.path))
+sh(library(tidyverse))
 
-# ---- MAIN -----
+# --- Working directory -----
+setwd(this.dir())
 
-set.seed(seed)
+# --- Source plot script -----
+source('../rscripts/ggseg_plots.R')
 
-df <- read.csv(path)
+# --- Load SVM weights ------
 
-splits <- matrix(data=NA, nrow=nrow(df), ncol=N)
-continuous.input <- df[, continuous.columns]
-categorical.input <- df[, categorical.columns]
+HAUFE_FOLDER <- 'outputs/haufe_weights_aaic/'
 
-for (i in 1:N) {
-  v <- anticlustering(
-    x = continuous.input,
-    k = K,
-    categories = categorical.input
-    )
-  splits[, i] <- v
-}
+biomarker.path <- file.path(HAUFE_FOLDER, 'svm_weights_haufe_ATNbiomarker.csv')
+roi.path <- file.path(HAUFE_FOLDER, 'svm_weights_haufe_AmyloidROI.csv')
 
-splits <- as.data.frame(splits)
+OUTPUT <- file.path('figures', 'haufe_brains_aaic')
+dir.create(OUTPUT, showWarnings = F)
 
-if (! is.null(id.columns)) {
-  ids <- df[, id.columns]
-  splits <- cbind(ids, splits)
-}
+# --- ATN biomarkers barplot -----
 
-write.table(splits, outpath, row.names = F, col.names = F, sep = ',')
+df <- read.csv(biomarker.path)
+
+p.data <- df %>%
+  pivot_longer(everything(), names_to = 'Feature', values_to = 'Importance') %>%
+  group_by(Feature) %>%
+  summarise(Mean = mean(abs(Importance)),
+            SD = sd(abs(Importance))) %>%
+  ungroup() %>%
+  recode(Feature,
+         AmyloidComposite = 'Amyloid SUVR',
+         META_TEMPORAL_TAU = 'Tau SUVR',
+         META_TEMPORAL_VOL = 'Temporal Volume',
+         Age = 'Age',
+         SexBinary = 'Sex',
+         HasE4Binary = 'APOEE4')

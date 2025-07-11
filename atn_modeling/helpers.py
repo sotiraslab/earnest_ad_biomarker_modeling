@@ -93,7 +93,7 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data,
         m.fit(train_data)
 
     X_train = get_training_x(train_data, covariates, models)
-    
+
     y_train = train_data[target].to_numpy()
     omit = np.any(np.isnan(X_train), axis=1)
     X_train = X_train[~omit, :]
@@ -310,7 +310,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
 
     # labels
     ax.set_yticklabels(order)
-    ax.set_xlabel('RMSE')
+    ax.set_xlabel(pivot_values)
     ax.grid(alpha=.4)
 
     if title:

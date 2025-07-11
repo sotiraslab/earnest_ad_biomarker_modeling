@@ -79,6 +79,9 @@ ax.legend(handles = [
     ncol=3,
     frameon=False)
 
+# update text
+ax.set_xlabel('Prediction Error for ΔMMSE (RMSE)')
+
 # save
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)
@@ -116,6 +119,9 @@ ax.legend(handles = [
     bbox_to_anchor=(1, 1),
     ncol=3,
     frameon=False)
+
+# update text
+ax.set_xlabel('Prediction Error for ΔMMSE (RMSE)')
 
 # save
 plt.tight_layout()

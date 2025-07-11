@@ -51,7 +51,7 @@ pairs = [
     ('ATN SVM', 'GM SVM'),
     ]
 
-positions = [0.75, 0.725, 0.7] * 4
+positions = [1.15, 1.15, 1.2] * 4
 
 # plot
 # plt.rcParams['font.size'] = 10
@@ -62,6 +62,9 @@ fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
                          n_train=n_train, n_test=n_test, font_file='arial.ttf',
                          stats_pairs=pairs, stats_pairs_positions=positions)
 set_labels_baseline_exp(fig)
+
+# update text
+fig.gca().set_xlabel('Prediction Error for ΔMMSE (RMSE)')
 
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)

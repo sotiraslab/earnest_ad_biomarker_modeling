@@ -76,7 +76,7 @@ do
         -t '72:00:00'
         -N 1
         -n 1
-        --mem=128GB
+        --mem=6GB
         --account='aristeidis_sotiras'
         --partition='tier2_cpu'
         --exclude=highmem01,highmem02

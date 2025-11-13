@@ -16,7 +16,9 @@ from atn_modeling.helpers import results_boxplot
 experiment_keys = [
     'MEM',
     'EXF',
-    'LAN'
+    'LAN',
+    'VSP',
+    'PC1'
     ]
 
 stats_dict = {}

@@ -20,15 +20,21 @@ output_dir = 'outputs'
 
 
 experiment_keys = [
-    'MEM'
+    'MEM',
+    'EXF',
+    'LAN',
+    'VSP',
+    'PC1'
     ]
 
 
 stats_dict = {}
 for key in experiment_keys:
     try:
-        lm_directory = locate_outfolder(f'comboVSbinary_{key}')
+        lm_directory = locate_outfolder(f'comboVSbinary_DeltaPHC_{key}')
+        print(lm_directory)
         svm_directory = locate_outfolder(f'svm_{key}')
+        print(svm_directory)
     except ValueError:
         print(f'NO RESULTS FOUND FOR KEY: {key}')
         continue

@@ -66,6 +66,7 @@ for key in experiment_keys:
                                  stats_vs_baseline=True, palette=palette,
                                  n_train=n_train, n_test=n_test)
     set_labels_binary_exp(fig)
+    fig.gca().set_ylabel(f'Prediction Error for ΔPHC-{key} (RMSE)')
     stats_dict[key] = stats['baseline']
     plt.title(key)
 

@@ -78,7 +78,7 @@ for key in experiment_keys:
     set_labels_baseline_exp(fig)
 
     # update text
-    fig.gca().set_xlabel(f'Prediction Error for ΔPHC-{key} (RMSE)')
+    fig.gca().set_ylabel(f'Prediction Error for ΔPHC-{key} (RMSE)')
 
     plt.tight_layout()
     fig.savefig(plot_path, dpi=300)

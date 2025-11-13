@@ -58,15 +58,15 @@ plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))
 # plot
 fig, stats = results_boxplot(data, groupby='name', baseline='Baseline',
                          palette=group['color'], order=order, font_file='arial.ttf')
+plt.xticks(rotation=90, ha='center')
 ax = fig.axes[0]
 for i, var in enumerate(group['variable_type']):
-    y = (len(group) - 1) - i
     if var is None:
         continue
     label = vartypes[var]
     color = varcolors[var]
-    ax.text(1.05, y, label, ha='left', va='center',
-            transform=ax.get_yaxis_transform(), color=color)
+    ax.text(i, 1.02, label, ha='center', va='bottom', color=color, rotation=90,
+            transform=ax.get_xaxis_transform())
 
 # manually make legend
 ax.legend(handles = [
@@ -74,21 +74,21 @@ ax.legend(handles = [
     mpatches.Patch(color=colors['tau'], label='Tau'),
     mpatches.Patch(color=colors['neurodegeneration'], label='Neurodegeneration'),
     ],
-    loc='lower right',
-    bbox_to_anchor=(1, 1),
+    loc='lower center',
+    bbox_to_anchor=(0.5, 1.07),
     ncol=3,
     frameon=False)
 
 # update text
-ax.set_xlabel('Prediction Error for ΔMMSE (RMSE)')
+ax.set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 
 # save
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)
 
-####################
-# with stats
-####################
+# ####################
+# # with stats
+# ####################
 
 plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '_stats' + '.svg')
 
@@ -96,18 +96,18 @@ plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))
 n_train = concat['ntrain'].dropna()[0]
 n_test = concat['ntest'].dropna()[0]
 fig, stats = results_boxplot(data, groupby='name', baseline='Baseline',
-                         palette=group['color'], order=order, font_file='arial.ttf',
-                         stats_vs_baseline=True, n_train=n_train,
-                         n_test=n_test)
+                             palette=group['color'], order=order, font_file='arial.ttf',
+                             stats_vs_baseline=True, n_train=n_train,
+                             n_test=n_test)
+plt.xticks(rotation=90, ha='center')
 ax = fig.axes[0]
 for i, var in enumerate(group['variable_type']):
-    y = (len(group) - 1) - i
     if var is None:
         continue
     label = vartypes[var]
     color = varcolors[var]
-    ax.text(1.05, y, label, ha='left', va='center',
-            transform=ax.get_yaxis_transform(), color=color)
+    ax.text(i, 1.02, label, ha='center', va='bottom', color=color, rotation=90,
+            transform=ax.get_xaxis_transform())
 
 # manually make legend
 ax.legend(handles = [
@@ -115,13 +115,13 @@ ax.legend(handles = [
     mpatches.Patch(color=colors['tau'], label='Tau'),
     mpatches.Patch(color=colors['neurodegeneration'], label='Neurodegeneration'),
     ],
-    loc='lower right',
-    bbox_to_anchor=(1, 1),
+    loc='lower center',
+    bbox_to_anchor=(0.5, 1.07),
     ncol=3,
     frameon=False)
 
 # update text
-ax.set_xlabel('Prediction Error for ΔMMSE (RMSE)')
+ax.set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 
 # save
 plt.tight_layout()

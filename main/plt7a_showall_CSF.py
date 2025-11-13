@@ -64,13 +64,12 @@ fig, _ = results_boxplot(data, groupby='name', baseline='Baseline',
                          hatch=group['csf'])
 ax = fig.axes[0]
 for i, var in enumerate(group['variable_type']):
-    y = (len(group) - 1) - i
     if var is None:
         continue
     label = vartypes[var]
     color = varcolors[var]
-    ax.text(1.05, y, label, ha='left', va='center',
-            transform=ax.get_yaxis_transform(), color=color)
+    ax.text(i, 1.02, label, ha='center', va='bottom', color=color, rotation=90,
+            transform=ax.get_xaxis_transform())
 
 # manually make legend
 ax.legend(handles = [
@@ -81,10 +80,13 @@ ax.legend(handles = [
     mpatches.Patch(color=colors['neurodegeneration'], label='ND (Imaging)'),
     mpatches.Patch(facecolor=colors['neurodegeneration'], edgecolor='white', label='ND (CSF)', hatch='//'),
     ],
-    loc='lower right',
-    bbox_to_anchor=(1, 1),
+    loc='lower center',
+    bbox_to_anchor=(0.5, 1.07),
     ncol=3,
     frameon=False)
+
+# update text
+ax.set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 
 # save
 plt.tight_layout()

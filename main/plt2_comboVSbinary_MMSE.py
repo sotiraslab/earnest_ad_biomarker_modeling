@@ -39,6 +39,7 @@ fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
                              stats_vs_baseline=True, palette=palette,
                              n_train=n_train, n_test=n_test, font_file='arial.ttf')
 set_labels_binary_exp(fig)
+fig.gca().set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)

@@ -16,25 +16,25 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def atn_subscripts(a='bin', t='bin', n='bin', upper=True):
-    
+
     def proc(x, upper=upper):
         if isinstance(x, int):
             val = {0: None, 1: 'bin', 2: 'cat', 3: 'con', 4: 'svm'}[x]
         else:
             val = x
-            
+
         val = val.upper() if val is not None and upper else val
         return val
-        
+
     a = proc(a)
     t = proc(t)
     n = proc(n)
-    
+
     alab = 'A$_{\\rm %s}$' % a if a is not None else ' - '
     tlab = 'T$_{\\rm %s}$' % t if t is not None else ' - '
     nlab = 'N$_{\\rm %s}$' % n if n is not None else ' - '
     included = [a is not None, t is not None, n is not None]
-    
+
     if sum(included) == 1:
         idx = included.index(True)
         full = [alab, tlab, nlab][idx]
@@ -107,8 +107,8 @@ def set_font_properties(arial_font=None):
                 'font.family': font_prop.get_name()})
         except:
             pass
-    plt.rcParams.update({'font.size': 14})
-    
+    plt.rcParams.update({'font.size': 10})
+
 def set_labels_baseline_exp(fig):
     ax = fig.axes[0]
     f = atn_subscripts
@@ -130,8 +130,8 @@ def set_labels_baseline_exp(fig):
         f(0, 4, 0),
         f(0, 0, 4),
         f(4, 4, 4),]
-    ax.set_yticklabels(labs)
-    
+    ax.set_xticklabels(labs)
+
 def set_labels_binary_exp(fig):
     ax = fig.axes[0]
     f = atn_subscripts
@@ -149,8 +149,8 @@ def set_labels_binary_exp(fig):
         f(0, 4, 0),
         f(0, 0, 4),
         f(4, 4, 4),]
-    ax.set_yticklabels(labs)
-    
+    ax.set_xticklabels(labs)
+
 def set_labels_combo_vs_csf(fig):
     ax = fig.axes[0]
     f = atn_subscripts
@@ -162,8 +162,8 @@ def set_labels_combo_vs_csf(fig):
         f(2, 2, 2) + ' [CSF]',
         f(3, 3, 3) + ' [Imaging]',
         f(3, 3, 3) + ' [CSF]']
-    ax.set_yticklabels(labs)
-    
+    ax.set_xticklabels(labs)
+
 def set_labels_pvc_combo(fig):
     ax = fig.axes[0]
     f = atn_subscripts
@@ -185,8 +185,8 @@ def set_labels_pvc_combo(fig):
         f(0, 4, 0) + ' [ PVC]',
         f(4, 4, 4),
         f(4, 4, 4) + ' [ PVC]']
-    ax.set_yticklabels(labs)
-    
+    ax.set_xticklabels(labs)
+
 def setup_output(call_file, short=False):
     outputs_dir = get_outputs_path()
     foldername = os.path.splitext(os.path.basename(call_file))[0]

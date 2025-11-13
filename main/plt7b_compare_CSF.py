@@ -43,5 +43,8 @@ fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
                              stats_pairs=pairs)
 set_labels_combo_vs_csf(fig)
 
+# update text
+fig.gca().set_ylabel('Prediction Error for ΔMMSE (RMSE)')
+
 plt.tight_layout()
 fig.savefig('figures/combo_models_vs_basline_with_csf.svg', dpi=300)

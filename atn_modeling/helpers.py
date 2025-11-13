@@ -275,10 +275,9 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
                          })
 
     # base plot
-    fig, ax = plt.subplots(figsize=(6, 8))
+    fig, ax = plt.subplots(figsize=(8, 6))
     positions = list(range(len(order)))
-    positions.reverse()
-    bplot = ax.boxplot(boxplotdata, vert=False, patch_artist=True, positions=positions,
+    bplot = ax.boxplot(boxplotdata, patch_artist=True, positions=positions,
                        sym='o', flierprops={'markerfacecolor':'gray', 'markeredgecolor':'gray'})
 
     # colors
@@ -309,8 +308,8 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
         median.set_color('white')
 
     # labels
-    ax.set_yticklabels(order)
-    ax.set_xlabel(pivot_values)
+    ax.set_xticklabels(order, rotation=45, ha='right')
+    ax.set_ylabel(pivot_values)
     ax.grid(alpha=.4)
 
     if title:
@@ -319,7 +318,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
     # baseline
     if baseline:
         baseline_median = np.median(boxplotdata[baseline])
-        ax.axvline(baseline_median, color='black', linestyle='dashed', zorder=3)
+        ax.axhline(baseline_median, color='black', linestyle='dashed', zorder=3)
 
     # stats
     stats_tbl_bl = None
@@ -349,9 +348,9 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
 
             model = stats_tbl_bl.iloc[i, :][groupby]
             rng = (boxplotdata[model].max() - boxplotdata[model].min())
-            x =  boxplotdata[model].max() + 0.12 * rng
-            y = len(order) - list(order).index(model) - 1
-            ax.text(x, y, s=stars, rotation=90, ha='center', va='center',
+            x = list(order).index(model)
+            y =  boxplotdata[model].max() + 0.12 * rng
+            ax.text(x, y, s=stars, ha='center', va='center',
                     fontsize=16, fontweight='bold', color='darkorange')
             while x >= xmax:
                 xmax = xmax + (0.05*xrng)
@@ -365,8 +364,8 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
                                                  n_test=n_test,
                                                  name_col=groupby)[idx]
 
-        xmin, xmax = ax.get_xlim()
-        xrng = xmax - xmin
+        ymin, ymax = ax.get_ylim()
+        yrng = ymax - ymin
 
         for i in range(len(stats_tbl_pairs)):
 
@@ -382,23 +381,23 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
             nameB = stats_tbl_pairs.loc[i, 'b']
             mini =  min(boxplotdata[nameA].min(), boxplotdata[nameB].min())
             maxi = max(boxplotdata[nameA].max(), boxplotdata[nameB].max())
-            yA = len(order) - list(order).index(nameA) - 1
-            yB = len(order) - list(order).index(nameB) - 1
+            xA = list(order).index(nameA)
+            xB = list(order).index(nameB)
             rng = (maxi - mini)
-            xbar =  (maxi + 0.15 * rng) if stats_pairs_positions is None else stats_pairs_positions[i]
-            xtext = xbar + (xrng/20)
-            ytext = (yA + yB)/2
+            ybar =  (maxi + 0.15 * rng) if stats_pairs_positions is None else stats_pairs_positions[i]
+            ytext = ybar + (yrng/100)
+            xtext = (xA + xB)/2
 
-            tip = xrng/100
+            tip = yrng/100
             clr = 'dimgray'
-            ax.plot([xbar, xbar], [yA, yB], color=clr)
-            ax.plot([xbar-tip, xbar], [yA, yA], color=clr)
-            ax.plot([xbar-tip, xbar], [yB, yB], color=clr)
-            ax.text(xtext, ytext, s=stars, rotation=90, ha='center', va='center',
+            ax.plot([xA, xB], [ybar, ybar], color=clr)
+            ax.plot([xA, xA], [ybar-tip, ybar], color=clr)
+            ax.plot([xB, xB], [ybar-tip, ybar],  color=clr)
+            ax.text(xtext, ytext, s=stars, ha='center', va='center',
                     fontsize=16, fontweight='bold', color=clr)
-            while xtext >= xmax:
-                xmax = xmax + (0.05*xrng)
-                ax.set_xlim(xmin, xmax)
+            while ytext >= ymax:
+                ymax = ymax + (0.1*yrng)
+                ax.set_ylim(ymin, ymax)
 
     stats_dict = {'baseline': stats_tbl_bl,
                   'pairs': stats_tbl_pairs}

@@ -64,7 +64,7 @@ fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
 set_labels_baseline_exp(fig)
 
 # update text
-fig.gca().set_xlabel('Prediction Error for ΔMMSE (RMSE)')
+fig.gca().set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 
 plt.tight_layout()
 fig.savefig(plot_path, dpi=300)

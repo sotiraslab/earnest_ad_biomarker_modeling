@@ -662,8 +662,9 @@ df <- df %>%
 # === PCA on PHC ======
 
 # train PCA on the baseline data
+# VSP is omitted due to data seeming wonky
 pca.data <- df %>%
-  select(PHC_MEM, PHC_EXF, PHC_LAN, PHC_VSP)
+  select(PHC_MEM, PHC_EXF, PHC_LAN)
 pca <- prcomp(pca.data, center = T, scale = T)
 
 # get PC1 loading for baseline data

@@ -42,7 +42,7 @@ binary_coefs = pd.DataFrame([np.abs(m['lm'].coef_) for m in all_binary], columns
 continuous_coefs = pd.DataFrame([np.abs(m['lm'].coef_) for m in all_continuous], columns=coef_order)
 
 # set font
-set_font_properties('arial.ttf')
+set_font_properties(arial_font='arial.ttf')
 
 # plot
 def jitter(ys, xcenter, spread):
@@ -53,7 +53,7 @@ def jitter(ys, xcenter, spread):
     xs += xcenter
     return xs
 
-fig, ax = plt.subplots(figsize=(3, 4))
+fig, ax = plt.subplots(figsize=(2.36, 3.5))
 alpha = .7
 
 y = binary_coefs['amyloid']

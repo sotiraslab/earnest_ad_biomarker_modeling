@@ -57,7 +57,7 @@ for model_type in model_types:
 # ---- plot
 
 # set font
-set_font_properties('arial.ttf')
+set_font_properties(arial_font='arial.ttf')
 
 figure, axes = plt.subplots(nrows=3,
                             ncols=3,

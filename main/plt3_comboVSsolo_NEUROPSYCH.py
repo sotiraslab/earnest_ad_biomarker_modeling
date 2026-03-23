@@ -74,11 +74,12 @@ for key in experiment_keys:
     fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
                              stats_vs_baseline=True, palette=palette,
                              n_train=n_train, n_test=n_test, font_file='arial.ttf',
-                             stats_pairs=pairs)
+                             stats_pairs=pairs, figsize=(7, 3.5))
+    stats_dict[key] = stats
     set_labels_baseline_exp(fig)
 
     # update text
-    fig.gca().set_ylabel(f'Prediction Error for ΔPHC-{key} (RMSE)')
+    fig.gca().set_ylabel(f'Prediction Error for Δ{key} (RMSE)')
 
     plt.tight_layout()
     fig.savefig(plot_path, dpi=300)

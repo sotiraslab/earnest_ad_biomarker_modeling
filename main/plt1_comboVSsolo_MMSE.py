@@ -49,9 +49,13 @@ pairs = [
     ('ATN SVM', 'Amyloid SVM'),
     ('ATN SVM', 'Tau SVM'),
     ('ATN SVM', 'GM SVM'),
+    ('Amyloid SVM', 'Continuous A'),
+    ('Tau SVM', 'Continuous T'),
+    ('GM SVM', 'Continuous N'),
+    ('ATN SVM', 'All continuous'),
     ]
 
-positions = [1.15, 1.15, 1.2] * 4
+positions = [1.15, 1.15, 1.2] * 4 + [1.25, 1.3, 1.35]
 
 # plot
 # plt.rcParams['font.size'] = 10

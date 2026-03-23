@@ -51,7 +51,7 @@ pairs = [
     ('ATN SVM', 'GM SVM'),
     ]
 
-positions = [.6, .6, .65] * 4
+positions = [.6, .6, .64] * 4
 
 # plot
 # plt.rcParams['font.size'] = 10
@@ -60,7 +60,8 @@ n_test = concat['ntest'].values[0]
 fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
                          stats_vs_baseline=True, palette=palette,
                          n_train=n_train, n_test=n_test, font_file='arial.ttf',
-                         stats_pairs=pairs, stats_pairs_positions=positions)
+                         stats_pairs=pairs, stats_pairs_positions=positions,
+                         figsize=(7, 3.5))
 set_labels_baseline_exp(fig)
 
 # update text

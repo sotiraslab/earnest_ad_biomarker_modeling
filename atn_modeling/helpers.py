@@ -252,7 +252,8 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
                     nadeau_bengio=True, title=None, palette=None,
                     n_train=None, n_test=None, order=None,
                     pivot_index=['fold', 'repeat'], pivot_values='rmse',
-                    error_measure=True, hatch=None, font_file=None):
+                    error_measure=True, hatch=None, font_file=None,
+                    figsize=(7,5)):
 
     # data
     if order is None:
@@ -275,7 +276,7 @@ def results_boxplot(results, groupby, baseline='Baseline', save=None,
                          })
 
     # base plot
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=figsize)
     positions = list(range(len(order)))
     bplot = ax.boxplot(boxplotdata, patch_artist=True, positions=positions,
                        sym='o', flierprops={'markerfacecolor':'gray', 'markeredgecolor':'gray'})

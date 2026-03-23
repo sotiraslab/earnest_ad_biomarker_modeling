@@ -12,7 +12,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from common import load_results
+from common import load_results, set_font_properties
 from atn_modeling.helpers import results_boxplot
 
 # load results
@@ -53,6 +53,7 @@ order = group['name']
 # without stats
 ####################
 
+set_font_properties()
 plot_path = os.path.join('figures', os.path.splitext(os.path.basename(__file__))[0] + '.svg')
 
 # plot
@@ -69,15 +70,15 @@ for i, var in enumerate(group['variable_type']):
             transform=ax.get_xaxis_transform())
 
 # manually make legend
-ax.legend(handles = [
-    mpatches.Patch(color=colors['amyloid'], label='Amyloid'),
-    mpatches.Patch(color=colors['tau'], label='Tau'),
-    mpatches.Patch(color=colors['neurodegeneration'], label='Neurodegeneration'),
-    ],
-    loc='lower center',
-    bbox_to_anchor=(0.5, 1.07),
-    ncol=3,
-    frameon=False)
+# ax.legend(handles = [
+#     mpatches.Patch(color=colors['amyloid'], label='Amyloid'),
+#     mpatches.Patch(color=colors['tau'], label='Tau'),
+#     mpatches.Patch(color=colors['neurodegeneration'], label='Neurodegeneration'),
+#     ],
+#     loc='lower center',
+#     bbox_to_anchor=(0.5, 1.1),
+#     ncol=3,
+#     frameon=False)
 
 # update text
 ax.set_ylabel('Prediction Error for ΔMMSE (RMSE)')

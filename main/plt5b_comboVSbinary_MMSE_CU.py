@@ -37,7 +37,8 @@ n_train = concat['ntrain'].values[0]
 n_test = concat['ntest'].values[0]
 fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
                              stats_vs_baseline=True, palette=palette,
-                             n_train=n_train, n_test=n_test, font_file='arial.ttf')
+                             n_train=n_train, n_test=n_test, font_file='arial.ttf',
+                             figsize=(7,3.5))
 set_labels_binary_exp(fig)
 fig.gca().set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 

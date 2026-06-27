@@ -161,9 +161,16 @@ min.ages <- ptdemog %>%
                               get.examdate.from.registry(ptdemog),
                               as.character(EXAMDATE)),
          DateDemogBL = as_datetime(ymd(DateDemogBL))) %>%
-  select(RID, DateDemogBL, AGE, PTGENDER) %>%
-  rename(AgeBL=AGE, Sex=PTGENDER) %>%
-  mutate(AgeBL = as.numeric(AgeBL)) %>%
+  select(RID, DateDemogBL, AGE, PTGENDER, PTEDUCAT, PTRACCAT, PTETHCAT) %>%
+  rename(AgeBL=AGE, Sex=PTGENDER, Education=PTEDUCAT, Race=PTRACCAT, Ethnicity=PTETHCAT) %>%
+  mutate(AgeBL = as.numeric(AgeBL),
+         Hispanic = as.numeric(Ethnicity == 'Hispanic or Latino'),
+         Race = recode(
+           Race,
+           'American Indian or Alaskan Native'='Other',
+           'Black or African American' = 'Black',
+           'More than one race' = 'Other')
+         ) %>%
   drop_na(AgeBL) %>%
   group_by(RID) %>%
   slice_min(DateDemogBL) %>%
@@ -689,6 +696,40 @@ df <- calc.longitudinal.change(
 df$SexBinary <- ifelse(df$Sex == 'Male', 1, 0)
 df$HasE4Binary <- ifelse(df$HasE4, 1, 0)
 
+# === Add longitudinal followup metrics ======
+
+# calc.longitudinal.change <- function(baseline, longitudinal,
+#                                      variable, date.column,
+#                                      id.column='RID', age.column='Age',
+#                                      plot.by='CDRBinned') {}
+
+
+# Reusing some code from calc.longitudinal change
+# to look at the distributions of longitudinal visits
+joiner <- mmse.long %>%
+  select(RID, DateMMSE, MMSE) 
+
+longmerge <- df %>%
+  select(RID, DateMMSE, Age) %>%
+  rename(DateMMSEBL=DateMMSE) %>%
+  left_join(joiner, by='RID') %>%
+  group_by(RID) %>%
+  mutate(DELTA = as.numeric(difftime(DateMMSE, DateMMSEBL, units='days')) / 365.25,
+         LONG.AGE = Age + DELTA) %>%
+  filter(DateMMSE >= DateMMSEBL) %>%
+  filter(n() >= 2) %>%
+  drop_na(MMSE) %>%
+  ungroup()
+
+longstats <- longmerge %>%
+  group_by(RID) %>%
+  summarise(NVisits = n(),
+            FollowupYears = max(DELTA)) %>%
+  ungroup()
+
+df <- df %>%
+  left_join(longstats, by = c('RID'))
+
 # === CSF markers =======
 
 # looks like the CSF markers are sparser for this dataset
@@ -746,7 +787,15 @@ write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', 
 
 # === Table 1 =======
 
-vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'MMSE', 'DeltaMMSE')
+df$Race <- factor(df$Race, levels = c('White', 'Black', 'Asian', 'Other', 'Unknown'))
+df$Hispanic <- as.character(df$Hispanic)
+
+vars <- c(
+  'Age', 'Sex', 'Race', 'Hispanic', 'Education',
+  'HasE4', 'Centiloid', 'META_TEMPORAL_TAU', 'HIPPOCAMPUS_VOL',
+  'MMSE', 'DeltaMMSE',
+  'NVisits', 'FollowupYears'
+  )
 
 tbl1 <- CreateTableOne(vars=vars,
                        strata='CDRBinned',
@@ -755,7 +804,13 @@ print(tbl1, showAllLevels=T)
 
 # === Table 1: CSF =======
 
-vars <- c('Age', 'Sex', 'HasE4', 'Centiloid', 'MMSE', 'DeltaMMSE')
+vars <- vars <- c(
+  'Age', 'Sex', 'Race', 'Hispanic', 'Education',
+  'HasE4', 'Centiloid', 'META_TEMPORAL_TAU', 'HIPPOCAMPUS_VOL',
+  'MMSE', 'DeltaMMSE',
+  'NVisits', 'FollowupYears',
+  'CSF_AB42OVER40', 'CSF_PTAU', 'CSF_TAU'
+)
 
 tbl1.csf <- CreateTableOne(vars=vars,
                        strata='CDRBinned',

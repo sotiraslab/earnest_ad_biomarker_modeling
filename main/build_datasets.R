@@ -347,7 +347,10 @@ df <- df.pacc
 calc.longitudinal.change <- function(baseline, longitudinal,
                                      variable, date.column,
                                      id.column='RID', age.column='Age',
-                                     plot.by='CDRBinned') {
+                                     plot.by='CDRBinned',
+                                     fixed.endpoint.years = NULL,
+                                     fixed.endpoint.gap = .5,
+                                     destination.column = NULL) {
 
   joiner <- longitudinal %>%
     select(!!id.column, !!date.column, !!variable, !!plot.by) %>%
@@ -365,6 +368,18 @@ calc.longitudinal.change <- function(baseline, longitudinal,
     drop_na(VAR) %>%
     ungroup()
   
+  if (! is.null(fixed.endpoint.years)) {
+    long.data <- long.data %>%
+      mutate(
+        InWindow = (DELTA >= (fixed.endpoint.years - fixed.endpoint.gap)) & 
+          (DELTA <= (fixed.endpoint.years + fixed.endpoint.gap))
+      ) %>%
+      group_by(ID) %>%
+      filter(any(InWindow)) %>%
+      ungroup() %>%
+      filter(DELTA <= (fixed.endpoint.years + fixed.endpoint.gap))
+  }
+  
   # longitudinal modelling
   m <- lmer(VAR ~ DELTA + (1+DELTA|ID), data=long.data)
   long.data$VAR.PREDICT <- predict(m, long.data)
@@ -376,7 +391,12 @@ calc.longitudinal.change <- function(baseline, longitudinal,
   
   print(p)
   
-  final.name <- paste('Delta', variable, sep='')
+  if (is.null(destination.column)) {
+    final.name <- paste('Delta', variable, sep='')
+  } else {
+    final.name <- destination.column
+  }
+  
   
   coefs <- coef(m)$ID %>%
     select(DELTA) %>%
@@ -444,34 +464,68 @@ df <- calc.longitudinal.change(
   date.column = 'DateADSP'
 )
 
-# UW Psych composites
+# # UW Psych composites
+# df <- calc.longitudinal.change(
+#   baseline = df,
+#   longitudinal = psych.long,
+#   variable = 'ADNI_MEM',
+#   date.column = 'DateUWPSYCH'
+# )
+# 
+# df <- calc.longitudinal.change(
+#   baseline = df,
+#   longitudinal = psych.long,
+#   variable = 'ADNI_EF',
+#   date.column = 'DateUWPSYCH'
+# )
+# 
+# df <- calc.longitudinal.change(
+#   baseline = df,
+#   longitudinal = psych.long,
+#   variable = 'ADNI_LAN',
+#   date.column = 'DateUWPSYCH'
+# )
+# 
+# df <- calc.longitudinal.change(
+#   baseline = df,
+#   longitudinal = psych.long,
+#   variable = 'ADNI_VS',
+#   date.column = 'DateUWPSYCH'
+# )
+
+# === MMSE changes within fixed windows =====
+
+# MMSE - 2 year
 df <- calc.longitudinal.change(
   baseline = df,
-  longitudinal = psych.long,
-  variable = 'ADNI_MEM',
-  date.column = 'DateUWPSYCH'
+  longitudinal = mmse.long,
+  variable = 'MMSE',
+  date.column = 'DateMMSE',
+  fixed.endpoint.years = 2,
+  fixed.endpoint.gap = 0.5,
+  destination.column = 'DeltaMMSE2Year'
 )
 
 df <- calc.longitudinal.change(
   baseline = df,
-  longitudinal = psych.long,
-  variable = 'ADNI_EF',
-  date.column = 'DateUWPSYCH'
+  longitudinal = mmse.long,
+  variable = 'MMSE',
+  date.column = 'DateMMSE',
+  fixed.endpoint.years = 3,
+  fixed.endpoint.gap = 0.5,
+  destination.column = 'DeltaMMSE3Year'
 )
 
 df <- calc.longitudinal.change(
   baseline = df,
-  longitudinal = psych.long,
-  variable = 'ADNI_LAN',
-  date.column = 'DateUWPSYCH'
+  longitudinal = mmse.long,
+  variable = 'MMSE',
+  date.column = 'DateMMSE',
+  fixed.endpoint.years = 4,
+  fixed.endpoint.gap = 0.5,
+  destination.column = 'DeltaMMSE4Year'
 )
 
-df <- calc.longitudinal.change(
-  baseline = df,
-  longitudinal = psych.long,
-  variable = 'ADNI_VS',
-  date.column = 'DateUWPSYCH'
-)
 
 # === variables for selecting ROIs ======
 

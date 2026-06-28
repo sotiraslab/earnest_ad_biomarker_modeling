@@ -113,18 +113,17 @@ cdr.record <- cdr %>%
   rename(CDR=CDGLOBAL, CDRSumBoxes=CDRSB) %>%
   drop_na(CDR)
 
-cdr.df <- left_join(df, cdr.record, by='RID') %>%
-  mutate(DiffMeanImagingDateCDR = as.numeric(difftime(MeanImagingDate, DateCDR, units = 'days')))
+cdr.long <- left_join(df, cdr.record, by='RID') %>%
+  mutate(DiffMeanImagingDateCDR = as.numeric(difftime(MeanImagingDate, DateCDR, units = 'days')),
+         CDRBinned = cut(CDR, breaks=c(0, .5, 1, Inf), right=F))
 
-cdr.df <- group_by(cdr.df, TauID) %>%
+cdr.df <- group_by(cdr.long, TauID) %>%
   slice_min(order_by=abs(DiffMeanImagingDateCDR), with_ties = F) %>%
   ungroup()
 
 bad <- is.na(cdr.df$CDR) | (abs(cdr.df$DiffMeanImagingDateCDR) > THRESHOLD.COGNITIVE.DAYS)
-cdr.df[bad, c("DateCDR", "CDR", "CDRSumBoxes", "DiffMeanImagingDateCDR")] <- NA
+cdr.df[bad, c("DateCDR", "CDR", "CDRSumBoxes", "DiffMeanImagingDateCDR", 'CDRBinned')] <- NA
 
-cdr.df <- cdr.df %>%
-  mutate(CDRBinned=cut(CDR, breaks=c(0, .5, 1, Inf), right=F))
 levels(cdr.df$CDRBinned) <- c("0.0", "0.5", "1.0+")
 
 df <- as.data.frame(cdr.df) %>%
@@ -258,6 +257,91 @@ df.psych <- psych.long %>%
 
 df <- df.psych
 
+# === Add PACC =========
+
+# Neuropsych battery - LDELTOTAL, TRABSCOR
+nps <- neurobat %>%
+  mutate(DateNeuropsych = ifelse(is.na(EXAMDATE),
+                                 get.examdate.from.registry(neurobat),
+                                 EXAMDATE),
+         DateNeuropsych = as_datetime(ymd(DateNeuropsych))) %>%
+  select(RID, DateNeuropsych, LDELTOTAL, TRABSCOR)
+
+# ADAS - Q4
+adascog <- adas %>%
+  mutate(DateADAS = ifelse(is.na(EXAMDATE),
+                           get.examdate.from.registry(adas),
+                           EXAMDATE),
+         DateADAS = as_datetime(ymd(DateADAS))) %>%
+  select(RID, DateADAS, Q4SCORE) %>%
+  rename(ADASQ4=Q4SCORE)
+
+# MMSE
+this.mmse <- mmse %>%
+  mutate(DateMMSE = as_datetime(ymd(USERDATE))) %>%
+  select(RID, DateMMSE, MMSCORE_EDC) %>%
+  rename(MMSE=MMSCORE_EDC)
+
+# COMBINE
+pacc <- left_join(this.mmse, nps, by='RID', relationship = "many-to-many") %>%
+  mutate(DiffMMSENPS = as.numeric(difftime(DateMMSE, DateNeuropsych, units='days')))
+
+pacc <- pacc %>%
+  group_by(RID, DateMMSE) %>%
+  slice_min(order_by=abs(DiffMMSENPS), with_ties = F) %>%
+  ungroup() %>%
+  filter(abs(DiffMMSENPS) < THRESHOLD.COGNITIVE.DAYS)
+
+pacc <- left_join(pacc, adascog, by='RID', relationship = "many-to-many") %>%
+  mutate(DiffMMSEADAS = as.numeric(difftime(DateMMSE, DateADAS, units='days')))
+
+pacc <- pacc %>%
+  group_by(RID, DateMMSE) %>%
+  slice_min(order_by=abs(DiffMMSEADAS), with_ties = F) %>%
+  ungroup() %>%
+  filter(abs(DiffMMSEADAS) < THRESHOLD.COGNITIVE.DAYS) %>%
+  mutate(DatePACC = DateMMSE) %>%
+  select(RID, DatePACC, MMSE, LDELTOTAL, TRABSCOR, ADASQ4)
+
+# Merge into base DF for computing PACC
+pacc.long <- df %>%
+  select(RID, DateTau, DateMMSE, AmyloidPositive, CDRBinned) 
+
+pacc.long <- left_join(pacc.long, pacc, by = 'RID') %>%
+  filter(DatePACC >= DateMMSE) %>%
+  group_by(RID) %>%
+  mutate(Baseline = row_number( )== 1) %>%
+  ungroup()
+
+cn.mask <- (
+  pacc.long$Baseline & 
+    (pacc.long$AmyloidPositive == 0 & !is.na(pacc.long$AmyloidPositive)) & 
+    (pacc.long$CDRBinned == '0.0' & !is.na(pacc.long$CDRBinned))
+  )
+
+pacc.long$PACC <- compute.pacc(
+  df = pacc.long,
+  pacc.columns = c('ADASQ4', 'LDELTOTAL', 'TRABSCOR', 'MMSE'),
+  cn.mask = cn.mask,
+  higher.better = c(F, T, F, T),
+  min.required = 2
+)
+
+# Merge into original DF
+pacc.merge <- pacc.long %>%
+  select(RID, DatePACC, PACC)
+
+pacc.leftjoin <- left_join(df, pacc.merge, by='RID') %>%
+  mutate(DiffImagingPACC = as.numeric(difftime(MeanImagingDate, DatePACC, units='days')))
+
+df.pacc <- pacc.leftjoin %>%
+  group_by(RID) %>%
+  slice_min(order_by=abs(DiffImagingPACC), with_ties = F) %>%
+  ungroup() %>%
+  filter(abs(DiffImagingPACC) < THRESHOLD.COGNITIVE.DAYS)
+
+df <- df.pacc
+
 # === Helper for computing longitudinal change =======
 
 calc.longitudinal.change <- function(baseline, longitudinal,
@@ -313,6 +397,22 @@ df <- calc.longitudinal.change(
   longitudinal = mmse.long,
   variable = 'MMSE',
   date.column = 'DateMMSE'
+)
+
+# CDRSB
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = cdr.long,
+  variable = 'CDRSumBoxes',
+  date.column = 'DateCDR'
+)
+
+# PACC
+df <- calc.longitudinal.change(
+  baseline = df,
+  longitudinal = pacc.long,
+  variable = 'PACC',
+  date.column = 'DatePACC'
 )
 
 # ADSP
@@ -794,6 +894,8 @@ vars <- c(
   'Age', 'Sex', 'Race', 'Hispanic', 'Education',
   'HasE4', 'Centiloid', 'META_TEMPORAL_TAU', 'HIPPOCAMPUS_VOL',
   'MMSE', 'DeltaMMSE',
+  'CDRSumBoxes', 'DeltaCDRSumBoxes',
+  'PACC', 'DeltaPACC',
   'NVisits', 'FollowupYears'
   )
 
@@ -804,15 +906,9 @@ print(tbl1, showAllLevels=T)
 
 # === Table 1: CSF =======
 
-vars <- vars <- c(
-  'Age', 'Sex', 'Race', 'Hispanic', 'Education',
-  'HasE4', 'Centiloid', 'META_TEMPORAL_TAU', 'HIPPOCAMPUS_VOL',
-  'MMSE', 'DeltaMMSE',
-  'NVisits', 'FollowupYears',
-  'CSF_AB42OVER40', 'CSF_PTAU', 'CSF_TAU'
-)
+vars.csf <- c(vars,  'CSF_AB42OVER40', 'CSF_PTAU', 'CSF_TAU')
 
-tbl1.csf <- CreateTableOne(vars=vars,
+tbl1.csf <- CreateTableOne(vars=vars.csf,
                        strata='CDRBinned',
                        data=df.csf)
 print(tbl1.csf, showAllLevels=T)

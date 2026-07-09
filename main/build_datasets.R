@@ -934,6 +934,30 @@ df.csf <- left_join(df, new.csf, by='RID') %>%
   mutate(CSF_AB42OVER40=CSF_ABETA42/CSF_ABETA40) %>%
   filter(! is.na(CSF_PTAU))
 
+# === Plasma markers =======
+
+plasma <- load.adni.table('UPENN_PLASMA', 'inputs')
+
+plasma <- plasma %>%
+  mutate(
+    DatePlasma = as_datetime(ymd(EXAMDATE)),
+    PLASMA_AB40 = AB40_F,
+    PLASMA_AB42 = AB42_F,
+    PLASMA_AB42OVER40 = AB42_AB40_F,
+    PLASMA_PTAU217 = pT217_F,
+    PLASMA_NFL = NfL_Q
+    ) %>%
+  select(RID, DatePlasma, 
+         starts_with('PLASMA'))
+
+df.plasma <- left_join(df, plasma, by = 'RID') %>%
+  mutate(DiffTauPlamsa = as.numeric(difftime(DateTau, DatePlasma, units='days')) / 365.25) %>%
+  group_by(TauID) %>%
+  slice_min(abs(DiffTauPlamsa), with_ties = F) %>%
+  filter(abs(DiffTauPlamsa) < THRESHOLD.IMAGING.DAYS) %>%
+  ungroup() %>%
+  filter(! is.na(PLASMA_PTAU217), PLASMA_NFL != -4)
+
 # === save ========
 
 write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
@@ -965,4 +989,14 @@ vars.csf <- c(vars,  'CSF_AB42OVER40', 'CSF_PTAU', 'CSF_TAU')
 tbl1.csf <- CreateTableOne(vars=vars.csf,
                        strata='CDRBinned',
                        data=df.csf)
+print(tbl1.csf, showAllLevels=T)
+
+
+# === Table 1: Plasma =======
+
+vars.plasma <- c(vars,  'PLASMA_AB42OVER40', 'PLASMA_PTAU217', 'PLASMA_NFL')
+
+tbl1.csf <- CreateTableOne(vars=vars.plasma,
+                           strata='CDRBinned',
+                           data=df.plasma)
 print(tbl1.csf, showAllLevels=T)

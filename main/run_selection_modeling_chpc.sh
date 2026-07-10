@@ -77,7 +77,7 @@ do
         -N 1
         -n 1
         --mem=6GB
-        --account='aristeidis_sotiras'
+        --account='daniel_marcus'
         --partition='tier2_cpu'
         --exclude=highmem01,highmem02
         call_python.sh $script $SHORT)

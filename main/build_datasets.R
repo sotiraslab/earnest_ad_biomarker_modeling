@@ -350,7 +350,10 @@ calc.longitudinal.change <- function(baseline, longitudinal,
                                      plot.by='CDRBinned',
                                      fixed.endpoint.years = NULL,
                                      fixed.endpoint.gap = .5,
-                                     destination.column = NULL) {
+                                     destination.column = NULL,
+                                     do.bootstrap.se = F,
+                                     save.model.path = NULL,
+                                     save.data.path = NULL) {
 
   joiner <- longitudinal %>%
     select(!!id.column, !!date.column, !!variable, !!plot.by) %>%
@@ -397,7 +400,7 @@ calc.longitudinal.change <- function(baseline, longitudinal,
     final.name <- destination.column
   }
   
-  
+  # Build output
   coefs <- coef(m)$ID %>%
     select(DELTA) %>%
     rownames_to_column(var='ID') %>%
@@ -406,8 +409,81 @@ calc.longitudinal.change <- function(baseline, longitudinal,
   
   result <- left_join(baseline, coefs, by=id.column)
   
+  # Bootstrap to estimate model uncertainty
+  if (do.bootstrap.se) {
+    boot.slopes <- bootMer(x = m,
+                           FUN = function(m) coef(m)$ID[, 'DELTA'],
+                           nsim = 1000, type = 'parametric', verbose = T)
+    subject.slope.se <- apply(boot_slopes$t, 2, sd)
+    toadd <- data.frame(ID = coefs[[id.column]], BOOT = subject.slope.se)
+    colnames(toadd) <- c(id.column, str_c(final.name, 'BootSE'))
+    
+    result <- left_join(result, toadd)
+  }
+  
+  # Save other outputs
+  if (! is.null(save.model.path)) {
+    saveRDS(m, file = save.model.path)
+  }
+  
+  if (! is.null(save.data.path)) {
+    write.csv(long.data, save.data.path, row.names = F)
+  }
+  
   return (result)
 }
+
+# # ==== TEST ======
+# 
+# baseline <- df
+# longitudinal <- mmse.long
+# variable <- 'MMSE'
+# date.column <- 'DateMMSE'
+# id.column<-'RID'
+# age.column<-'Age'
+# plot.by<-'CDRBinned'
+# fixed.endpoint.years <- NULL
+# fixed.endpoint.gap <- .5
+# destination.column <- NULL
+# do.bootstrap.se <- T
+# save.model.path <- NULL
+# save.data.path <- NULL
+# 
+# joiner <- longitudinal %>%
+#   select(!!id.column, !!date.column, !!variable, !!plot.by) %>%
+#   rename(ID=!!id.column, DATE=!!date.column, VAR=!!variable)
+# 
+# long.data <- baseline %>%
+#   select(!!id.column, !!date.column, !!age.column, !!plot.by) %>%
+#   rename(ID=!!id.column, DATE.BL=!!date.column, AGE=!!age.column, PLOTBY=!!plot.by) %>%
+#   left_join(joiner, by='ID') %>%
+#   group_by(ID) %>%
+#   mutate(DELTA = as.numeric(difftime(DATE, DATE.BL, units='days')) / 365.25,
+#          LONG.AGE = AGE + DELTA) %>%
+#   filter(DATE >= DATE.BL) %>%
+#   filter(n() >= 2) %>%
+#   drop_na(VAR) %>%
+#   ungroup()
+# 
+# # longitudinal modelling
+# m <- lmer(VAR ~ DELTA + (1+DELTA|ID), data=long.data)
+# long.data$VAR.PREDICT <- predict(m, long.data)
+# 
+# if (is.null(destination.column)) {
+#   final.name <- paste('Delta', variable, sep='')
+# } else {
+#   final.name <- destination.column
+# }
+# 
+# # Create output
+# coefs <- coef(m)$ID %>%
+#   select(DELTA) %>%
+#   rownames_to_column(var='ID') %>%
+#   mutate(ID = as.numeric(ID))
+# colnames(coefs) <- c(id.column, final.name)
+# 
+# result <- left_join(baseline, coefs, by=id.column)
+
 
 # === Compute longitudinal changes =====
 
@@ -416,7 +492,10 @@ df <- calc.longitudinal.change(
   baseline = df,
   longitudinal = mmse.long,
   variable = 'MMSE',
-  date.column = 'DateMMSE'
+  date.column = 'DateMMSE',
+  do.bootstrap.se = T,
+  save.data.path = file.path(outfolder, 'mmse_lmem_fit_data.csv'),
+  save.model.path = file.path(outfolder, 'mmse_lmem_model.rds')
 )
 
 # CDRSB
@@ -962,6 +1041,7 @@ df.plasma <- left_join(df, plasma, by = 'RID') %>%
 
 write.csv(df, file.path(outfolder, 'maindata.csv'), quote = F, na = '', row.names = F)
 write.csv(df.csf, file.path(outfolder, 'maindata_csf.csv'), quote = F, na = '', row.names = F)
+write.csv(df.plasma, file.path(outfolder, 'maindata_plasma.csv'), quote = F, na = '', row.names = F)
 
 # === Table 1 =======
 
@@ -996,7 +1076,7 @@ print(tbl1.csf, showAllLevels=T)
 
 vars.plasma <- c(vars,  'PLASMA_AB42OVER40', 'PLASMA_PTAU217', 'PLASMA_NFL')
 
-tbl1.csf <- CreateTableOne(vars=vars.plasma,
+tbl1.plasma <- CreateTableOne(vars=vars.plasma,
                            strata='CDRBinned',
                            data=df.plasma)
-print(tbl1.csf, showAllLevels=T)
+print(tbl1.plasma, showAllLevels=T)

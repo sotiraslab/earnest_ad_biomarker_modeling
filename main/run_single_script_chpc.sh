@@ -17,7 +17,7 @@ usage() {
 # read arguments
 SHORT=''
 DRYRUN='0'
-while getopts hSD arg
+while getopts hi:SD arg
 do
 	case $arg in
 	h)	usage
@@ -37,6 +37,15 @@ done
 module load python
 source ~/.bashrc
 source ~/miniconda/bin/activate atn_cognition
+
+name=$(basename $SCRIPT .py)
+mkdir -p "logs"
+log="logs/${name}.log"
+
+if [[ $SHORT == '--short' ]]
+then
+	log="logs/${name}_short.log"
+fi
 
 COMMAND=(sbatch
     -J $name

@@ -414,7 +414,7 @@ calc.longitudinal.change <- function(baseline, longitudinal,
     boot.slopes <- bootMer(x = m,
                            FUN = function(m) coef(m)$ID[, 'DELTA'],
                            nsim = 1000, type = 'parametric', verbose = T)
-    subject.slope.se <- apply(boot_slopes$t, 2, sd)
+    subject.slope.se <- apply(boot.slopes$t, 2, sd)
     toadd <- data.frame(ID = coefs[[id.column]], BOOT = subject.slope.se)
     colnames(toadd) <- c(id.column, str_c(final.name, 'BootSE'))
     
@@ -1024,6 +1024,7 @@ plasma <- plasma %>%
     PLASMA_AB42 = AB42_F,
     PLASMA_AB42OVER40 = AB42_AB40_F,
     PLASMA_PTAU217 = pT217_F,
+    PLASMA_PTAU217OVERAB42 = pT217_AB42_F,
     PLASMA_NFL = NfL_Q
     ) %>%
   select(RID, DatePlasma, 

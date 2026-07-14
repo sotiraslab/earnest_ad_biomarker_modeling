@@ -260,6 +260,24 @@ class GMMWithIndeterminateZone(ATNPredictor):
 
         return pd.get_dummies(digitized_cat).to_numpy().astype(float)
 
+class ManualIntermediateZone(ATNPredictor):
+    def __init__(self, y_col, low_cutoff, high_cutoff, atn=None, nickname=None):
+        super().__init__(atn=atn, nickname=nickname, variable_type='categorical')
+        self.y_col = y_col
+        self.low_cutoff = low_cutoff
+        self.high_cutoff = high_cutoff
+
+    def fit(self, data):
+        pass
+
+    def covariates(self, data):
+        y = data[self.y_col]
+        digitized = np.digitize(y, bins=[self.low_cutoff, self.high_cutoff])
+        digitized_cat = pd.Categorical(digitized, categories=[0, 1, 2])
+        result = pd.get_dummies(digitized_cat).to_numpy().astype(float)
+
+        return result
+
 # Continuous predictors ----
 
 class Continuous(ATNPredictor):

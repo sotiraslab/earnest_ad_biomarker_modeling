@@ -12,7 +12,8 @@ from atn_modeling.atn_predictor_classes import (BinaryGMM,
                                                 CategoricalStager,
                                                 GMMWithIndeterminateZone,
                                                 Continuous,
-                                                Quantiles)
+                                                Quantiles,
+                                                ManualIntermediateZone)
 
 collij_regions = [
     "AV45_CTX_TOT_POSTERIORCINGULATE_SUVR",
@@ -199,6 +200,59 @@ CSF_NEURODEGENERATION_CONTINUOUS = [
     Continuous('CSF_TAU', nickname='tTau', atn='csf_neurodegeneration')
     ]
 
+# ---- PLASMA ----
+
+PLASMA_AMYLOID_BINARY = [
+    BinaryManual('PLASMA_AB42OVER40', cutoff=0.00705, atn='plasma_amyloid', nickname='p. Aβ42/Aβ40 (0.00705)'),
+    BinaryGMM('PLASMA_ABETA40', nickname='p. Aβ40 (GMM)', atn='plasma_amyloid'),
+    BinaryGMM('PLASMA_ABETA42', nickname='p. Aβ42 (GMM)', atn='plasma_amyloid'),
+    BinaryGMM('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40 (GMM)', atn='plasma_amyloid'),
+    ]
+
+PLASMA_AMYLOID_CATEGORICAL = [
+    ManualIntermediateZone('PLASMA_AB42OVER40', low_cutoff=0.0055, high_cutoff=0.0086, atn='plasma_amyloid', nickname='p. Aβ42/Aβ40 (UPenn)'),
+    GMMWithIndeterminateZone('PLASMA_ABETA40', nickname='p. Aβ40 (BIZ)', atn='plasma_amyloid'),
+    GMMWithIndeterminateZone('PLASMA_ABETA42', nickname='p. Aβ42 (BIZ)', atn='plasma_amyloid'),
+    GMMWithIndeterminateZone('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40 (BIZ)', atn='plasma_amyloid'),
+    Quantiles('PLASMA_ABETA40', nickname='p. Aβ40 (Quartiles)', atn='plasma_amyloid'),
+    Quantiles('PLASMA_ABETA42', nickname='p. Aβ42 (Quartiles)', atn='plasma_amyloid'),
+    Quantiles('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40 (Quartiles)', atn='plasma_amyloid'),
+    ]
+
+PLASMA_AMYLOID_CONTINUOUS = [
+    Continuous('PLASMA_ABETA40', nickname='p. Aβ40', atn='plasma_amyloid'),
+    Continuous('PLASMA_ABETA42', nickname='p. Aβ42', atn='plasma_amyloid'),
+    Continuous('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40', atn='plasma_amyloid'),
+    ]
+
+PLASMA_TAU_BINARY = [
+    BinaryManual('PLASMA_PTAU217', cutoff=0.216, atn='plasma_tau', nickname='p. pTau217 (0.216 pg/ml)'),
+    BinaryGMM('PLASMA_PTAU217', atn='plasma_tau', nickname='p. pTau217 (GMM)')
+    ]
+
+PLASMA_TAU_CATEGORICAL = [
+    ManualIntermediateZone('PLASMA_PTAU217', low_cutoff=0.128, high_cutoff=0.300, atn='plasma_tau', nickname='p. pTau217 (UPenn)'),
+    GMMWithIndeterminateZone('PLASMA_PTAU217', nickname='p. pTau217 (BIZ)', atn='plasma_tau'),
+    Quantiles('PLASMA_PTAU217', nickname='p. pTau217 (Quartiles)', atn='plasma_tau'),
+    ]
+
+PLASMA_TAU_CONTINUOUS = [
+    Continuous('PLASMA_PTAU217', nickname='p. pTau217', atn='plasma_tau'),
+    ]
+
+PLASMA_NEURODEGENERATION_BINARY = [
+    BinaryGMM('PLASMA_NFL', nickname='p. NFL (GMM)', atn='plasma_neurodegeneration'),
+    ]
+
+PLASMA_NEURODEGENERATION_CATEGORICAL = [
+    GMMWithIndeterminateZone('PLASMA_NFL', nickname='p. NFL (BIZ)', atn='plasma_neurodegeneration'),
+    Quantiles('PLASMA_NFL', nickname='p. NFL (Quartiles)', atn='plasma_neurodegeneration'),
+    ]
+
+PLASMA_NEURODEGENERATION_CONTINUOUS = [
+    Continuous('PLASMA_NFL', nickname='p. NFL', atn='plasma_neurodegeneration')
+    ]
+
 # ---- Big dictionary -----
 
 ATN_PREDICTORS = {
@@ -242,8 +296,29 @@ CSF_ATN_PREDICTORS = {
         },
     }
 
+PLASMA_ATN_PREDICTORS = {
+    'plasma_amyloid': {
+        'binary': PLASMA_AMYLOID_BINARY,
+        'categorical': PLASMA_AMYLOID_CATEGORICAL,
+        'continuous': PLASMA_AMYLOID_CONTINUOUS
+        },
+    'plasma_tau': {
+        'binary': PLASMA_TAU_BINARY,
+        'categorical': PLASMA_TAU_CATEGORICAL,
+        'continuous': PLASMA_TAU_CONTINUOUS
+        },
+    'plasma_neurodegeneration': {
+        'binary': PLASMA_NEURODEGENERATION_BINARY,
+        'categorical': PLASMA_NEURODEGENERATION_CATEGORICAL,
+        'continuous': PLASMA_NEURODEGENERATION_CONTINUOUS
+        },
+    }
+
 ATN_PREDICTORS_PLUS_CSF = ATN_PREDICTORS.copy()
 ATN_PREDICTORS_PLUS_CSF.update(CSF_ATN_PREDICTORS)
+
+ATN_PREDICTORS_PLUS_PLASMA = ATN_PREDICTORS.copy()
+ATN_PREDICTORS_PLUS_PLASMA.update(PLASMA_ATN_PREDICTORS)
 
 ATN_PREDICTORS_FLAT = [*AMYLOID_BINARY,
                        *AMYLOID_CATEGORICAL,
@@ -269,7 +344,18 @@ CSF_ATN_PREDICTORS_FLAT = [
     *CSF_NEURODEGENERATION_CATEGORICAL,
     *CSF_NEURODEGENERATION_CONTINUOUS,]
 
-ALL_PREDICTORS_FLAT = ATN_PREDICTORS_FLAT + CSF_ATN_PREDICTORS_FLAT
+PLASMA_ATN_PREDICTORS_FLAT = [
+    *PLASMA_AMYLOID_BINARY,
+    *PLASMA_AMYLOID_CATEGORICAL,
+    *PLASMA_AMYLOID_CONTINUOUS,
+    *PLASMA_TAU_BINARY,
+    *PLASMA_TAU_CATEGORICAL,
+    *PLASMA_TAU_CONTINUOUS,
+    *PLASMA_NEURODEGENERATION_BINARY,
+    *PLASMA_NEURODEGENERATION_CATEGORICAL,
+    *PLASMA_NEURODEGENERATION_CONTINUOUS,]
+
+ALL_PREDICTORS_FLAT = ATN_PREDICTORS_FLAT + CSF_ATN_PREDICTORS_FLAT + PLASMA_ATN_PREDICTORS_FLAT
 
 # Accessor functions -------
 

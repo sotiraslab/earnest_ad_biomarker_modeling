@@ -1092,4 +1092,4 @@ continuous <- df %>%
 cormat <- cor(continuous)
 
 m <- lm(DeltaMMSE ~ Centiloid + META_TEMPORAL_TAU + HIPPOCAMPUS_VOL, data=df)
-
+vif(m)

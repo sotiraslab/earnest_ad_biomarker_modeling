@@ -46,7 +46,9 @@ group = data.groupby('name').agg({'name': 'first', 'biomarker': 'first',
                                   'variable_type': 'first', 'rmse': 'mean'})
 group['color'] = group['biomarker'].map(colors)
 group = group.loc[order, :]
-group = group.sort_values('rmse', ascending=False)
+group.loc[group['biomarker'].isna(), 'biomarker'] = 'None'
+group['biomarker'] = pd.Categorical(group['biomarker'], categories=['None', 'amyloid', 'tau', 'neurodegeneration'])
+group = group.sort_values(['biomarker', 'rmse'], ascending=[True, False])
 order = group['name']
 
 ####################

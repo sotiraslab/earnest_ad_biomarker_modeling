@@ -204,24 +204,24 @@ CSF_NEURODEGENERATION_CONTINUOUS = [
 
 PLASMA_AMYLOID_BINARY = [
     BinaryManual('PLASMA_AB42OVER40', cutoff=0.00705, atn='plasma_amyloid', nickname='p. Aβ42/Aβ40 (0.00705)'),
-    BinaryGMM('PLASMA_ABETA40', nickname='p. Aβ40 (GMM)', atn='plasma_amyloid'),
-    BinaryGMM('PLASMA_ABETA42', nickname='p. Aβ42 (GMM)', atn='plasma_amyloid'),
+    BinaryGMM('PLASMA_AB40', nickname='p. Aβ40 (GMM)', atn='plasma_amyloid'),
+    BinaryGMM('PLASMA_AB42', nickname='p. Aβ42 (GMM)', atn='plasma_amyloid'),
     BinaryGMM('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40 (GMM)', atn='plasma_amyloid'),
     ]
 
 PLASMA_AMYLOID_CATEGORICAL = [
     ManualIntermediateZone('PLASMA_AB42OVER40', low_cutoff=0.0055, high_cutoff=0.0086, atn='plasma_amyloid', nickname='p. Aβ42/Aβ40 (UPenn)'),
-    GMMWithIndeterminateZone('PLASMA_ABETA40', nickname='p. Aβ40 (BIZ)', atn='plasma_amyloid'),
-    GMMWithIndeterminateZone('PLASMA_ABETA42', nickname='p. Aβ42 (BIZ)', atn='plasma_amyloid'),
+    GMMWithIndeterminateZone('PLASMA_AB40', nickname='p. Aβ40 (BIZ)', atn='plasma_amyloid'),
+    GMMWithIndeterminateZone('PLASMA_AB42', nickname='p. Aβ42 (BIZ)', atn='plasma_amyloid'),
     GMMWithIndeterminateZone('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40 (BIZ)', atn='plasma_amyloid'),
-    Quantiles('PLASMA_ABETA40', nickname='p. Aβ40 (Quartiles)', atn='plasma_amyloid'),
-    Quantiles('PLASMA_ABETA42', nickname='p. Aβ42 (Quartiles)', atn='plasma_amyloid'),
+    Quantiles('PLASMA_AB40', nickname='p. Aβ40 (Quartiles)', atn='plasma_amyloid'),
+    Quantiles('PLASMA_AB42', nickname='p. Aβ42 (Quartiles)', atn='plasma_amyloid'),
     Quantiles('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40 (Quartiles)', atn='plasma_amyloid'),
     ]
 
 PLASMA_AMYLOID_CONTINUOUS = [
-    Continuous('PLASMA_ABETA40', nickname='p. Aβ40', atn='plasma_amyloid'),
-    Continuous('PLASMA_ABETA42', nickname='p. Aβ42', atn='plasma_amyloid'),
+    Continuous('PLASMA_AB40', nickname='p. Aβ40', atn='plasma_amyloid'),
+    Continuous('PLASMA_AB42', nickname='p. Aβ42', atn='plasma_amyloid'),
     Continuous('PLASMA_AB42OVER40', nickname='p. Aβ42/Aβ40', atn='plasma_amyloid'),
     ]
 

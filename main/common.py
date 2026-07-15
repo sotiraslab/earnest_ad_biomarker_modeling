@@ -164,6 +164,19 @@ def set_labels_combo_vs_csf(fig):
         f(3, 3, 3) + ' [CSF]']
     ax.set_xticklabels(labs)
 
+def set_labels_combo_vs_plasma(fig):
+    ax = fig.axes[0]
+    f = atn_subscripts
+    labs = [
+        'Baseline',
+        f(1, 1, 1) + ' [Imaging]',
+        f(1, 1, 1) + ' [Plasma]',
+        f(2, 2, 2) + ' [Imaging]',
+        f(2, 2, 2) + ' [Plasma]',
+        f(3, 3, 3) + ' [Imaging]',
+        f(3, 3, 3) + ' [Plasma]']
+    ax.set_xticklabels(labs)
+
 def set_labels_pvc_combo(fig):
     ax = fig.axes[0]
     f = atn_subscripts

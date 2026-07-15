@@ -39,6 +39,7 @@ def get_combo_atn_model(selected_models, atn_predictors_dict,
                         neurodegeneration=None,
                         taupvc=False,
                         csf=False,
+                        plasma=False,
                         biomarker_col='biomarker',
                         vartype_col='variable_type',
                         name_col='name'):
@@ -46,8 +47,12 @@ def get_combo_atn_model(selected_models, atn_predictors_dict,
     df = selected_models
 
     variable_types = [amyloid, tau, neurodegeneration]
+    if csf and plasma:
+        raise ValueError('Can only specify `csf` or `plasma`, not both.')
     if csf:
         biomarkers = ['csf_amyloid', 'csf_tau', 'csf_neurodegeneration']
+    elif plasma:
+        biomarkers = ['plasma_amyloid', 'plasma_tau', 'plasma_neurodegeneration']
     else:
         biomarkers = ['amyloid', 'taupvc' if taupvc else 'tau', 'neurodegeneration']
     output = []

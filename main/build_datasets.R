@@ -3,6 +3,7 @@
 sh <- suppressPackageStartupMessages
 
 sh(library(ADNIMERGE))
+sh(library(car))
 sh(library(factoextra))
 sh(library(ggplot2))
 sh(library(lme4))
@@ -1081,3 +1082,14 @@ tbl1.plasma <- CreateTableOne(vars=vars.plasma,
                            strata='CDRBinned',
                            data=df.plasma)
 print(tbl1.plasma, showAllLevels=T)
+
+# === Look at multicollinearity ========
+
+continuous <- df %>%
+  select(Centiloid, META_TEMPORAL_TAU, BRAAK1_TAU, BRAAK34_TAU, BRAAK56_TAU,
+         HIPPOCAMPUS_VOL, META_TEMPORAL_VOL)
+
+cormat <- cor(continuous)
+
+m <- lm(DeltaMMSE ~ Centiloid + META_TEMPORAL_TAU + HIPPOCAMPUS_VOL, data=df)
+

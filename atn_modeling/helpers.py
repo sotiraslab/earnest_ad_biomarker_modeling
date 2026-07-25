@@ -124,6 +124,42 @@ def test_atn_linear_model(models, covariates, target, train_data, test_data,
 
     return metrics, pipeline
 
+def test_atn_linear_model_return_predictions(models, covariates, target, train_data, test_data,
+                                             scale=False):
+
+    if not isinstance(models, list):
+        models = [models]
+
+    for m in models:
+        m.fit(train_data)
+
+    X_train = get_training_x(train_data, covariates, models)
+
+    y_train = train_data[target].to_numpy()
+    omit = np.any(np.isnan(X_train), axis=1)
+    X_train = X_train[~omit, :]
+    y_train = y_train[~omit]
+
+    X_test = get_training_x(test_data, covariates, models)
+    y_test = test_data[target].to_numpy()
+    omit = np.any(np.isnan(X_test), axis=1)
+    X_test = X_test[~omit, :]
+    y_test = y_test[~omit]
+
+    if scale:
+        pipeline = Pipeline([('scaler', StandardScaler()),
+                             ('lm', LinearRegression())])
+    else:
+        pipeline = Pipeline([('lm', LinearRegression())])
+
+    pipeline.fit(X_train.copy(), y_train.copy())
+    y_pred = pipeline.predict(X_test.copy())
+
+    metrics = {'rmse': root_mean_squared_error(y_test, y_pred),
+               'r2': r2_score(y_test, y_pred)}
+
+    return metrics, y_test, y_pred
+
 # ---- stats
 
 def compute_stats_vs_baseline(results, n_train, n_test, baseline = 'Baseline',

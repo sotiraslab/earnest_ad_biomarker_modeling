@@ -14,6 +14,7 @@ from sklearn.metrics import root_mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from scipy.stats import spearmanr
 import matplotlib.font_manager as fm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -156,7 +157,8 @@ def test_atn_linear_model_return_predictions(models, covariates, target, train_d
     y_pred = pipeline.predict(X_test.copy())
 
     metrics = {'rmse': root_mean_squared_error(y_test, y_pred),
-               'r2': r2_score(y_test, y_pred)}
+               'r2': r2_score(y_test, y_pred),
+               'spearman': spearmanr(y_test, y_pred).statistic}
 
     return metrics, y_test, y_pred
 

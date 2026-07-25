@@ -11,10 +11,10 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
-from atn_modeling.helpers import results_boxplot
-from common import load_results, set_labels_baseline_exp, set_labels_binary_exp
+from common import load_results, set_font_properties
+
+set_font_properties()
 
 svm = load_results('exp1_svm_MMSE', 'results.csv')
 svm = svm[~svm['model'].str.contains('PVC')].copy()
@@ -28,7 +28,12 @@ gamma_labels = [r"$2^{{{}}}$".format(p) for p in np.arange(-15, 5, 2)]
 
 models = svm['model'].unique()
 
+odir = os.path.join('figures', 'svm_hyperparameters')
+os.makedirs(odir, exist_ok=True)
+
 for model in models:
+
+    model_name = model.lower().replace(' ', '_')
 
     # Plot C
     df = svm[svm['model'].eq(model).copy()]
@@ -45,6 +50,9 @@ for model in models:
     plt.ylabel('Count')
     plt.xlabel('C')
 
+    plotpath = os.path.join(odir, f'{model_name}_C.svg')
+    plt.savefig(plotpath)
+
     # Plot gamma
     df = svm[svm['model'].eq(model).copy()]
     gamma = df.groupby('gamma')['model'].count()
@@ -59,3 +67,6 @@ for model in models:
     plt.grid(zorder=1)
     plt.ylabel('Count')
     plt.xlabel('Gamma')
+
+    plotpath = os.path.join(odir, f'{model_name}_gamma.svg')
+    plt.savefig(plotpath)

@@ -69,7 +69,7 @@ fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
                              stats_vs_baseline=True, palette=palette,
                              n_train=n_train, n_test=n_test, font_file='arial.ttf',
                              stats_pairs=pairs, stats_pairs_positions=positions,
-                             pivot_values = 'Spearman correlation')
+                             pivot_values = 'Spearman correlation', figsize=(7, 3.5))
 set_labels_baseline_exp(fig)
 
 plot_path = os.path.join('figures', 'spearman_correlations', 'results_combo_vs_baseline.svg')
@@ -107,7 +107,7 @@ n_test = concat['ntest'].values[0]
 fig, stats = results_boxplot(concat, groupby='model', baseline='All binary',
                              stats_vs_baseline=True, palette=palette,
                              n_train=n_train, n_test=n_test, font_file='arial.ttf',
-                             pivot_values='Spearman correlation')
+                             pivot_values='Spearman correlation', figsize=(7, 3.5))
 set_labels_binary_exp(fig)
 
 plot_path = os.path.join('figures', 'spearman_correlations', 'results_combo_vs_binary.svg')

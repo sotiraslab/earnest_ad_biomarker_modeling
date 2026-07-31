@@ -42,7 +42,7 @@ for model in models:
     x = c_labels
     y = C['model'].values
 
-    fig = plt.figure(figsize=(6, 2))
+    fig = plt.figure(figsize=(3.5, 1.5))
 
     plt.bar(x, y, zorder=2, edgecolor='k')
     plt.ylim(0, 100)
@@ -60,7 +60,7 @@ for model in models:
     x = gamma_labels
     y = gamma['model'].values
 
-    fig = plt.figure(figsize=(6, 2))
+    fig = plt.figure(figsize=(3.5, 1.5))
 
     plt.bar(x, y, zorder=2, edgecolor='k', color='firebrick')
     plt.ylim(0, 100)

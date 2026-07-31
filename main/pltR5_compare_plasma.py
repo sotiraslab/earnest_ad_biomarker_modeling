@@ -37,11 +37,11 @@ n_test = plasma['ntest'].values[0]
 fig, stats = results_boxplot(plasma, groupby='model', baseline='Baseline',
                              stats_vs_baseline=True, n_train=n_train, n_test=n_test,
                              font_file='arial.ttf', palette=palette, hatch=hatch,
-                             stats_pairs=pairs)
+                             stats_pairs=pairs, figsize=(3.5, 5))
 set_labels_combo_vs_plasma(fig)
 
 # update text
 fig.gca().set_ylabel('Prediction Error for ΔMMSE (RMSE)')
 
 plt.tight_layout()
-fig.savefig('figures/combo_models_vs_basline_with_csf.svg', dpi=300)
+fig.savefig('figures/combo_models_vs_basline_with_plasma.svg', dpi=300)

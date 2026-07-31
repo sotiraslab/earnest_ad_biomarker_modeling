@@ -40,7 +40,7 @@ n_test = concat['ntest'].values[0]
 fig, stats = results_boxplot(concat, groupby='model', baseline='Baseline',
                              stats_vs_baseline=True, n_train=n_train, n_test=n_test,
                              font_file='arial.ttf', palette=palette, hatch=hatch,
-                             stats_pairs=pairs)
+                             stats_pairs=pairs, figsize=(3.5, 5))
 set_labels_combo_vs_csf(fig)
 
 # update text

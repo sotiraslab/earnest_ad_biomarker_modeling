@@ -136,6 +136,9 @@ df$Dementia <- ifelse(df$CDR >= 0.5 & ! is.na(df$CDR),
 df[is.na(df$CDR), 'Dementia'] <- 'Unknown'
 df$Control <- ifelse(! df$AmyloidPositive & df$Dementia == 'No', 1, 0)
 
+df$CogStatus <- ifelse(df$CDRBinned == '0.0', 'CU', 'CI')
+df$CogStatus <- factor(df$CogStatus, levels=c('CU', 'CI'))
+
 # === Add APOE ======
 
 a1 <- select(apoeres, RID, APGEN1, APGEN2)
@@ -1054,34 +1057,45 @@ vars <- c(
   'Age', 'Sex', 'Race', 'Hispanic', 'Education',
   'HasE4', 'Centiloid', 'META_TEMPORAL_TAU', 'HIPPOCAMPUS_VOL',
   'MMSE', 'DeltaMMSE',
+  'CDRBinned', 
   'CDRSumBoxes', 'DeltaCDRSumBoxes',
   'PACC', 'DeltaPACC',
   'NVisits', 'FollowupYears'
   )
 
 tbl1 <- CreateTableOne(vars=vars,
-                       strata='CDRBinned',
+                       strata='CogStatus',
                        data=df)
-print(tbl1, showAllLevels=T)
+# print(tbl1, showAllLevels=T)
+tbl1.mat <- print(tbl1, showAllLevels=T, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
+write.csv(tbl1.mat, file.path(outfolder, 'table1.csv'))
 
 # === Table 1: CSF =======
+
+df.csf$Race <- droplevels(factor(df.csf$Race, levels = c('White', 'Black', 'Asian', 'Other', 'Unknown')))
+df.csf$Hispanic <- as.character(df.csf$Hispanic)
 
 vars.csf <- c(vars,  'CSF_AB42OVER40', 'CSF_PTAU', 'CSF_TAU')
 
 tbl1.csf <- CreateTableOne(vars=vars.csf,
-                       strata='CDRBinned',
+                       strata='CogStatus',
                        data=df.csf)
-print(tbl1.csf, showAllLevels=T)
+tbl1.csf.mat <- print(tbl1.csf, showAllLevels=T, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
+write.csv(tbl1.csf.mat, file.path(outfolder, 'table1_csf.csv'))
 
 
 # === Table 1: Plasma =======
 
+df.plasma$Race <- factor(df.plasma$Race, levels = c('White', 'Black', 'Asian', 'Other', 'Unknown'))
+df.plasma$Hispanic <- as.character(df.plasma$Hispanic)
+
 vars.plasma <- c(vars,  'PLASMA_AB42OVER40', 'PLASMA_PTAU217', 'PLASMA_NFL')
 
 tbl1.plasma <- CreateTableOne(vars=vars.plasma,
-                           strata='CDRBinned',
+                           strata='CogStatus',
                            data=df.plasma)
-print(tbl1.plasma, showAllLevels=T)
+tbl1.plasma.mat <- print(tbl1.plasma, showAllLevels=T, quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
+write.csv(tbl1.plasma.mat, file.path(outfolder, 'table1_plasma.csv'))
 
 # === Look at multicollinearity ========
 
@@ -1091,5 +1105,5 @@ continuous <- df %>%
 
 cormat <- cor(continuous)
 
-m <- lm(DeltaMMSE ~ Centiloid + META_TEMPORAL_TAU + HIPPOCAMPUS_VOL, data=df)
+m <- lm(DeltaMMSE ~ AmyloidComposite + META_TEMPORAL_TAU + META_TEMPORAL_VOL, data=df)
 vif(m)
